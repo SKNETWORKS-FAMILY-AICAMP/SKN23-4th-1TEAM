@@ -8,15 +8,38 @@ Modification History:
 - 2026-02-20 (김지우): 초기 생성
 - 2026-02-21 (양창일): 소셜 로그인 구현
 - 2026-02-22 (김지우): utils/api_utils.py 모듈을 적용하여 API 통신 로직 완벽 분리 및 관리자 UX 개선 (로그아웃 순정 링크 적용)
+- 2026-02-21 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가
 """
 import streamlit as st
 import time
-from utils.api_utils import api_login
+from utils.api_utils import api_login, api_verify_token
 from utils.config import GOOGLE_URI, KAKAO_URI
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# 🚀 [추가된 마법의 로직] HTML 링크를 눌러서 URL에 ?logout=true 가 붙으면 실행됨
+# 소셜로그인 access처리 블록
+if "token" not in st.session_state:
+    st.session_state.token = None
+
+social_token = st.query_params.get("access_token")
+if social_token:
+    st.session_state.token = social_token
+
+    ok, result = api_verify_token(social_token)
+    if ok:
+        st.session_state.user = {
+            "name": result.get("name") or "사용자",
+            "role": result.get("role") or "user",
+        }
+        st.query_params.clear()
+        st.switch_page("pages/home.py")
+    else:
+        st.session_state.token = None
+        st.session_state.user = None
+        st.query_params.clear()
+
+
+# HTML 링크를 눌러서 URL에 ?logout=true 가 붙으면 실행됨
 if st.query_params.get("logout") == "true":
     st.session_state.clear() # 1. 세션 완벽하게 날리기
     st.query_params.clear()  # 2. URL에서 파라미터 지우기 (깔끔하게)

@@ -8,10 +8,12 @@ Modification History:
 - 2026-02-15 (양창일): 초기 생성 (로그인, 회원가입, CSRF 방어, Rate Limit 등)
 - 2026-02-21 (김지우): 로그인 API 로직 보완
 - 2026-02-22 (김지우): 토큰 검증(/verify) API 및 비밀번호 찾기(/send-reset-email, /reset-password) API 통합 추가, 권한(Role) 반환 로직 동적 수정
+- 2026-02-22 (양창일): username 혼동으로 email, name으로 정리, jwt처리 수정
 """
 
 import os
-import jwt
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -84,7 +86,7 @@ def get_current_user(req: Request, db: Session) -> User:
 @router.post("/signup")
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
     try:
-        auth_service.signup(db, req.username, req.password)
+        auth_service.signup(db, req.email, req.password)
         return {"ok": True}
     except ValueError:
         raise HTTPException(status_code=400, detail="유효하지 않은 요청입니다.")
@@ -149,7 +151,7 @@ def refresh(req: Request, res: Response, db: Session = Depends(get_db)):
 @router.get("/me", response_model=MeResponse)
 def me(req: Request, db: Session = Depends(get_db)):
     user = get_current_user(req, db)
-    return {"id": user.id, "username": user.username}
+    return {"id": user.id, "email": user.email, "name": user.name}
 
 
 # ==========================================
@@ -177,9 +179,9 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
 
         return {"name": user_name, "role": user_role} # 👈 여기도 실제 role 반환하도록 수정!
 
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="30분 동안 활동이 없어 자동 로그아웃 되었습니다.")
-    except jwt.InvalidTokenError:
+    except JWTError:
         raise HTTPException(status_code=401, detail="유효하지 않은 인증 정보입니다.")
 
 

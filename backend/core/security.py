@@ -6,6 +6,7 @@ Description: 암호 만들고 토큰 만들고 검사하는 보안 도구 모음
 
 Modification History:
 - 2026-02-15: 초기 생성
+- 2026-02-22 (양창일) : 비밀번호 hash 72자리로 끊기
 """
 
 import hashlib  # 해시
@@ -18,7 +19,7 @@ from backend.core.config import settings  # 설정
 pwd_context = CryptContext(schemes=["bcrypt", "argon2"], deprecated="auto")  # bcrypt(기존 DB) + argon2 지원
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)  # 비번 해시
+    return pwd_context.hash(password[:72])  # 비번 해시
 
 def verify_password(password: str, password_hash: str) -> bool:
     # passlib + 최신 bcrypt 버전 간 호환성 문제 우회: bcrypt 해시는 직접 처리

@@ -8,6 +8,7 @@ Description: AWS EC2 서버 관리자 대시보드 (Suscale 스타일 UI)
 Modification History:
 - 2026-02-21 (김다빈): 초기 생성 — 대시보드, 서버 제어, 배포, 로그, 회원 관리 UI
 - 2026-02-22 (김다빈): 관리자 페이지 통합, Suscale 테마 CSS 적용, 회원 등급/삭제 기능 추가
+- 2026-02-22 (양창일): username 혼동으로 email, name으로 정리
 """
 
 import streamlit as st
@@ -820,7 +821,7 @@ with content_col:
                         if not df.empty:
                             target_user = st.selectbox(
                                 "사용자 선택",
-                                [f"{row['id']}: {row['username']}" for row in data],
+                                [f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'}" for row in data]
                             )
                             new_tier = st.selectbox("변경할 등급", ["normal", "plus"])
 
@@ -851,7 +852,7 @@ with content_col:
                         if not df.empty:
                             del_target = st.selectbox(
                                 "삭제할 사용자 선택",
-                                [f"{row['id']}: {row['username']}" for row in data],
+                                [f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'}" for row in data]
                                 key="del",
                             )
                             if st.button(

@@ -8,6 +8,7 @@ Modification History:
 - 2026-02-22 (김지우): 초기 생성 및 연결 에러 디버깅 로직 추가
 - 2026-02-22 (김지우): 면접 기능(RAG 인덱싱, 질문 생성, 결과 저장) 함수 통합
 - 2026-02-22 (김지우): API 통신 타임아웃 기본 5초 -> 30초로 연장 (Timeout 에러 해결)
+- 2026-02-22 (양창일): username 혼동으로 email, name으로 정리
 """
 import requests
 import streamlit as st
@@ -65,7 +66,7 @@ def api_send_signup_email(email, auth_code):
     return _handle_request("POST", "/auth/send-signup-email", json={"email": email, "auth_code": auth_code})
 
 def api_signup(email, password):
-    return _handle_request("POST", "/auth/signup", json={"username": email, "password": password})
+    return _handle_request("POST", "/auth/signup", json={"email": email, "password": password})
 
 def api_send_reset_email(email, auth_code):
     return _handle_request("POST", "/auth/send-reset-email", json={"email": email, "auth_code": auth_code})
