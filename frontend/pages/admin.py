@@ -1,3 +1,15 @@
+"""
+File: admin.py
+Author: 김다빈
+Created: 2026-02-21
+Description: AWS EC2 서버 관리자 대시보드 (Suscale 스타일 UI)
+             서버 제어, 배포 도구, 시스템 로그, 회원 관리, 설정 기능 포함
+
+Modification History:
+- 2026-02-21 (김다빈): 초기 생성 — 대시보드, 서버 제어, 배포, 로그, 회원 관리 UI
+- 2026-02-22 (김다빈): 관리자 페이지 통합, Suscale 테마 CSS 적용, 회원 등급/삭제 기능 추가
+"""
+
 import streamlit as st
 import time
 import pandas as pd
