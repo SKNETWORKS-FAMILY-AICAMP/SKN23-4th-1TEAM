@@ -92,6 +92,7 @@ EVAL_JSON_SCHEMA_INSTRUCTIONS = """
 
 규칙:
 - question_id는 입력값을 그대로 복사한다.
+- 만약 답변이 질문의 내용에 적합하지 않거나, 잘 모르겠다는 답변밖에 없다면 score는 0점으로 부여합니다.
 - pass_threshold는 기본 70으로 하되, difficulty_score가 있으면 아래로 조정 가능:
     - difficulty_score >= 0.8: 75
     - 0.5 <= difficulty_score < 0.8: 70
