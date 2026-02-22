@@ -19,3 +19,6 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     password: Mapped[str | None] = mapped_column(String(255), nullable=True)  # 비번 해시(소셜은 None)
+    provider: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)  # kakao/google/naver
+    provider_user_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)  # 제공자 고유 ID
+    role: Mapped[str] = mapped_column(String(20), default="user")  # user/admin 관리자용 

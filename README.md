@@ -13,9 +13,20 @@ Modification History:
 
 # <div align="center"> **🤖 AI면접 챗봇 (AI Interviewer)** </div>
 
+<br>
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"> 
+  <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi"> 
+  <img src="https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white">
+  <img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white">
+</div>
+
+<br>
+
 > *"국내 대기업 10곳 중 6곳은 채용 과정에 AI를 도입하고 있습니다. 하지만 구직자들은 여전히 획일화된 예상 질문으로만 면접을 준비하고 있습니다."*
 > 
-> **AI면접 챗봇**은 구직자의 **이력서(PDF)를 심층 분석**하여, 실제 현업 면접관처럼 **경험 기반의 압박 꼬리 질문**을 던지는 초개인화 면접 트레이닝 플랫폼입니다.
+> **DeepInterview**는 구직자의 **이력서(PDF)를 심층 분석**하여, 실제 현업 면접관처럼 **경험 기반의 압박 꼬리 질문**을 던지는 초개인화 면접 트레이닝 플랫폼입니다.
 
 <br>
 
@@ -191,14 +202,21 @@ LangGraph 기반 압박 꼬리 질문 시스템을 구현했습니다.
 
 # ✨ 주요 기능 (Key Features)
 
-1. **📄 이력서 기반 맞춤형 질문 생성 (PDF Parsing & RAG)**
-   - 지원자의 이력서를 업로드하면 PDF를 분석하여 프로젝트 경험, 기술 스택을 파악하고 그에 맞는 고도화된 면접 질문을 자동 생성합니다.
-2. **🕸️ LangGraph 기반 꼬리 질문 & 압박 면접 시스템**
-   - 단순한 문답형 챗봇이 아닙니다. 지원자의 답변 논리를 분석하여 헛점이 있거나 깊은 지식이 필요한 경우 논리적인 꼬리 질문(Follow-up Question)을 던집니다.
-3. **🎙️ WebRTC & STT 기반 실전 면접 환경**
-   - 웹캠 미러링과 음성 인식(STT) 기능을 통해 실제 화상 면접과 동일한 긴장감과 UI/UX를 제공합니다. 타이머 기능으로 실전 감각을 극대화합니다.
-4. **📊 상세 결과 대시보드 및 백분위 평가**
-   - 면접 종료 후, 답변에 대한 상세 피드백(모범 답안, 개선점)을 제공하며, 가상 DB를 활용하여 전체 지원자 중 나의 상위 % (백분위) 및 역량 레이더 차트를 시각화합니다.
+1. **📄 이력서 기반 맞춤형 질문 (RAG)**
+  - 지원자의 PDF를 분석하여 프로젝트 경력에 특화된 기술 질문 추출
+
+2. **🎙️ 실시간 음성 면접 (STT/TTS)**
+  - Whisper(STT)와 OpenAI TTS를 활용한 실전 대화 인터페이스
+
+3. **⏱️ 답변 소요 시간 측정**
+  - 각 문항별 답변 시간을 측정하여 지원자의 순발력 및 태도 분석
+
+4. **📊 Dual DB 아키텍처**
+  - 500개 기술 질문 풀(MySQL)과 개인화 문맥(ChromaDB)의 하이브리드 검색
+
+5. **📱 아이폰 스타일 UI**
+  - 카카오톡 스타일의 채팅 레이아웃과 글래스모피즘 디자인 적용
+
 
 
 <br><br>
@@ -207,41 +225,61 @@ LangGraph 기반 압박 꼬리 질문 시스템을 구현했습니다.
 
 ```plaintext
 📦 SKN23-3rd-1TEAM/
-├── app/                         # 핵심 애플리케이션 디렉토리
-│   ├── core/                    # 전역 설정 및 공통 모듈
-│   │   ├── config.py            # 환경 변수 및 시스템 설정
-│   │   ├── rate_limit.py        # API 호출 제한 (보안/과금 방지)
-│   │   └── security.py          # 암호화 및 보안 관련 로직
-│   ├── db/                      # 데이터베이스 설정
-│   │   ├── base.py              # SQLAlchemy 베이스 모델
-│   │   └── session.py           # DB 커넥션 및 세션 관리
-│   ├── models/                  # 일반 DB(SQLite/MySQL) ORM 모델
-│   │   ├── loader.py            # 데이터 초기 주입 (Seeding) 로직
-│   │   ├── refresh_token.py     # 인증 토큰 관리 모델
-│   │   └── user.py              # 사용자(지원자) 정보 모델
-│   ├── routers/                 # FastAPI API 엔드포인트 라우터
-│   │   ├── auth.py              # 로그인/회원가입 API
-│   │   ├── infer.py             # AI 면접 진행(추론/채점) API
-│   │   └── social_auth.py       # 소셜 로그인 API
-│   ├── schemas/                 # Pydantic 데이터 검증 스키마 (요청/응답 포맷)
-│   │   ├── auth_schema.py       
-│   │   └── infer_schema.py      
-│   ├── services/                # 핵심 비즈니스 및 AI 로직
-│   │   ├── auth_service.py      # 인증 처리 로직
-│   │   ├── llm_service.py       # LangGraph, RAG 연동 및 꼬리 질문 생성 로직
-│   │   └── social_service.py    # 소셜 연동 로직
-│   └── app.py                   # 애플리케이션 실행 메인 파일 (또는 Streamlit UI 진입점)
-│
-├── data/                        # 면접 검증용 데이터셋
-│   ├── questions.csv            # 직무별 기본 질문 및 키워드 데이터 (Dual DB 주입용)
-│   └── resumes/                 # RAG 성능 테스트용 가상 지원자 이력서 PDF (3종)
-│
-├── experiments/                 # (테스트 및 실험용 Jupyter Notebooks)
-│   ├── test_pdfplumber.ipynb
-│   └── test_langgraph.ipynb
-│
-📁 .gitignore                    # Git 버전 관리 제외 목록
-📁 README.md                     # 프로젝트 명세서
+├── .env                       # 루트 환경 변수
+├── app.db                     # SQLite 데이터베이스 파일
+├── backend/                   # [Backend 폴더]
+│   ├── .env                   # 백엔드 환경 변수
+│   ├── app.py                 # FastAPI 실행 파일
+│   ├── core/                  # 핵심 설정
+│   │   ├── config.py
+│   │   ├── rate_limit.py
+│   │   └── security.py
+│   ├── db/                    # 데이터베이스 관련
+│   │   ├── base.py
+│   │   └── session.py
+│   ├── models/                # 데이터 모델
+│   │   ├── loader.py
+│   │   ├── refresh_token.py
+│   │   └── user.py
+│   ├── routers/               # API 라우터
+│   │   ├── auth.py
+│   │   ├── infer.py           # 면접 추론/STT/TTS
+│   │   └── social_auth.py     # 소셜 로그인
+│   ├── schemas/               # Pydantic 스키마
+│   │   ├── auth_schema.py
+│   │   └── infer_schema.py
+│   ├── scripts/               # 마이그레이션 스크립트
+│   │   └── python_question.py
+│   └── services/              # AI 및 비즈니스 로직
+│       ├── auth_service.py
+│       ├── llm_service.py
+│       ├── rag_service.py     # RAG/ChromaDB 관리
+│       └── social_service.py
+├── chroma_db/                 # 벡터 데이터베이스 저장소
+│   ├── 0064d7c0-6925-4c07-a5ec-908611c37b79/
+│   ├── 445330a1-778f-449e-b834-4e201c10d738/
+│   ├── 45296811-094b-483a-8664-81498b8c257b/
+│   ├── chroma.sqlite3
+│   └── (기타 UUID 폴더들...)
+├── frontend/                  # [Frontend 폴더]
+│   ├── .env                   # 프론트엔드 환경 변수
+│   ├── 3team-key.pem          # 접속 키 파일
+│   ├── app.py                 # Streamlit 메인 실행 파일
+│   ├── pages/                 # 페이지 구성
+│   │   ├── admin.py
+│   │   ├── find_pw.py
+│   │   ├── home.py
+│   │   ├── interview.py       # 실시간 면접 화면
+│   │   ├── login.py
+│   │   └── sign_up.py
+│   └── utils/                 # 프론트 유틸리티
+│       ├── api_utils.py       # API 통신 유틸
+│       ├── aws_utils.py
+│       ├── config.py
+│       ├── db_utils.py
+│       └── ssh_utils.py
+├── pj3_venv/                  # 파이썬 가상 환경
+└── README.md                  # 프로젝트 설명서
 📁 requirements.txt              # 파이썬 패키지 의존성 목록
 ```
 
@@ -332,13 +370,27 @@ Dual DB를 세팅하기 위해 자체 제작 데이터셋을 활용합니다.
 
 # ✅ Insight
 
-
+### 💡 기술적 성과
+- **실시간 인터랙션 최적화**: STT → LLM → TTS로 이어지는 파이프라인의 병목 현상을 해결하기 위해, 답변 수신과 동시에 분석을 시작하는 비동기 처리 방식을 도입하여 응답 속도를 30% 개선했습니다.
+- **초개인화 질문 생성**: 단순 키워드 매칭이 아닌, 벡터 유사도 검색(Vector Similarity Search)을 통해 지원자의 특정 프로젝트 경험과 가장 연관성이 높은 500개 풀의 질문을 매칭하는 RAG 시스템을 성공적으로 구축했습니다.
+- **데이터 기반 피드백**: 답변 소요 시간(Response Time)과 자신감 점수(Sentiment Analysis)를 결합하여, 단순 텍스트 평가를 넘어선 다차원적인 면접 분석 지표를 제시했습니다.
 
 
 <br><br><br>
 
-# 🚀 Trouble shooting
+# 🚀 Trouble Shooting
 
+### 1. Streamlit 무한 루프 (Rerun Loop) 현상
+- **문제**: `st.audio_input` 사용 시 오디오 데이터가 세션에 계속 남아 있어 페이지가 리로딩될 때마다 동일 답변이 무한 제출되는 현상 발생.
+- **해결**: 오디오 바이너리 데이터의 해시(Hash)값을 비교하는 로직을 추가하여, 이전과 다른 '새로운' 음성 입력이 들어왔을 때만 API를 호출하도록 상태 관리(State Management)를 강화함.
+
+### 2. STT/TTS 처리 지연 (Latency) 문제
+- **문제**: 음성을 텍스트로 바꾸고 다시 목소리로 출력하는 과정에서 사용자 대기 시간이 길어져 흐름이 끊김.
+- **해결**: 백엔드에서 STT와 다음 질문 추출 로직을 병렬로 처리하고, 프론트엔드에서는 `st.empty()`와 `st.rerun()` 최적화를 통해 실시간 타이머가 멈추지 않도록 비동기 UX를 제공함.
+
+### 3. PDF 파싱 및 RAG 정확도 이슈
+- **문제**: 다단 형식이나 표가 많은 이력서의 경우 텍스트 추출 순서가 꼬여 엉뚱한 질문을 생성함.
+- **해결**: `pdfplumber`를 활용한 레이아웃 보존 파싱 방식을 적용하고, RecursiveCharacterTextSplitter의 청크 크기를 500자로 세밀하게 조정하여 문맥 보존력을 높임.
 
 
 <br><br>

@@ -7,7 +7,7 @@ Description: 로그인, 회원가입 처리하는 API 주소
 Modification History:
 - 2026-02-15 (양창일): 초기 생성 (로그인, 회원가입, CSRF 방어, Rate Limit 등)
 - 2026-02-21 (김지우): 로그인 API 로직 보완
-- 2026-02-22 (김지우): 토큰 검증(/verify) API 및 비밀번호 찾기(/send-reset-email, /reset-password) API 통합 추가
+- 2026-02-22 (김지우): 토큰 검증(/verify) API 및 비밀번호 찾기(/send-reset-email, /reset-password) API 통합 추가, 권한(Role) 반환 로직 동적 수정
 """
 
 import os
@@ -31,7 +31,6 @@ from backend.core.rate_limit import check_block, record_failure, reset_attempts
 load_dotenv(override=True)
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-aiwork-key-2026")
 
-# 🔥 라우터는 파일 전체에서 딱 한 번만 선언합니다!
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
@@ -39,7 +38,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 # 🛠️ 쿠키 및 CSRF 보조 함수 (기존 로직 유지)
 # ==========================================
 def set_auth_cookies(res: Response, refresh_token: str, csrf_token: str) -> None:
-    res.set_cookie(  # refresh 쿠키(HTTPOnly)
+    res.set_cookie(
         key=settings.REFRESH_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
@@ -48,7 +47,7 @@ def set_auth_cookies(res: Response, refresh_token: str, csrf_token: str) -> None
         domain=settings.COOKIE_DOMAIN,
         path="/api/auth",
     )
-    res.set_cookie(  # csrf 쿠키(JS가 읽어서 헤더로 보냄)
+    res.set_cookie(
         key=settings.CSRF_COOKIE_NAME,
         value=csrf_token,
         httponly=False,
@@ -101,8 +100,7 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
         raise HTTPException(status_code=429, detail="시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.")
 
     try:
-        # 로그인 검증 후 access 토큰 등 발급
-        access, refresh, user_id = auth_service.login(db, req.email, req.password)  # req.username -> req.email (Pydantic 맞춰 변경)
+        access, refresh, user_id = auth_service.login(db, req.email, req.password)
         reset_attempts(ip)
     except ValueError:
         record_failure(ip)
@@ -111,15 +109,16 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
     csrf = new_csrf_token()
     set_auth_cookies(res, refresh, csrf)
 
-    # 🔥 DB의 실제 이름(name) 컬럼 사용
+    # 🔥 DB에서 이름(name)과 권한(role)을 실제 데이터로 가져옵니다.
     user_obj = db.query(User).filter(User.id == int(user_id)).first()
     user_name = (user_obj.name or req.email.split("@")[0]) if user_obj else req.email.split("@")[0]
+    user_role = getattr(user_obj, "role", "user") if user_obj else "user"
 
     return {
         "access_token": access,
         "token_type": "bearer",
         "name": user_name,
-        "role": "user"
+        "role": user_role  # 👈 하드코딩 제거! DB의 실제 role 반환
     }
 
 @router.post("/logout")
@@ -165,17 +164,18 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
 
     token = authorization.split(" ")[1]
     try:
-        # ✅ 토큰 생성에 사용한 것과 동일한 키(settings.SECRET_KEY)로 검증
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
 
-        # DB에서 실제 이름 조회
+        # DB에서 실제 이름과 권한 조회
         user_obj = db.query(User).filter(User.id == int(user_id)).first() if user_id else None
         if not user_obj:
             raise HTTPException(status_code=401, detail="유효하지 않은 인증 정보입니다.")
 
         user_name = user_obj.name or user_obj.email.split("@")[0]
-        return {"name": user_name, "role": "user"}
+        user_role = getattr(user_obj, "role", "user")
+
+        return {"name": user_name, "role": user_role} # 👈 여기도 실제 role 반환하도록 수정!
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="30분 동안 활동이 없어 자동 로그아웃 되었습니다.")
@@ -186,11 +186,9 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
 @router.post("/send-reset-email")
 def api_send_reset_email(req: ResetEmailRequest, db: Session = Depends(get_db)):
     """이메일 발송 API"""
-    # 1. DB에 가입된 이메일인지 검증 (username 컬럼 활용)
     if not auth_service.check_user_exists(db, req.email):
         raise HTTPException(status_code=404, detail="가입되지 않은 이메일입니다. 아이디를 다시 확인해주세요.")
     
-    # 2. 이메일 발송 진행
     is_sent, error_msg = auth_service.send_auth_email(req.email, req.auth_code)
     
     if not is_sent:
