@@ -49,7 +49,7 @@ def main():
             "question_id": qid,
             "question": qtext,
             "answer_text": user_text,
-            "evaluation": ev,  # Task2 JSON 그대로 저장
+            "evaluation": ev,  # JSON 그대로 저장
             "next_question_id": st.get("current_question_id"),
             "next_question": st.get("current_question_text"),
         }

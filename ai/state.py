@@ -1,4 +1,3 @@
-# root/ai/state.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, TypedDict, Literal
@@ -29,7 +28,7 @@ class InterviewState(TypedDict, total=False):
     # 사용자 최신 답변(STT 텍스트; 현재는 텍스트 입력)
     last_user_answer_text: Optional[str]
 
-    # 평가 결과(Task2의 JSON 원문 그대로 저장)
+    # 평가 결과(JSON 원문 그대로 저장)
     last_eval_json: Optional[Dict[str, Any]]
     last_score: Optional[int]
 

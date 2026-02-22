@@ -192,6 +192,8 @@ def main():
     with open("ai/평가결과_한글.json", "w", encoding="utf-8") as f:
         json.dump(result_korean, f, ensure_ascii=False, indent=2)
 
+    # 영문 평가, 한글평가 둘다 반환
+    return {'Eng':result_json, 'Kor':result_korean}
 
 if __name__ == "__main__":
     main()
