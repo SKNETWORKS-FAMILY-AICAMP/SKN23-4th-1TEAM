@@ -10,6 +10,7 @@ Modification History:
 - 2026-02-22 (김지우): utils/api_utils.py 모듈을 적용하여 API 통신 로직 완벽 분리 및 관리자 UX 개선
 - 2026-02-23 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가, profile_image_url 저장
 - 2026-02-23 (김지우): 휴면 계정 로그인 시 복구 모달(Popup) 로직 적용
+- 2026-02-23 (김지우): 아이디/비밀번호 입력 후 엔터키로 로그인 가능하도록 st.form 적용
 """
 import streamlit as st
 import time
@@ -120,8 +121,8 @@ html, body, [data-testid="stAppViewContainer"] { background-color: #f5f5f5 !impo
 label[data-testid="stWidgetLabel"] > div > p { font-size: 13px !important; color: #555 !important; font-weight: 500 !important; margin-bottom: 4px !important; }
 input[type="text"], input[type="password"] { border-color: transparent !important; border-radius: 6px !important; font-size: 15px !important; padding: 12px 14px !important; background: #fafafa !important; }
 input[type="text"]:focus, input[type="password"]:focus { border-color: #bb38d0 !important; background: #fff !important; outline: none !important; box-shadow: 0 0 0 2px rgba(187, 56, 208, 0.12) !important; }
-[data-testid="stButton"] > button[kind="primary"], div[data-testid="stButton"]:first-of-type > button { background-color: #bb38d0 !important; color: #fff !important; border: none !important; border-radius: 6px !important; height: 50px !important; font-size: 16px !important; font-weight: 700 !important; width: 100% !important; letter-spacing: 0.5px; transition: background 0.15s; margin-top: 6px; }
-div[data-testid="stButton"]:first-of-type > button:hover { background-color: #872a96 !important; }
+[data-testid="stButton"] > button[kind="primary"], div[data-testid="stButton"]:first-of-type > button, [data-testid="stFormSubmitButton"] > button { background-color: #bb38d0 !important; color: #fff !important; border: none !important; border-radius: 6px !important; height: 50px !important; font-size: 16px !important; font-weight: 700 !important; width: 100% !important; letter-spacing: 0.5px; transition: background 0.15s; margin-top: 6px; }
+div[data-testid="stButton"]:first-of-type > button:hover, [data-testid="stFormSubmitButton"] > button:hover { background-color: #872a96 !important; }
 .divider-row { display: flex; align-items: center; margin: 24px 0 20px; color: #bbb; font-size: 13px; gap: 10px; }
 .divider-row::before, .divider-row::after { content: ''; flex: 1; border-top: 1px solid #eee; }
 .social-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
@@ -133,6 +134,7 @@ div[data-testid="stButton"]:first-of-type > button:hover { background-color: #87
 .helper-links a:hover{ color: #bb38d0 !important; text-decoration: underline; transition: all 300ms; }
 .helper-sep { color: #ddd; }
 [data-testid="stButton"] > button { border-radius: 6px !important; }
+[data-testid="stForm"] { border: none !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; }
 .custom-error-msg { font-size: 13px; color: #e74c3c; text-align: center; margin-top: 10px; font-weight: 500; }
 .custom-success-box { background-color: rgba(187, 56, 208, 0.08); color: #bb38d0; border: 1px solid rgba(187, 56, 208, 0.2); padding: 14px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
 </style>
@@ -145,11 +147,16 @@ st.markdown('<div class="login-logo">AI<span>WORK</span></div>', unsafe_allow_ht
 # 🔥 1. 일반 로그인 폼
 # ==========================================
 if not st.session_state.get("show_admin_choice"):
-    username = st.text_input("아이디", placeholder="이메일을 입력하세요")
-    password = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
+    # ✅ st.form으로 감싸서 엔터키로도 로그인 가능하도록 변경
+    with st.form("login_form"):
+        username = st.text_input("아이디", placeholder="이메일을 입력하세요")
+        password = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
+        submitted = st.form_submit_button("로그인", use_container_width=True)
+
+    # ✅ msg_placeholder는 폼 바깥에 위치 (폼 안에 두면 제출 후 사라짐)
     msg_placeholder = st.empty()
 
-    if st.button("로그인", use_container_width=True):
+    if submitted:
         if not username or not password:
             msg_placeholder.markdown('<div class="custom-error-msg">아이디와 비밀번호를 모두 입력해주세요.</div>', unsafe_allow_html=True)
         elif username == "admin" and password == "1234":
@@ -177,12 +184,13 @@ if not st.session_state.get("show_admin_choice"):
                 else:
                     # 🔥 휴면 계정이면 모달 띄우기! (password 변수 같이 넘기기)
                     if "휴면" in result:
-                        dormant_recovery_modal(username, password) # 👈 여기 수정!
+                        dormant_recovery_modal(username, password)
                     # 탈퇴 계정은 무조건 차단! (모달 안 띄움)
                     elif "탈퇴" in result:
                         msg_placeholder.markdown(f'<div class="custom-error-msg" style="color:red; font-size:14px; font-weight:bold;">{result}</div>', unsafe_allow_html=True)
                     else:
                         msg_placeholder.markdown(f'<div class="custom-error-msg">{result}</div>', unsafe_allow_html=True)
+
     # 하단 헬퍼 링크 및 소셜 로그인 버튼
     st.markdown(f"""
     <div class="helper-links"><a href="find_pw" target="_self">비밀번호 찾기</a><span class="helper-sep">|</span><a href="sign_up" target="_self">회원가입</a></div>
