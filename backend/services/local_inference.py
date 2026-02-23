@@ -8,6 +8,7 @@ Description: 로컬 STT(faster-whisper) 및 TTS(Qwen3-TTS) 모듈
 
 Modification History:
 - 2026-02-22 (김다빈): 초기 생성 — faster-whisper STT + Qwen3-TTS + OpenAI 폴백
+- 2026-02-23 (김다빈): faster-whisper STT 프롬프트 최적화 및 한국어 추론 안정화
 """
 
 import os
@@ -114,7 +115,7 @@ def local_stt(audio_bytes: bytes, language: str = "ko") -> str:
     return transcript.text
 
 
-def local_tts(text: str, voice: str = "onyx") -> bytes:
+def local_tts(text: str, voice: str = "echo") -> bytes:
     """
     텍스트 → 음성(bytes) (TTS)
     1순위: Qwen3-TTS (로컬, 무료, GPU 권장)
