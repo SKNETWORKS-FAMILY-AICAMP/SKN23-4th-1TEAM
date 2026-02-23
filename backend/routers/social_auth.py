@@ -6,6 +6,8 @@ Description: 소셜 로그인
 
 Modification History:
 - 2026-02-16: 초기 생성
+- 2026-02-22(양창일): 스코프 카카오 닉네임 , 이미지 추가 
+- 2026-02-23(양창일): 프로필에서 image_url 받도록 연결, get_or_create_social_user(..., profile_image_url=image_url) 전달, scope에 profile_image 포함
 """
 
 import secrets  # state 생성
@@ -72,7 +74,7 @@ def kakao_start():
         "client_id": settings.KAKAO_CLIENT_ID,
         "redirect_uri": settings.KAKAO_REDIRECT_URI,
         "state": state,
-        "scope": "account_email",
+        "scope": "account_email profile_nickname profile_image",
     }
     url = "https://kauth.kakao.com/oauth/authorize?" + urlencode(params)
     response = RedirectResponse(url)
@@ -86,7 +88,7 @@ def kakao_callback(code: str, state: str, req: Request, res: Response, db: Sessi
         raise HTTPException(status_code=400, detail="invalid state")
 
     access_token = social_service.kakao_exchange_code_for_token(code)
-    provider_user_id, email, name = social_service.kakao_fetch_profile(access_token)
+    provider_user_id, email, name, image_url = social_service.kakao_fetch_profile(access_token)
 
     user = social_service.get_or_create_social_user(
         db,
@@ -94,6 +96,7 @@ def kakao_callback(code: str, state: str, req: Request, res: Response, db: Sessi
         provider_user_id=provider_user_id,
         email=email,
         name=name,
+        profile_image_url=image_url,
     )
     our_access, our_refresh = issue_tokens_for_user_id(db, user.id)
 
@@ -129,7 +132,7 @@ def google_callback(code: str, state: str, req: Request, res: Response, db: Sess
         raise HTTPException(status_code=400, detail="invalid state")
 
     access_token = social_service.google_exchange_code_for_token(code)
-    provider_user_id, email, name = social_service.google_fetch_profile(access_token)
+    provider_user_id, email, name, image_url = social_service.google_fetch_profile(access_token)
 
     user = social_service.get_or_create_social_user(
         db,
@@ -137,6 +140,7 @@ def google_callback(code: str, state: str, req: Request, res: Response, db: Sess
         provider_user_id=provider_user_id,
         email=email,
         name=name,
+        profile_image_url=image_url,
     )
     our_access, our_refresh = issue_tokens_for_user_id(db, user.id)
 

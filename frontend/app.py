@@ -8,7 +8,7 @@ Modification History:
 - 2026-02-20 (김지우): 초기 생성
 - 2026-02-21 (양창일): 소셜 로그인 구현
 - 2026-02-22 (김지우): utils/api_utils.py 모듈을 적용하여 API 통신 로직 완벽 분리 및 관리자 UX 개선 (로그아웃 순정 링크 적용)
-- 2026-02-21 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가
+- 2026-02-23 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가, session_state.newtoken추가
 """
 import streamlit as st
 import time
@@ -24,6 +24,7 @@ if "token" not in st.session_state:
 social_token = st.query_params.get("access_token")
 if social_token:
     st.session_state.token = social_token
+    st.session_state.new_token = social_token
 
     ok, result = api_verify_token(social_token)
     if ok:

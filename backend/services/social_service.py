@@ -6,7 +6,8 @@ Description: 소셜 로그인
 
 Modification History:
 - 2026-02-16: 초기 생성
-- 2026-02-23(양창일): 소셜 로그인 수정
+- 2026-02-23(양창일): 소셜 로그인 수정, 카카오 패치 이미지 추가 get_or_create_social_user(..., profile_image_url=None) 파라미터 추가
+                    , 기존 유저 로그인 시 profile_image_url 값이 오면 업데이트, 신규 유저 생성 시 profile_image_url 저장
 """
 
 
@@ -26,6 +27,7 @@ def get_or_create_social_user(
     provider_user_id: str,
     email: str | None,
     name: str | None = None,
+    profile_image_url: str | None = None,
 ) -> User:
     user = (
         db.query(User)
@@ -43,6 +45,9 @@ def get_or_create_social_user(
         elif (not user.name):
             user.name = email or f"{provider}_{provider_user_id}"
             changed = True
+        if profile_image_url and user.profile_image_url != profile_image_url:
+            user.profile_image_url = profile_image_url
+            changed = True
         if changed:
             db.add(user)
             db.commit()
@@ -57,6 +62,7 @@ def get_or_create_social_user(
         password=None,
         provider=provider,
         provider_user_id=provider_user_id,
+        profile_image_url=profile_image_url,
     )
     db.add(user)
     db.commit()
@@ -81,21 +87,28 @@ def kakao_exchange_code_for_token(code: str) -> str:
     j = resp.json()
     return j["access_token"]
 
-def kakao_fetch_profile(access_token: str) -> tuple[str, str | None, str | None]:
+def kakao_fetch_profile(access_token: str) -> tuple[str, str | None, str | None, str | None]:
     url = "https://kapi.kakao.com/v2/user/me"
     headers = {"Authorization": f"Bearer {access_token}"}
     resp = requests.get(url, headers=headers, timeout=10)
     resp.raise_for_status()
+
     j = resp.json()
     provider_user_id = str(j["id"])
-    email = None
-    name = None
+
     kakao_account = j.get("kakao_account") or {}
-    email = kakao_account.get("email")
     properties = j.get("properties") or {}
     profile = kakao_account.get("profile") or {}
+
+    email = kakao_account.get("email")
     name = properties.get("nickname") or profile.get("nickname")
-    return provider_user_id, email, name
+
+    # 선택 동의 항목: 없으면 None
+    image_url = profile.get("profile_image_url") or properties.get("profile_image")
+    if profile.get("is_default_image") is True:
+        image_url = None
+
+    return provider_user_id, email, name, image_url
 
 # Google
 def google_exchange_code_for_token(code: str) -> str:
@@ -114,7 +127,7 @@ def google_exchange_code_for_token(code: str) -> str:
     j = resp.json()
     return j["access_token"]
 
-def google_fetch_profile(access_token: str) -> tuple[str, str | None, str | None]:
+def google_fetch_profile(access_token: str) -> tuple[str, str | None, str | None, str | None]:
     # 실서비스에서는 id_token 검증(서명/iss/aud)까지 하는 게 더 안전함
     url = "https://www.googleapis.com/oauth2/v2/userinfo"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -124,7 +137,8 @@ def google_fetch_profile(access_token: str) -> tuple[str, str | None, str | None
     provider_user_id = str(j.get("id"))
     email = j.get("email")
     name = j.get("name")
-    return provider_user_id, email, name
+    image_url = j.get("picture")
+    return provider_user_id, email, name, image_url
 
 # Naver
 def naver_exchange_code_for_token(code: str, state: str) -> str:
