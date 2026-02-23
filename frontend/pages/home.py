@@ -7,6 +7,7 @@ Description: 메인 화면
 Modification History:
 - 2026-02-21 (김지우): JWT 해독 로직 백엔드 이관
 - 2026-02-22 (김지우): stx.CookieManager 타이밍 문제 해결, 쿠키 retry 로직 추가
+- 2026-02-23 (양창일): user_profile_image_url 추가
 """
 
 # ─── 1. 경로 설정 ─────────────────────────────────────────────────────────
@@ -86,6 +87,7 @@ elif token:
         st.session_state.user = {
             "name": result.get("name"),
             "role": result.get("role", "user"),
+            "profile_image_url": result.get("profile_image_url"),
         }
         st.session_state.token = token
     else:
@@ -106,6 +108,7 @@ else:
 user_info   = st.session_state.user or {}
 user_name   = user_info.get("name") or "사용자"
 user_role   = user_info.get("role", "user")
+user_profile_image_url = user_info.get("profile_image_url")
 role_display = "일반회원" if user_role == "user" else "관리자"
 
 # ==========================================
@@ -146,7 +149,8 @@ if selected == "홈":
         with st.container(border=True):
             c1, c2 = st.columns([2, 8])
             with c1:
-                st.image(f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_name}", width=55)
+                avatar_url = user_profile_image_url or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_name}"
+                st.image(avatar_url, width=55)
             with c2:
                 st.markdown(f"**{user_name} 님** ({role_display}) 🔒")
                 if st.button("로그아웃 ➔", key="logout_btn"):
