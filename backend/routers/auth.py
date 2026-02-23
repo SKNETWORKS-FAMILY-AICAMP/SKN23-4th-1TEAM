@@ -307,10 +307,12 @@ def upload_profile_image(
         shutil.copyfileobj(file.file, buffer)
 
     # 5. DB 업데이트 및 프론트로 경로 반환
-    # 프론트가 브라우저에서 읽을 수 있는 도메인 주소로 저장
     image_url = f"http://127.0.0.1:8000/static/profiles/{new_filename}"
     
+    # 🔥 확실하게 멱살 잡고 DB에 밀어넣는 코드
     user.profile_image_url = image_url
-    db.commit()
+    db.add(user)     
+    db.commit()       
+    db.refresh(user)  
 
-    return {"profile_image_url": image_url}
+    return {"profile_image_url": user.profile_image_url} # user 객체에서 직접 꺼내서 반환
