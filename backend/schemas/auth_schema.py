@@ -8,6 +8,7 @@ Modification History:
 - 2026-02-15: 초기 생성
 - 2026-02-21 (김지우): email 추가, 비밀번호 찾기 관련 스키마 추가
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리, 소셜 로그인 수정
+- 2026-02-23 (양창일): profile_image_url 추가
 """
 
 from pydantic import BaseModel, Field  # 스키마
@@ -25,6 +26,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"  # 타입
     name: str | None = None     # 유저 이름 (프론트 표시용)
     role: str | None = None     # 권한 (user / admin)
+    profile_image_url: str | None = None
 
 class MeResponse(BaseModel):
     id: int  # 유저 ID

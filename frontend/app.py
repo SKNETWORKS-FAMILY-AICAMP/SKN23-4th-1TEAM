@@ -8,7 +8,7 @@ Modification History:
 - 2026-02-20 (김지우): 초기 생성
 - 2026-02-21 (양창일): 소셜 로그인 구현
 - 2026-02-22 (김지우): utils/api_utils.py 모듈을 적용하여 API 통신 로직 완벽 분리 및 관리자 UX 개선 (로그아웃 순정 링크 적용)
-- 2026-02-23 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가, session_state.newtoken추가
+- 2026-02-23 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가, session_state.newtoken추가, profile_image_url 저장
 """
 import streamlit as st
 import time
@@ -31,6 +31,7 @@ if social_token:
         st.session_state.user = {
             "name": result.get("name") or "사용자",
             "role": result.get("role") or "user",
+            "profile_image_url": result.get("profile_image_url"),
         }
         st.query_params.clear()
         st.switch_page("pages/home.py")
@@ -107,7 +108,11 @@ if not st.session_state.get("show_admin_choice"):
                 
                 if is_success:
                     st.session_state.new_token = result.get("access_token")
-                    st.session_state.user = {"name": result.get("name"), "role": result.get("role")}
+                    st.session_state.user = {
+                        "name": result.get("name"),
+                        "role": result.get("role"),
+                        "profile_image_url": result.get("profile_image_url"),
+                    }
                     
                     if result.get("role") == "admin":
                         st.session_state.show_admin_choice = True

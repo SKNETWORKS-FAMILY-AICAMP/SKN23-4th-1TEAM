@@ -9,6 +9,8 @@ Modification History:
 - 2026-02-21 (김지우): 로그인 API 로직 보완
 - 2026-02-22 (김지우): 토큰 검증(/verify) API 및 비밀번호 찾기(/send-reset-email, /reset-password) API 통합 추가, 권한(Role) 반환 로직 동적 수정
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리, jwt처리 수정
+- 2026-02-23 (양창일): profile_image_url 포함
+
 """
 
 import os
@@ -115,12 +117,14 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
     user_obj = db.query(User).filter(User.id == int(user_id)).first()
     user_name = (user_obj.name or req.email.split("@")[0]) if user_obj else req.email.split("@")[0]
     user_role = getattr(user_obj, "role", "user") if user_obj else "user"
+    user_profile_image_url = getattr(user_obj, "profile_image_url", None) if user_obj else None
 
     return {
         "access_token": access,
         "token_type": "bearer",
         "name": user_name,
-        "role": user_role  # 👈 하드코딩 제거! DB의 실제 role 반환
+        "role": user_role,  # 👈 하드코딩 제거! DB의 실제 role 반환
+        "profile_image_url": user_profile_image_url,
     }
 
 @router.post("/logout")
@@ -177,7 +181,11 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
         user_name = user_obj.name or user_obj.email.split("@")[0]
         user_role = getattr(user_obj, "role", "user")
 
-        return {"name": user_name, "role": user_role} # 👈 여기도 실제 role 반환하도록 수정!
+        return {
+            "name": user_name,
+            "role": user_role,
+            "profile_image_url": getattr(user_obj, "profile_image_url", None),
+        } # 👈 여기도 실제 role 반환하도록 수정!
 
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="30분 동안 활동이 없어 자동 로그아웃 되었습니다.")
