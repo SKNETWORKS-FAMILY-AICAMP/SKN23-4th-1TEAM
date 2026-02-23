@@ -19,13 +19,14 @@ for p in possible_env_paths:
             break
 
 # 상수 및 설정
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-2")
-EC2_INSTANCE_ID = os.getenv("EC2_INSTANCE_ID")
-SSH_KEY_PATH = os.getenv("SSH_KEY_PATH")
-NGROK_AUTHTOKEN = os.getenv("NGROK_AUTHTOKEN")
-GITHUB_REPO = os.getenv("GITHUB_REPO_URL")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "").strip() or None
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip() or None
+AWS_REGION = os.getenv("AWS_REGION", "ap-northeast-2").strip()
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", AWS_REGION).strip()
+EC2_INSTANCE_ID = os.getenv("EC2_INSTANCE_ID", "").replace('"', '').replace("'", "").strip() or None
+SSH_KEY_PATH = os.getenv("SSH_KEY_PATH", "").strip() or None
+NGROK_AUTHTOKEN = os.getenv("NGROK_AUTHTOKEN", "").strip() or None
+GITHUB_REPO = os.getenv("GITHUB_REPO_URL", "").strip() or None
 
 # 앱 전역 설정 값 상수화
 REMOTE_DB_PATH = "3team/AI_Interviewer/db/interview.db"

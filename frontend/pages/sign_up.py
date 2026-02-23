@@ -8,7 +8,7 @@ Modification History:
 - 2026-02-20 (김다빈): 초기 틀 생성
 - 2026-02-21 (김지우) : 이메일 인증 모달, 실시간 폼 검증, 약관 동의 및 가입 완료 프로세스 전체 구현, DB 연동
 - 2026-02-22 (김지우) : Back/Front 구분 
-- 2026-02-23 (김지우) : UI/UX 개선 (가로폭 꽉 차는 세련된 커스텀 에러 알림창 적용)
+- 2026-02-23 (김지우) : DB 연결 에러 발생 시 전용 경고 알림창 UI 적용
 """
 # pip install pymysql bcrypt
 
@@ -54,14 +54,14 @@ def get_db_connection():
         )
         return True, conn
     except Exception as e:
-        # DB 연결 에러도 예쁘게 띄우기 위해 에러 메시지 반환
+        # DB 연결 에러 메시지 반환
         return False, f"데이터베이스 연결 실패: {e}"
 
 # --- 이메일 중복 확인 (DB 조회) ---
 def check_email_exists(email):
     success, result = get_db_connection()
     if not success:
-        return "error", result # 에러 발생 시 문자열(error)과 메시지 반환
+        return "error", result # 에러 발생 시
     
     conn = result
     try:
@@ -259,32 +259,6 @@ input[type="text"]:focus, input[type="password"]:focus { border-color: #bb38d0 !
 .helper-links a { color: #888; text-decoration: none; font-weight: 500; }
 .helper-links a:hover { color: #bb38d0; text-decoration: underline; }
 
-/* 🔥 새롭게 추가된 커스텀 에러 & 성공 알림창 스타일 (인증하기 버튼 위) */
-.custom-alert-box {
-    padding: 14px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 12px;
-    animation: fadeIn 0.3s ease-in-out;
-}
-.alert-error {
-    background-color: #fff4f4;
-    color: #e74c3c;
-    border-left: 4px solid #e74c3c;
-    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.1);
-}
-.alert-success {
-    background-color: #f0fdf4;
-    color: #2ecc71;
-    border-left: 4px solid #2ecc71;
-    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.1);
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 .status-msg { font-size: 13px; text-align: center; margin-top: 0px; margin-bottom: 12px; font-weight: 500; }
 .field-msg  { font-size: 12px; margin-top: -12px; margin-bottom: 12px; margin-left: 4px; font-weight: 500; }
 .text-success { color: #2ecc71; }
@@ -404,7 +378,7 @@ def signup_success_modal(user_name):
 
 
 # ==========================================
-# 🔥 1. 아이디 입력 & 중복 확인 (찌그러진 에러창 탈출!)
+# 1. 아이디 입력 & 중복 확인 (DB 연동)
 # ==========================================
 col1, col2 = st.columns([2.5, 1])
 
@@ -412,44 +386,44 @@ with col1:
     user_id = st.text_input("아이디 (이메일)", placeholder="이메일을 입력하세요", key="email_input")
 with col2:
     st.markdown("<div style='margin-top: 29px;'></div>", unsafe_allow_html=True)
-    check_btn = st.button("중복 확인", type="primary", use_container_width=True)
+    if st.button("중복 확인", type="primary", use_container_width=True):
+        st.session_state.verify_error_msg = ""
+        st.session_state.id_checked = False
 
-# 🚀 에러 메시지가 뜰 '넓고 시원한' 빈 공간을 버튼 아래에 마련합니다.
-auth_status_ph = st.empty()
+        if not user_id:
+            st.session_state.id_check_result = "empty"
+        elif not re.match(email_pattern, user_id):
+            st.session_state.id_check_result = "invalid"
+        else:
+            with st.spinner("DB에서 확인 중..."):
+                time.sleep(0.3)
+                status, result = check_email_exists(user_id)
+                st.session_state.id_checked = True
+                
+                if status == "error":
+                    st.session_state.id_check_result = "db_error"
+                    st.session_state.verify_error_msg = result
+                else:
+                    st.session_state.id_check_result = not result
 
-if check_btn:
-    st.session_state.verify_error_msg = ""
-    st.session_state.id_checked = False
-    
-    if not user_id:
-        st.session_state.id_check_result = "empty"
-    elif not re.match(email_pattern, user_id):
-        st.session_state.id_check_result = "invalid"
-    else:
-        with st.spinner("DB에서 확인 중..."):
-            time.sleep(0.3)
-            status, result = check_email_exists(user_id)
-            st.session_state.id_checked = True
-            
-            if status == "error":
-                # DB 에러가 발생한 경우 (예: 타임아웃, 접속 실패)
-                st.session_state.id_check_result = "db_error"
-                st.session_state.verify_error_msg = result # 에러 상세 내용 저장
-            else:
-                # 정상적으로 조회된 경우 (True면 이미 존재, False면 사용 가능)
-                st.session_state.id_check_result = not result
-
-# 🚀 마련해둔 넓은 공간에 조건에 맞춰 알림창(custom-alert-box)을 띄웁니다.
+# --- 지우님 원본 코드 그대로 복구 (기존 메시지 유지) ---
 if st.session_state.id_check_result == "empty":
-    auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 이메일을 먼저 입력해주세요.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="status-msg text-error">이메일을 먼저 입력해주세요.</div>', unsafe_allow_html=True)
 elif st.session_state.id_check_result == "invalid":
-    auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 유효한 이메일 형식이 아닙니다.</div>', unsafe_allow_html=True)
-elif st.session_state.id_check_result == "db_error":
-    auth_status_ph.markdown(f'<div class="custom-alert-box alert-error">🚨 <b>시스템 오류:</b><br>{st.session_state.verify_error_msg}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="status-msg text-error">유효한 이메일 형식이 아닙니다.</div>', unsafe_allow_html=True)
 elif st.session_state.id_checked and st.session_state.id_check_result == True:
-    auth_status_ph.markdown('<div class="custom-alert-box alert-success">✅ <b>사용 가능한 아이디</b>(이메일)입니다. 아래 인증하기 버튼을 눌러주세요.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="status-msg text-success">사용가능한 아이디(이메일)입니다.</div>', unsafe_allow_html=True)
 elif st.session_state.id_checked and st.session_state.id_check_result == False:
-    auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 <b>이미 가입된 아이디</b>(이메일)입니다. 다른 이메일을 입력해주세요.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="status-msg text-error">이미 가입된 아이디(이메일)입니다.</div>', unsafe_allow_html=True)
+# 🔥 딱! DB 에러 났을 때만 버튼 위쪽에 시원하게 뜨는 개쩌는 디자인 박스 추가
+elif st.session_state.id_check_result == "db_error":
+    st.markdown(f'''
+    <div style="background-color: #fff4f4; border-left: 5px solid #e74c3c; padding: 16px; border-radius: 8px; margin-top: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(231, 76, 60, 0.1);">
+        <span style="font-size: 15px; font-weight: bold; color: #e74c3c;">🚨 시스템 오류 발생</span><br>
+        <span style="font-size: 13px; color: #555; line-height: 1.5;">{st.session_state.verify_error_msg}</span><br>
+        <span style="font-size: 12px; color: #888; margin-top: 8px; display: inline-block;">※ .env 파일의 DB 비밀번호 옆에 한글 주석이 없는지 확인해주세요.</span>
+    </div>
+    ''', unsafe_allow_html=True)
 
 
 # ==========================================
@@ -458,12 +432,17 @@ elif st.session_state.id_checked and st.session_state.id_check_result == False:
 if not st.session_state.is_verified:
     if st.button("인증하기", type="primary", use_container_width=True):
         if not st.session_state.id_checked or st.session_state.id_check_result != True:
-            # 여기도 예쁜 알림창으로 변경
-            auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 먼저 사용 가능한 아이디인지 <b>중복 확인</b>을 진행해주세요.</div>', unsafe_allow_html=True)
+            st.session_state.verify_error_msg = "먼저 사용 가능한 아이디(이메일)인지 중복 확인을 진행해주세요."
         else:
+            st.session_state.verify_error_msg = ""
             email_verification_modal()
+
+    auth_msg_ph = st.empty()
+    if st.session_state.verify_error_msg and st.session_state.id_check_result != "db_error":
+        auth_msg_ph.markdown(f'<div class="status-msg text-error">{st.session_state.verify_error_msg}</div>', unsafe_allow_html=True)
 else:
     st.button("인증 완료 ✅", type="primary", use_container_width=True, disabled=True)
+    auth_msg_ph = st.empty()
 
 
 # ==========================================
@@ -532,8 +511,7 @@ if st.button("가입하기", type="primary", use_container_width=True):
     has_error = False
 
     if not st.session_state.is_verified:
-        # 가입하기 눌렀을 때도 예쁜 에러창 활용
-        auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 <b>이메일 인증</b>을 먼저 진행해주세요.</div>', unsafe_allow_html=True)
+        auth_msg_ph.markdown('<div class="status-msg text-error">이메일 인증을 먼저 진행해주세요.</div>', unsafe_allow_html=True)
         has_error = True
 
     if not name:

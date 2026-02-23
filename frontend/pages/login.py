@@ -265,7 +265,8 @@ password = st.text_input("비밀번호", type="password", placeholder="비밀번
 
 if st.button("로그인", use_container_width=True):
     if username == "admin" and password == "1234":
-        st.session_state.user = {"name": username}
+        st.session_state.user = {"name": username, "role": "admin"}
+        st.session_state.new_token = "admin_token"
         st.switch_page("pages/home.py")  # 로그인 성공시 home.py로 이동
     else:
         st.error("아이디 또는 비밀번호가 틀렸습니다.")
