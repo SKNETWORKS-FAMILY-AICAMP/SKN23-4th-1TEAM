@@ -24,9 +24,16 @@ def get_ec2_client():
 
 def get_instance_info():
     """현재 EC2 인스턴스의 상태 및 IP 정보를 조회"""
+    if not EC2_INSTANCE_ID:
+        return {"error": "EC2_INSTANCE_ID가 설정되지 않았습니다. .env 파일을 확인해주세요."}
+    
+    # 앞뒤 보이지 않는 유니코드 공백이나 따옴표 등 모든 특수문자 완벽히 제거
+    import re
+    clean_id = re.sub(r'[^a-zA-Z0-9-]', '', EC2_INSTANCE_ID)
+    
     try:
         ec2 = get_ec2_client()
-        response = ec2.describe_instances(InstanceIds=[EC2_INSTANCE_ID])
+        response = ec2.describe_instances(InstanceIds=[clean_id])
 
         if not response.get("Reservations"):
             return {"error": "No reservations found for this Instance ID"}
@@ -42,11 +49,23 @@ def get_instance_info():
         return {"error": str(e)}
 
 
+def _get_clean_id():
+    import re
+    if not EC2_INSTANCE_ID:
+        return None
+    return re.sub(r'[^a-zA-Z0-9-]', '', EC2_INSTANCE_ID)
+
 def start_instance():
     """서버(EC2 인스턴스) 시작"""
-    return get_ec2_client().start_instances(InstanceIds=[EC2_INSTANCE_ID])
+    clean_id = _get_clean_id()
+    if not clean_id:
+        raise ValueError("EC2_INSTANCE_ID is missing")
+    return get_ec2_client().start_instances(InstanceIds=[clean_id])
 
 
 def stop_instance():
     """서버(EC2 인스턴스) 중지"""
-    return get_ec2_client().stop_instances(InstanceIds=[EC2_INSTANCE_ID])
+    clean_id = _get_clean_id()
+    if not clean_id:
+        raise ValueError("EC2_INSTANCE_ID is missing")
+    return get_ec2_client().stop_instances(InstanceIds=[clean_id])

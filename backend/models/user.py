@@ -24,3 +24,5 @@ class User(Base):
     provider: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)  # kakao/google/naver
     provider_user_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)  # 제공자 고유 ID
     role: Mapped[str] = mapped_column(String(20), default="user")  # user/admin 관리자용 
+    tier: Mapped[str] = mapped_column(String(20), default="normal")  # normal/plus
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active/dormant/withdrawn

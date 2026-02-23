@@ -98,6 +98,13 @@ def kakao_callback(code: str, state: str, req: Request, res: Response, db: Sessi
         name=name,
         profile_image_url=image_url,
     )
+
+    user_status = getattr(user, "status", "active")
+    if user_status == "withdrawn":
+        raise HTTPException(status_code=403, detail="탈퇴 처리된 계정입니다.")
+    elif user_status == "dormant":
+        raise HTTPException(status_code=403, detail="장기 미접속으로 휴면 전환된 계정입니다.")
+
     our_access, our_refresh = issue_tokens_for_user_id(db, user.id)
 
     csrf = new_csrf_token()
@@ -142,6 +149,13 @@ def google_callback(code: str, state: str, req: Request, res: Response, db: Sess
         name=name,
         profile_image_url=image_url,
     )
+
+    user_status = getattr(user, "status", "active")
+    if user_status == "withdrawn":
+        raise HTTPException(status_code=403, detail="탈퇴 처리된 계정입니다.")
+    elif user_status == "dormant":
+        raise HTTPException(status_code=403, detail="장기 미접속으로 휴면 전환된 계정입니다.")
+
     our_access, our_refresh = issue_tokens_for_user_id(db, user.id)
 
     csrf = new_csrf_token()
@@ -182,6 +196,13 @@ def naver_callback(code: str, state: str, req: Request, res: Response, db: Sessi
         email=email,
         name=name,
     )
+
+    user_status = getattr(user, "status", "active")
+    if user_status == "withdrawn":
+        raise HTTPException(status_code=403, detail="탈퇴 처리된 계정입니다.")
+    elif user_status == "dormant":
+        raise HTTPException(status_code=403, detail="장기 미접속으로 휴면 전환된 계정입니다.")
+
     our_access, our_refresh = issue_tokens_for_user_id(db, user.id)
 
     csrf = new_csrf_token()

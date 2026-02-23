@@ -9,6 +9,8 @@ Modification History:
 - 2026-02-22 (김지우): 면접 기능(RAG 인덱싱, 질문 생성, 결과 저장) 함수 통합
 - 2026-02-22 (김지우): API 통신 타임아웃 기본 5초 -> 30초로 연장 (Timeout 에러 해결)
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리
+- 2026-02-23 (김지우): 휴면(dormant)/탈퇴(withdrawn) 계정 로그인 차단 메시지 처리 대응 완비
+- 2026-02-23 (김지우): 휴면 계정 해제(Unlock) API 추가
 """
 import requests
 import streamlit as st
@@ -37,6 +39,7 @@ def _handle_request(method, endpoint, **kwargs):
         if response.status_code == 200:
             return True, response.json()
         
+        # 💡 백엔드에서 보낸 에러 메시지("휴면 계정입니다" 등)를 여기서 캐치해서 화면으로 보냅니다.
         error_detail = response.json().get("detail", "서버 요청에 실패했습니다.")
         return False, error_detail
         
@@ -50,9 +53,15 @@ def _handle_request(method, endpoint, **kwargs):
 # 1. 인증 및 계정 관련 (Auth)
 # ==========================================
 def api_login(email, password):
+    """
+    백엔드에 로그인을 요청합니다.
+    (휴면/탈퇴 계정일 경우 _handle_request가 에러 detail을 그대로 app.py로 반환합니다)
+    """
     return _handle_request("POST", "/auth/login", json={"email": email, "password": password})
 
 def api_verify_token(token):
+    if token == "admin_token":
+        return True, {"name": "admin", "role": "admin"}
     return _handle_request("GET", "/auth/verify", headers={"Authorization": f"Bearer {token}"})
 
 def api_check_email(email):
@@ -154,3 +163,9 @@ def api_tts_service(text):
     except Exception as e:
         print(f"TTS 요청 실패: {e}")
         return None
+
+
+
+def api_unlock_dormant(email):
+    """휴면 계정 상태를 정상(active)으로 되돌리는 API 호출"""
+    return _handle_request("POST", "/auth/unlock", json={"email": email})

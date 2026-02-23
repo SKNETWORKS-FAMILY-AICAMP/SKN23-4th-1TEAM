@@ -10,7 +10,8 @@ Modification History:
 - 2026-02-22 (김지우): 토큰 검증(/verify) API 및 비밀번호 찾기(/send-reset-email, /reset-password) API 통합 추가, 권한(Role) 반환 로직 동적 수정
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리, jwt처리 수정
 - 2026-02-23 (양창일): profile_image_url 포함
-
+- 2026-02-23 (김지우): 휴면(dormant)/탈퇴(withdrawn) 계정 로그인 차단 로직 추가
+- 2026-02-23 (김지우): 휴면 계정 해제 API 추가
 """
 
 import os
@@ -19,6 +20,7 @@ from jose.exceptions import ExpiredSignatureError, JWTError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 # --- 백엔드 모듈 임포트 ---
 from backend.db.session import get_db
@@ -103,6 +105,7 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
     except Exception:
         raise HTTPException(status_code=429, detail="시도 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.")
 
+    # 1. 비밀번호 검증 (성공 시 access 토큰 반환)
     try:
         access, refresh, user_id = auth_service.login(db, req.email, req.password)
         reset_attempts(ip)
@@ -110,11 +113,21 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
         record_failure(ip)
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 일치하지 않습니다.")
 
+    # 2. 유저 정보 조회
+    user_obj = db.query(User).filter(User.id == int(user_id)).first()
+    
+    # 🔥 3. [추가된 로직] 비밀번호는 맞았지만, 계정 상태(status)가 휴면/탈퇴인지 검사!
+    if user_obj:
+        user_status = getattr(user_obj, "status", "active")
+        if user_status == "withdrawn":
+            raise HTTPException(status_code=403, detail="탈퇴 처리된 계정입니다.")
+        elif user_status == "dormant":
+            raise HTTPException(status_code=403, detail="장기 미접속으로 휴면 전환된 계정입니다.")
+
+    # 4. 상태가 정상(active)인 경우에만 쿠키 세팅 및 로그인 성공 처리
     csrf = new_csrf_token()
     set_auth_cookies(res, refresh, csrf)
 
-    # 🔥 DB에서 이름(name)과 권한(role)을 실제 데이터로 가져옵니다.
-    user_obj = db.query(User).filter(User.id == int(user_id)).first()
     user_name = (user_obj.name or req.email.split("@")[0]) if user_obj else req.email.split("@")[0]
     user_role = getattr(user_obj, "role", "user") if user_obj else "user"
     user_profile_image_url = getattr(user_obj, "profile_image_url", None) if user_obj else None
@@ -123,7 +136,7 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
         "access_token": access,
         "token_type": "bearer",
         "name": user_name,
-        "role": user_role,  # 👈 하드코딩 제거! DB의 실제 role 반환
+        "role": user_role,
         "profile_image_url": user_profile_image_url,
     }
 
@@ -185,7 +198,7 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
             "name": user_name,
             "role": user_role,
             "profile_image_url": getattr(user_obj, "profile_image_url", None),
-        } # 👈 여기도 실제 role 반환하도록 수정!
+        }
 
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="30분 동안 활동이 없어 자동 로그아웃 되었습니다.")
@@ -216,3 +229,24 @@ def api_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db))
         raise HTTPException(status_code=500, detail=error_msg)
         
     return {"message": "비밀번호가 성공적으로 변경되었습니다."}
+
+
+class UnlockRequest(BaseModel):
+    email: str
+
+@router.post("/unlock")
+def unlock_dormant(req: UnlockRequest, db: Session = Depends(get_db)):
+    """휴면 계정을 다시 활성화(active) 시키는 API"""
+    user = db.query(User).filter(User.email == req.email).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    
+    if getattr(user, "status", "active") != "dormant":
+        raise HTTPException(status_code=400, detail="휴면 상태인 계정이 아닙니다.")
+    
+    # 상태를 다시 활성화로 변경!
+    user.status = "active"
+    db.commit()
+    
+    return {"detail": "휴면 해제 완료"}

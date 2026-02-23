@@ -9,6 +9,8 @@ Modification History:
 - 2026-02-21 (김다빈): 초기 생성 — 대시보드, 서버 제어, 배포, 로그, 회원 관리 UI
 - 2026-02-22 (김다빈): 관리자 페이지 통합, Suscale 테마 CSS 적용, 회원 등급/삭제 기능 추가
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리
+- 2026-02-23 (김지우): 회원 관리 탭 selectbox SyntaxError(쉼표 누락) 해결
+- 2026-02-23 (김지우): 설정 탭 내부에 시스템 종료(로그아웃) 기능 추가 및 tier 업데이트 쿼리 버그 수정
 """
 
 import streamlit as st
@@ -35,23 +37,49 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- 인증 및 권한 확인 ---
+# --- 인증 및 권한 확인 (쿠키 기반 세션 유지) ---
+import extra_streamlit_components as stx
+from utils.api_utils import api_verify_token
+
+cookie_manager = stx.CookieManager(key="admin_cookie_manager")
+
+if "new_token" in st.session_state:
+    token = st.session_state.new_token
+    cookie_manager.set("access_token", token)
+    del st.session_state["new_token"]
+else:
+    try:
+        token = cookie_manager.get("access_token")
+    except Exception:
+        token = None
+
 if "user" not in st.session_state or st.session_state.user is None:
-    st.warning("로그인이 필요합니다.")
-    # st.switch_page("app.py") # 필요시 주석 해제하여 리다이렉트 처리
-    st.stop()
+    if token:
+        is_valid, result = api_verify_token(token)
+        if is_valid:
+            st.session_state.user = {
+                "name": result.get("name"),
+                "role": result.get("role", "user"),
+            }
+            st.session_state.token = token
+        else:
+            st.warning("유효하지 않은 토큰입니다. 다시 로그인해주세요.")
+            st.stop()
+    else:
+        # 쿠키 읽기 재시도 로직 (초기 렌더링 시 지연 문제 해결)
+        if not st.session_state.get("_admin_cookie_retry"):
+            st.session_state["_admin_cookie_retry"] = True
+            import time
+            time.sleep(0.4)
+            st.rerun()
+        else:
+            del st.session_state["_admin_cookie_retry"]
+            st.warning("로그인이 필요합니다.")
+            st.stop()
 
 if st.session_state.user.get("role") != "admin":
     st.error("관리자 페이지 접근 권한이 없습니다.")
     st.stop()
-
-# TODO: 추후 FastAPI를 사용해 토큰 기반으로 로직 변경 시 아래와 같이 수정
-# import requests
-# headers = {"Authorization": f"Bearer {st.session_state.get('access_token')}"}
-# res = requests.get("http://api.backend.com/admin/verify", headers=headers)
-# if res.status_code != 200:
-#     st.error("유효하지 않은 토큰입니다.")
-#     st.stop()
 # ----------------------
 
 # --- 커스텀 CSS (Suscale 스타일 테마 적용) ---
@@ -336,7 +364,6 @@ with content_col:
         unsafe_allow_html=True,
     )
 
-    # 전체보기 영역 삭제 완료
     # 연결 테스트 및 정보 가져오기
     try:
         info = get_instance_info()
@@ -460,7 +487,6 @@ with content_col:
         # 2. 서버 제어 (Control)
         # -------------------------------------------------------------------------
         elif "서버 제어" in menu:
-            # 테이블 헤더 UI
             st.markdown(
                 """
                 <div class='list-header'>
@@ -472,13 +498,9 @@ with content_col:
                 unsafe_allow_html=True,
             )
 
-            # 행 1: 전원 제어
             col1, col2, col3 = st.columns([1, 2, 1], gap="small")
             with col1:
-                st.markdown(
-                    "<div style='padding: 20px 0 20px 10px; font-weight: 600; color: #333;'>전원 제어</div>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div style='padding: 20px 0 20px 10px; font-weight: 600; color: #333;'>전원 제어</div>", unsafe_allow_html=True)
             with col2:
                 st.markdown(
                     """
@@ -490,27 +512,15 @@ with content_col:
                     unsafe_allow_html=True,
                 )
             with col3:
-                st.markdown(
-                    "<div style='padding: 20px 10px 20px 0;'>", unsafe_allow_html=True
-                )
+                st.markdown("<div style='padding: 20px 10px 20px 0;'>", unsafe_allow_html=True)
                 if state == "stopped":
-                    if st.button(
-                        "서버 시작 (START)",
-                        type="primary",
-                        use_container_width=True,
-                        key="btn_start",
-                    ):
+                    if st.button("서버 시작 (START)", type="primary", use_container_width=True, key="btn_start"):
                         start_instance()
                         st.toast("서버 시작 명령을 보냈습니다...")
                         time.sleep(2)
                         st.rerun()
                 elif state == "running":
-                    if st.button(
-                        "서버 중지 (STOP)",
-                        type="primary",
-                        use_container_width=True,
-                        key="btn_stop",
-                    ):
+                    if st.button("서버 중지 (STOP)", type="primary", use_container_width=True, key="btn_stop"):
                         stop_instance()
                         st.toast("서버 중지 명령을 보냈습니다...")
                         time.sleep(2)
@@ -521,18 +531,11 @@ with content_col:
                         st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown(
-                "<div style='border-bottom: 1px solid #eaebf0;'></div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div style='border-bottom: 1px solid #eaebf0;'></div>", unsafe_allow_html=True)
 
-            # 행 2: 시스템 정보
             col1, col2, col3 = st.columns([1, 2, 1], gap="small")
             with col1:
-                st.markdown(
-                    "<div style='padding: 20px 0 20px 10px; font-weight: 600; color: #333;'>시스템 정보</div>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div style='padding: 20px 0 20px 10px; font-weight: 600; color: #333;'>시스템 정보</div>", unsafe_allow_html=True)
             with col2:
                 st.markdown(
                     f"""
@@ -544,40 +547,20 @@ with content_col:
                     unsafe_allow_html=True,
                 )
             with col3:
-                st.markdown(
-                    "<div style='padding: 20px 10px 20px 0; text-align: right;'>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div style='padding: 20px 10px 20px 0; text-align: right;'>", unsafe_allow_html=True)
                 if state == "running":
-                    st.markdown(
-                        '<span class="status-badge status-running">RUNNING</span>',
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown('<span class="status-badge status-running">RUNNING</span>', unsafe_allow_html=True)
                 else:
-                    st.markdown(
-                        f'<span class="status-badge status-stopped">{state.upper()}</span>',
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(f'<span class="status-badge status-stopped">{state.upper()}</span>', unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown(
-                "<div style='border-bottom: 1px solid #eaebf0;'></div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div style='border-bottom: 1px solid #eaebf0;'></div>", unsafe_allow_html=True)
 
-            # 행 3: 네트워크 및 접속
             col1, col2, col3 = st.columns([1, 2, 1], gap="small")
             with col1:
-                st.markdown(
-                    "<div style='padding: 20px 0 20px 10px; font-weight: 600; color: #333;'>네트워크 및 접속</div>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div style='padding: 20px 0 20px 10px; font-weight: 600; color: #333;'>네트워크 및 접속</div>", unsafe_allow_html=True)
             with col2:
-                pub_dns = (
-                    "N/A"
-                    if ip == "N/A"
-                    else f"ec2-{ip.replace('.','-')}.ap-northeast-2.compute.amazonaws.com"
-                )
+                pub_dns = "N/A" if ip == "N/A" else f"ec2-{ip.replace('.','-')}.ap-northeast-2.compute.amazonaws.com"
                 ssh_cmd = f"ssh -i {SSH_KEY_PATH} ubuntu@{ip}"
                 st.markdown(
                     f"""
@@ -590,18 +573,12 @@ with content_col:
                     unsafe_allow_html=True,
                 )
             with col3:
-                st.markdown(
-                    "<div style='padding: 30px 10px 20px 0; text-align: right;'>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div style='padding: 30px 10px 20px 0; text-align: right;'>", unsafe_allow_html=True)
                 if st.button("연결 테스트", key="conn_test", use_container_width=True):
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown(
-                "<div style='border-bottom: 1px solid #eaebf0;'></div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div style='border-bottom: 1px solid #eaebf0;'></div>", unsafe_allow_html=True)
 
         # -------------------------------------------------------------------------
         # 3. 배포 도구 (Deployment)
@@ -613,20 +590,12 @@ with content_col:
                 t1, t2 = st.tabs(["코드 동기화 (Git)", "서비스 관리 (Service)"])
 
                 with t1:
-                    st.markdown(
-                        "<div style='text-align:left; margin-top:15px;'>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        "<h3 style='font-size:16px; font-weight:700; margin-bottom:10px; color:#111;'>GitHub 연동</h3>",
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown("<div style='text-align:left; margin-top:15px;'>", unsafe_allow_html=True)
+                    st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:10px; color:#111;'>GitHub 연동</h3>", unsafe_allow_html=True)
                     st.info("GitHub에 올린 최신 코드를 서버로 내려받습니다.")
                     if st.button("최신 코드 받기 (Git Pull)", type="primary"):
                         with st.spinner("GitHub에서 코드를 가져오는 중..."):
-                            cmd = f"""
-                            if [ -d "3team" ]; then cd 3team && git pull; else git clone {GITHUB_REPO} 3team; fi
-                            """
+                            cmd = f'if [ -d "3team" ]; then cd 3team && git pull; else git clone {GITHUB_REPO} 3team; fi'
                             out, err = ssh_command(ip, cmd)
                             if out:
                                 st.success("업데이트 성공!")
@@ -637,26 +606,13 @@ with content_col:
                     st.markdown("</div>", unsafe_allow_html=True)
 
                 with t2:
-                    st.markdown(
-                        "<div style='text-align:left; margin-top:15px;'>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(
-                        "<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>서비스 상태 관리</h3>",
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown("<div style='text-align:left; margin-top:15px;'>", unsafe_allow_html=True)
+                    st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>서비스 상태 관리</h3>", unsafe_allow_html=True)
                     is_st_running = check_process_status(ip, "streamlit")
 
                     col_s1, col_s2, col_s3 = st.columns([2, 1, 1])
-                    st_badge = (
-                        '<span class="status-badge status-running">가동 중</span>'
-                        if is_st_running
-                        else '<span class="status-badge status-stopped">중지됨</span>'
-                    )
-                    col_s1.markdown(
-                        f"**Streamlit 앱 상태** &nbsp; {st_badge}",
-                        unsafe_allow_html=True,
-                    )
+                    st_badge = '<span class="status-badge status-running">가동 중</span>' if is_st_running else '<span class="status-badge status-stopped">중지됨</span>'
+                    col_s1.markdown(f"**Streamlit 앱 상태** &nbsp; {st_badge}", unsafe_allow_html=True)
 
                     if col_s3.button("앱 재시작 (Restart)"):
                         ssh_command(ip, "pkill -f streamlit")
@@ -666,35 +622,19 @@ with content_col:
                         time.sleep(2)
                         st.rerun()
 
-                    st.markdown(
-                        "<div class='section-divider'></div>", unsafe_allow_html=True
-                    )
-                    st.markdown(
-                        "<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>Ngrok (외부 접속)</h3>",
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+                    st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>Ngrok (외부 접속)</h3>", unsafe_allow_html=True)
                     is_ngrok_running = check_process_status(ip, "ngrok")
-                    ng_badge = (
-                        '<span class="status-badge status-running">가동 중</span>'
-                        if is_ngrok_running
-                        else '<span class="status-badge status-stopped">중지됨</span>'
-                    )
-                    st.markdown(
-                        f"**Ngrok 상태** &nbsp; {ng_badge}", unsafe_allow_html=True
-                    )
+                    ng_badge = '<span class="status-badge status-running">가동 중</span>' if is_ngrok_running else '<span class="status-badge status-stopped">중지됨</span>'
+                    st.markdown(f"**Ngrok 상태** &nbsp; {ng_badge}", unsafe_allow_html=True)
 
-                    st.markdown(
-                        "<div style='height:10px;'></div>", unsafe_allow_html=True
-                    )
+                    st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
 
                     ng_col1, ng_col2 = st.columns(2)
                     with ng_col1:
                         if not is_ngrok_running:
                             if st.button("Ngrok 시작 (Start)"):
-                                ssh_command(
-                                    ip,
-                                    f"nohup ngrok http {STREAMLIT_PORT} > /dev/null 2>&1 &",
-                                )
+                                ssh_command(ip, f"nohup ngrok http {STREAMLIT_PORT} > /dev/null 2>&1 &")
                                 st.toast("Ngrok을 시작했습니다.")
                                 time.sleep(2)
                                 st.rerun()
@@ -706,27 +646,17 @@ with content_col:
                                 time.sleep(1)
                                 st.rerun()
 
-                    st.markdown(
-                        "<div class='section-divider'></div>", unsafe_allow_html=True
-                    )
-                    st.markdown(
-                        "<h4 style='font-size:14px; color:#555;'>접속 주소 확인</h4>",
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+                    st.markdown("<h4 style='font-size:14px; color:#555;'>접속 주소 확인</h4>", unsafe_allow_html=True)
                     if st.button("주소 가져오기 (Fetch URL)"):
                         if not is_ngrok_running:
                             st.error("Ngrok이 꺼져 있습니다. 먼저 시작해주세요.")
                         elif not is_st_running:
                             st.warning("Streamlit 앱이 꺼져 있습니다!")
                         else:
-                            out, _ = ssh_command(
-                                ip,
-                                "curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'",
-                            )
+                            out, _ = ssh_command(ip, "curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'")
                             if out and "http" in out:
-                                st.success(
-                                    "접속 성공! 아래 주소를 클릭해서 들어가세요."
-                                )
+                                st.success("접속 성공! 아래 주소를 클릭해서 들어가세요.")
                                 st.markdown(
                                     f"""
                                 <div style="padding: 15px; border-radius: 8px; background-color: #f0f7ff; border: 1px dashed #3b82f6; text-align: center; margin-top:10px;">
@@ -743,14 +673,8 @@ with content_col:
         # 4. 시스템 로그 (Logs)
         # -------------------------------------------------------------------------
         elif "시스템 로그" in menu:
-            st.markdown(
-                "<div class='metric-card' style='text-align:left;'>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>애플리케이션 로그 뷰어</h3>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div class='metric-card' style='text-align:left;'>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>애플리케이션 로그 뷰어</h3>", unsafe_allow_html=True)
 
             if state != "running":
                 st.warning("서버가 꺼져 있어 로그를 볼 수 없습니다.")
@@ -765,36 +689,13 @@ with content_col:
         # 5. 회원 관리 (Users)
         # -------------------------------------------------------------------------
         elif "회원 관리" in menu:
-            st.markdown(
-                "<div class='metric-card' style='text-align:left;'>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>통합 회원 관리 시스템</h3>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div class='metric-card' style='text-align:left;'>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>통합 회원 관리 시스템</h3>", unsafe_allow_html=True)
 
             if state != "running":
                 st.warning("서버가 켜져 있어야 데이터를 가져올 수 있습니다.")
             else:
-                with st.expander("DB 스키마 업데이트 (최초 1회 실행)"):
-                    if st.button("Tier 컬럼 추가하기 (ALTER TABLE)"):
-                        res = run_remote_sql(
-                            ip,
-                            "ALTER TABLE users ADD COLUMN tier TEXT DEFAULT 'normal'",
-                        )
-                        if "SUCCESS" in res:
-                            st.success("컬럼 추가 성공!")
-                        else:
-                            st.error(f"오류 발생: {res}")
-
-                st.markdown(
-                    "<div class='section-divider'></div>", unsafe_allow_html=True
-                )
-                st.markdown(
-                    "<h4 style='font-size:15px; font-weight:600; margin-bottom:10px;'>사용자 목록</h4>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<h4 style='font-size:15px; font-weight:600; margin-bottom:10px;'>👥 전체 사용자 목록</h4>", unsafe_allow_html=True)
                 if st.button("새로고침 (Refresh Data)"):
                     st.cache_data.clear()
                     st.rerun()
@@ -803,39 +704,32 @@ with content_col:
 
                 if data and not ("error" in data[0] if data else False):
                     df = pd.DataFrame(data)
+                    if "status" not in df.columns:
+                        df["status"] = "active"
                     if "tier" not in df.columns:
-                        df["tier"] = "N/A"
+                        df["tier"] = "normal"
+                        
                     st.dataframe(df, use_container_width=True)
 
-                    st.markdown(
-                        "<div class='section-divider'></div>", unsafe_allow_html=True
-                    )
-
+                    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
                     col_u1, col_u2 = st.columns(2, gap="large")
 
+                    # [왼쪽] 회원 등급 변경
                     with col_u1:
-                        st.markdown(
-                            "<h4 style='font-size:15px; font-weight:600; margin-bottom:10px;'>회원 등급 변경</h4>",
-                            unsafe_allow_html=True,
-                        )
+                        st.markdown("<h4 style='font-size:15px; font-weight:600; margin-bottom:10px;'>💎 회원 등급 변경</h4>", unsafe_allow_html=True)
                         if not df.empty:
-                            target_user = st.selectbox(
-                                "사용자 선택",
-                                [f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'}" for row in data]
+                            target_user_tier = st.selectbox(
+                                "등급을 변경할 사용자",
+                                [f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'}" for row in data],
+                                key="tier_select"
                             )
                             new_tier = st.selectbox("변경할 등급", ["normal", "plus"])
 
-                            if st.button(
-                                "등급 수정 적용",
-                                type="primary",
-                                use_container_width=True,
-                            ):
-                                user_id = target_user.split(":")[0]
-                                # args를 이용해 Injection 방어
-                                sql = "UPDATE users SET tier = ? WHERE id = ?"
-                                res = run_remote_sql(
-                                    ip, sql, args=[new_tier, int(user_id)]
-                                )
+                            if st.button("등급 수정 적용", type="primary", use_container_width=True):
+                                user_id = target_user_tier.split(":")[0]
+                                # 🔥 방금 고친 버그 수정 부분! (status -> tier 로 쿼리 완벽 수정)
+                                sql = "UPDATE users SET tier = %s WHERE id = %s"
+                                res = run_remote_sql(ip, sql, args=[new_tier, int(user_id)])
 
                                 if "SUCCESS" in res:
                                     st.success("등급 변경 완료!")
@@ -844,85 +738,78 @@ with content_col:
                                 else:
                                     st.error(f"수정 실패: {res}")
 
+                    # [오른쪽] 회원 상태 관리 (휴면/탈퇴)
                     with col_u2:
-                        st.markdown(
-                            "<h4 style='font-size:15px; font-weight:600; margin-bottom:10px; color:#ef4444;'>회원 삭제</h4>",
-                            unsafe_allow_html=True,
-                        )
+                        st.markdown("<h4 style='font-size:15px; font-weight:600; margin-bottom:10px;'>🛑 계정 상태 관리 (휴면/탈퇴)</h4>", unsafe_allow_html=True)
                         if not df.empty:
-                            del_target = st.selectbox(
-                                "삭제할 사용자 선택",
-                                [f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'}" for row in data]
-                                key="del",
+                            target_user_status = st.selectbox(
+                                "상태를 변경할 사용자",
+                                [f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'}" for row in data],
+                                key="status_select"
                             )
-                            if st.button(
-                                "사용자 삭제 (주의)",
-                                type="primary",
-                                use_container_width=True,
-                            ):
-                                user_id = del_target.split(":")[0]
-                                sql = "DELETE FROM users WHERE id = ?"
-                                res = run_remote_sql(ip, sql, args=[int(user_id)])
+                            status_dict = {
+                                "정상 (active)": "active",
+                                "휴면 계정 (dormant)": "dormant",
+                                "탈퇴 처리 (withdrawn)": "withdrawn"
+                            }
+                            selected_status_label = st.selectbox("변경할 상태", list(status_dict.keys()))
+
+                            if st.button("상태 변경 적용", type="primary", use_container_width=True):
+                                user_id = target_user_status.split(":")[0]
+                                new_status = status_dict[selected_status_label]
+                                sql = "UPDATE users SET status = %s WHERE id = %s"
+                                res = run_remote_sql(ip, sql, args=[new_status, int(user_id)])
 
                                 if "SUCCESS" in res:
-                                    st.warning("삭제 완료!")
+                                    if new_status == "withdrawn":
+                                        st.warning("탈퇴 처리되었습니다. (데이터는 보존됨)")
+                                    else:
+                                        st.success(f"상태가 {new_status}로 변경되었습니다!")
                                     time.sleep(1)
                                     st.rerun()
                                 else:
-                                    st.error(f"삭제 실패: {res}")
+                                    st.error(f"변경 실패: {res}")
                 else:
                     st.warning("데이터가 없거나 조회에 실패했습니다.")
             st.markdown("</div>", unsafe_allow_html=True)
 
         # -------------------------------------------------------------------------
-        # 6. 설정 (Settings)
+        # 6. 설정 (Settings) & 시스템 종료
         # -------------------------------------------------------------------------
         elif "설정" in menu:
-            st.markdown(
-                "<div class='metric-card' style='text-align:left;'>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>필수 연결 설정</h3>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div class='metric-card' style='text-align:left;'>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:15px; color:#111;'>필수 연결 설정</h3>", unsafe_allow_html=True)
 
             if state != "running":
                 st.warning("설정을 변경하려면 서버를 먼저 켜주세요.")
             else:
-                st.markdown(
-                    "<h4 style='font-size:14px; color:#555;'>Ngrok 설정</h4>",
-                    unsafe_allow_html=True,
-                )
-                ngrok_token = st.text_input(
-                    "Ngrok 토큰",
-                    value=NGROK_AUTHTOKEN if NGROK_AUTHTOKEN else "",
-                    type="password",
-                )
+                st.markdown("<h4 style='font-size:14px; color:#555;'>Ngrok 설정</h4>", unsafe_allow_html=True)
+                ngrok_token = st.text_input("Ngrok 토큰", value=NGROK_AUTHTOKEN if NGROK_AUTHTOKEN else "", type="password")
                 if st.button("토큰 등록", type="primary"):
                     if ngrok_token:
-                        out, err = ssh_command(
-                            ip, f"ngrok config add-authtoken {ngrok_token}"
-                        )
+                        out, err = ssh_command(ip, f"ngrok config add-authtoken {ngrok_token}")
                         st.success("Ngrok 토큰 등록 완료!")
                     else:
                         st.error("토큰을 입력해주세요.")
 
-                st.markdown(
-                    "<div class='section-divider'></div>", unsafe_allow_html=True
-                )
-                st.markdown(
-                    "<h4 style='font-size:14px; color:#555;'>GitHub 설정</h4>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+                st.markdown("<h4 style='font-size:14px; color:#555;'>GitHub 설정</h4>", unsafe_allow_html=True)
                 if st.button("SSH 키 확인 / 생성"):
                     out, err = ssh_command(ip, "cat ~/.ssh/id_rsa.pub")
                     if not out or "No such file" in err:
-                        ssh_command(
-                            ip, "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-                        )
+                        ssh_command(ip, "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''")
                         out, _ = ssh_command(ip, "cat ~/.ssh/id_rsa.pub")
                     st.code(out, language="text")
-            st.markdown("</div>", unsafe_allow_html=True)
 
-        # 컨텐츠 종료
+            # 🔥 시스템 종료 기능 (서버 켜짐/꺼짐 상관없이 동작하도록 분리)
+            st.markdown("<div class='section-divider' style='margin-top: 40px;'></div>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size:16px; font-weight:700; margin-bottom:10px; color:#e74c3c;'>시스템 종료</h3>", unsafe_allow_html=True)
+            st.info("관리자 대시보드 사용을 마치고 초기 로그인 화면(app.py)으로 안전하게 빠져나갑니다.")
+            
+            if st.button("🚪 관리자 로그아웃 (Exit)", use_container_width=True):
+                # 1. 세션 정보를 싹 날려서 권한을 초기화합니다.
+                st.session_state.clear()
+                # 2. 로그인 페이지(app.py)로 튕겨냅니다.
+                st.switch_page("app.py")
+
+            st.markdown("</div>", unsafe_allow_html=True)

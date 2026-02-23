@@ -1,10 +1,44 @@
-import json
-from utils.config import REMOTE_DB_PATH
-from utils.ssh_utils import ssh_command
+"""
+File: db_utils.py
+Author: 김다빈, 김지우
+Created: 2026-02-21
+Description: 데이터베이스 연결 및 쿼리 실행 원격 제어 유틸리티
 
+Modification History:
+- 2026-02-21 (김다빈): 초기 생성 (SSH 터널링 기반 원격 SQLite 연동 스크립트 구축)
+- 2026-02-23 (김지우): SSH 및 SQLite 방식 전면 폐기, AWS MySQL(pymysql) 다이렉트 연결 방식으로 아키텍처 개선 및 SQL Injection 방어 적용
+"""
+import os
+import pymysql
+from dotenv import load_dotenv
+
+# .env 파일에서 환경 변수 불러오기 (sign_up.py와 동일한 방식)
+_ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+load_dotenv(_ENV_PATH, override=True)
+
+# 지우님의 AWS MySQL 접속 정보
+DB_HOST     = os.getenv("DB_HOST", "localhost")
+DB_PORT     = int(os.getenv("DB_PORT", 3306))
+DB_USER     = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_NAME     = os.getenv("DB_NAME", "ai_interview")
+
+def get_db_connection():
+    """AWS MySQL 데이터베이스 직접 연결 객체 생성"""
+    return pymysql.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        db=DB_NAME,
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
 def fetch_remote_db(ip, query_type="users"):
-    """SSH를 통해 원격 DB 정보를 조회"""
+    """(구) SSH 방식을 버리고 다이렉트로 원격 MySQL DB 정보 조회"""
+    # ip 인자는 이전 SSH 방식의 잔재로 남겨둠 (admin.py 코드 수정 최소화를 위해)
+    
     if query_type == "users":
         sql = "SELECT * FROM users"
     elif query_type == "interviews":
@@ -12,56 +46,35 @@ def fetch_remote_db(ip, query_type="users"):
     else:
         return None
 
-    # 원격에서 JSON으로 안전하게 응답받는 Python 스크립트 실행
-    py_script = f"""
-import sqlite3
-import json
-try:
-    conn = sqlite3.connect('{REMOTE_DB_PATH}')
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("{sql}")
-    rows = cursor.fetchall()
-    results = [dict(row) for row in rows]
-    print(json.dumps(results))
-except Exception as e:
-    print(json.dumps({{'error': str(e)}}))
-"""
-    py_cmd = f"python3 -c {json.dumps(py_script)}"
-    out, err = ssh_command(ip, py_cmd)
-
     try:
-        return json.loads(out)
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            result = cursor.fetchall()
+        return result
     except Exception as e:
-        return [{"error": "Parsing failed", "raw": out, "err": err}]
-
+        # admin.py가 에러를 화면에 띄울 수 있도록 기존 딕셔너리 포맷 유지
+        return [{"error": "DB Fetch Failed", "raw": str(e), "err": str(e)}]
+    finally:
+        if 'conn' in locals() and conn.open:
+            conn.close()
 
 def run_remote_sql(ip, sql, args=None):
-    """원격 DB 상에서 SQL 쿼리 실행
-    SQL 인젝션 방지를 위해 args 파라미터 전달 기능 지원
+    """(구) SSH 방식을 버리고 다이렉트로 원격 MySQL 쿼리 실행 
+    SQL 인젝션 방지를 위해 args 파라미터 전달 기능 지원 (pymysql 자체 기능 활용)
     """
-
-    # args가 튜플이나 딕셔너리로 넘어오는 경우 안전하게 직렬화하여 우회
-    # (sqlite3.execute(sql, args) 방식 지원)
-    args_json = json.dumps(args) if args else "None"
-
-    py_script = f"""
-import sqlite3
-import json
-try:
-    conn = sqlite3.connect('{REMOTE_DB_PATH}')
-    cursor = conn.cursor()
-    args = json.loads('{args_json}')
-    if args:
-        cursor.execute("{sql}", args)
-    else:
-        cursor.execute("{sql}")
-    conn.commit()
-    print("SUCCESS")
-except Exception as e:
-    print(f"ERROR: {{str(e)}}")
-"""
-    py_cmd = f"python3 -c {json.dumps(py_script)}"
-    out, _ = ssh_command(ip, py_cmd)
-
-    return out.strip()
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            if args:
+                # args가 넘어오면 pymysql이 알아서 안전하게 ?(포맷) 자리에 맵핑해줌
+                cursor.execute(sql, args)
+            else:
+                cursor.execute(sql)
+        conn.commit()
+        return "SUCCESS"
+    except Exception as e:
+        return f"ERROR: {str(e)}"
+    finally:
+        if 'conn' in locals() and conn.open:
+            conn.close()

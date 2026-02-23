@@ -42,18 +42,15 @@ st.markdown("""
 # ==========================================
 cookie_manager = stx.CookieManager(key="home_cookie_manager")
 
-# 로그인 직후: 새 토큰을 쿠키에 굽고 user 세션 유지한 채 rerun
 if "new_token" in st.session_state:
-    cookie_manager.set("access_token", st.session_state.new_token)
+    token = st.session_state.new_token
+    cookie_manager.set("access_token", token)
     del st.session_state["new_token"]
-    time.sleep(0.3)
-    st.rerun()
-
-# ─── 쿠키 읽기 (stx는 첫 렌더에 못 읽을 수 있어 try/except) ───
-try:
-    token = cookie_manager.get("access_token")
-except Exception:
-    token = None
+else:
+    try:
+        token = cookie_manager.get("access_token")
+    except Exception:
+        token = None
 
 # ==========================================
 # 🔒 강제 로그아웃
