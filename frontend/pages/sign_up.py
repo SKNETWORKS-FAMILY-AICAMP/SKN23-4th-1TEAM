@@ -8,6 +8,7 @@ Modification History:
 - 2026-02-20 (김다빈): 초기 틀 생성
 - 2026-02-21 (김지우) : 이메일 인증 모달, 실시간 폼 검증, 약관 동의 및 가입 완료 프로세스 전체 구현, DB 연동
 - 2026-02-22 (김지우) : Back/Front 구분 
+- 2026-02-23 (김지우) : UI/UX 개선 (가로폭 꽉 차는 세련된 커스텀 에러 알림창 적용)
 """
 # pip install pymysql bcrypt
 
@@ -51,36 +52,37 @@ def get_db_connection():
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor
         )
-        return conn
+        return True, conn
     except Exception as e:
-        st.error(f"데이터베이스 연결 실패: {e}")
-        return None
+        # DB 연결 에러도 예쁘게 띄우기 위해 에러 메시지 반환
+        return False, f"데이터베이스 연결 실패: {e}"
 
 # --- 이메일 중복 확인 (DB 조회) ---
 def check_email_exists(email):
-    conn = get_db_connection()
-    if not conn:
-        return True  # DB 연결 실패 시 중복된 것으로 처리하여 가입 방지
+    success, result = get_db_connection()
+    if not success:
+        return "error", result # 에러 발생 시 문자열(error)과 메시지 반환
+    
+    conn = result
     try:
         with conn.cursor() as cursor:
             sql = "SELECT id FROM users WHERE email = %s"
             cursor.execute(sql, (email,))
-            return cursor.fetchone() is not None
+            is_exists = cursor.fetchone() is not None
+            return "success", is_exists
     finally:
         conn.close()
 
 # --- 회원 가입 처리 (DB 저장) ---
 def register_user_to_db(email, name, raw_password):
-    conn = get_db_connection()
-    if not conn:
+    success, result = get_db_connection()
+    if not success:
         return False, "DB 서버 연결에 실패했습니다."
-
+    
+    conn = result
     try:
         with conn.cursor() as cursor:
-            # 1. 비밀번호 안전하게 암호화
             hashed_pw = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-            # 2. 유저 정보 DB에 INSERT
             sql = "INSERT INTO users (email, name, password) VALUES (%s, %s, %s)"
             cursor.execute(sql, (email, name, hashed_pw))
             conn.commit()
@@ -257,6 +259,32 @@ input[type="text"]:focus, input[type="password"]:focus { border-color: #bb38d0 !
 .helper-links a { color: #888; text-decoration: none; font-weight: 500; }
 .helper-links a:hover { color: #bb38d0; text-decoration: underline; }
 
+/* 🔥 새롭게 추가된 커스텀 에러 & 성공 알림창 스타일 (인증하기 버튼 위) */
+.custom-alert-box {
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+.alert-error {
+    background-color: #fff4f4;
+    color: #e74c3c;
+    border-left: 4px solid #e74c3c;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.1);
+}
+.alert-success {
+    background-color: #f0fdf4;
+    color: #2ecc71;
+    border-left: 4px solid #2ecc71;
+    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.1);
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .status-msg { font-size: 13px; text-align: center; margin-top: 0px; margin-bottom: 12px; font-weight: 500; }
 .field-msg  { font-size: 12px; margin-top: -12px; margin-bottom: 12px; margin-left: 4px; font-weight: 500; }
 .text-success { color: #2ecc71; }
@@ -292,12 +320,6 @@ terms_aiwork_text = """
 
 **제 1 조 (목적)**
 본 약관은 AIWORK가 운영하는 AI 모의면접 서비스(이하 "당 사이트")에서 제공하는 모든 서비스(이하 "서비스")의 이용조건 및 절차, 이용자와 당 사이트의 권리, 의무, 책임사항과 기타 필요한 사항을 규정함을 목적으로 합니다.
-
-**제 2 조 (이용약관의 효력 및 변경)**
-본 약관은 서비스 화면에 게시하거나 기타의 방법으로 이용자에게 공지함으로써 효력이 발생합니다.
-
-**제 3 조 (서비스의 제공)**
-당 사이트는 AI 모의면접, 채용 정보, 면접 팁 등의 서비스를 제공합니다.
 """
 
 terms_privacy_text = """
@@ -306,15 +328,6 @@ terms_privacy_text = """
 AIWORK에서는 기본적인 회원 서비스 제공을 위해 다음의 정보를 수집합니다.
 
 - 필수 수집 항목: 이메일, 이름, 비밀번호
-- 선택 수집 항목: 없음
-
-**2. 개인정보의 수집 및 이용 목적**
-- 회원 가입 및 관리
-- 서비스 제공 및 개선
-- 고객 지원
-
-**3. 개인정보의 보유 및 이용기간**
-회원 탈퇴 시까지 보유하며, 탈퇴 즉시 파기합니다.
 """
 
 
@@ -391,7 +404,7 @@ def signup_success_modal(user_name):
 
 
 # ==========================================
-# 1. 아이디 입력 & 중복 확인 (DB 연동)
+# 🔥 1. 아이디 입력 & 중복 확인 (찌그러진 에러창 탈출!)
 # ==========================================
 col1, col2 = st.columns([2.5, 1])
 
@@ -399,28 +412,44 @@ with col1:
     user_id = st.text_input("아이디 (이메일)", placeholder="이메일을 입력하세요", key="email_input")
 with col2:
     st.markdown("<div style='margin-top: 29px;'></div>", unsafe_allow_html=True)
-    if st.button("중복 확인", type="primary", use_container_width=True):
-        st.session_state.verify_error_msg = ""
+    check_btn = st.button("중복 확인", type="primary", use_container_width=True)
 
-        if not user_id:
-            st.session_state.id_check_result = "empty"
-        elif not re.match(email_pattern, user_id):
-            st.session_state.id_check_result = "invalid"
-        else:
-            with st.spinner("DB에서 확인 중..."):
-                time.sleep(0.3)
-                exists = check_email_exists(user_id)
-                st.session_state.id_checked      = True
-                st.session_state.id_check_result = not exists  # 존재하지 않아야 True(사용가능)
+# 🚀 에러 메시지가 뜰 '넓고 시원한' 빈 공간을 버튼 아래에 마련합니다.
+auth_status_ph = st.empty()
 
+if check_btn:
+    st.session_state.verify_error_msg = ""
+    st.session_state.id_checked = False
+    
+    if not user_id:
+        st.session_state.id_check_result = "empty"
+    elif not re.match(email_pattern, user_id):
+        st.session_state.id_check_result = "invalid"
+    else:
+        with st.spinner("DB에서 확인 중..."):
+            time.sleep(0.3)
+            status, result = check_email_exists(user_id)
+            st.session_state.id_checked = True
+            
+            if status == "error":
+                # DB 에러가 발생한 경우 (예: 타임아웃, 접속 실패)
+                st.session_state.id_check_result = "db_error"
+                st.session_state.verify_error_msg = result # 에러 상세 내용 저장
+            else:
+                # 정상적으로 조회된 경우 (True면 이미 존재, False면 사용 가능)
+                st.session_state.id_check_result = not result
+
+# 🚀 마련해둔 넓은 공간에 조건에 맞춰 알림창(custom-alert-box)을 띄웁니다.
 if st.session_state.id_check_result == "empty":
-    st.markdown('<div class="status-msg text-error">이메일을 먼저 입력해주세요.</div>', unsafe_allow_html=True)
+    auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 이메일을 먼저 입력해주세요.</div>', unsafe_allow_html=True)
 elif st.session_state.id_check_result == "invalid":
-    st.markdown('<div class="status-msg text-error">유효한 이메일 형식이 아닙니다.</div>', unsafe_allow_html=True)
+    auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 유효한 이메일 형식이 아닙니다.</div>', unsafe_allow_html=True)
+elif st.session_state.id_check_result == "db_error":
+    auth_status_ph.markdown(f'<div class="custom-alert-box alert-error">🚨 <b>시스템 오류:</b><br>{st.session_state.verify_error_msg}</div>', unsafe_allow_html=True)
 elif st.session_state.id_checked and st.session_state.id_check_result == True:
-    st.markdown('<div class="status-msg text-success">사용가능한 아이디(이메일)입니다.</div>', unsafe_allow_html=True)
+    auth_status_ph.markdown('<div class="custom-alert-box alert-success">✅ <b>사용 가능한 아이디</b>(이메일)입니다. 아래 인증하기 버튼을 눌러주세요.</div>', unsafe_allow_html=True)
 elif st.session_state.id_checked and st.session_state.id_check_result == False:
-    st.markdown('<div class="status-msg text-error">이미 가입된 아이디(이메일)입니다.</div>', unsafe_allow_html=True)
+    auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 <b>이미 가입된 아이디</b>(이메일)입니다. 다른 이메일을 입력해주세요.</div>', unsafe_allow_html=True)
 
 
 # ==========================================
@@ -429,17 +458,12 @@ elif st.session_state.id_checked and st.session_state.id_check_result == False:
 if not st.session_state.is_verified:
     if st.button("인증하기", type="primary", use_container_width=True):
         if not st.session_state.id_checked or st.session_state.id_check_result != True:
-            st.session_state.verify_error_msg = "먼저 사용 가능한 아이디(이메일)인지 중복 확인을 진행해주세요."
+            # 여기도 예쁜 알림창으로 변경
+            auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 먼저 사용 가능한 아이디인지 <b>중복 확인</b>을 진행해주세요.</div>', unsafe_allow_html=True)
         else:
-            st.session_state.verify_error_msg = ""
             email_verification_modal()
-
-    auth_msg_ph = st.empty()
-    if st.session_state.verify_error_msg:
-        auth_msg_ph.markdown(f'<div class="status-msg text-error">{st.session_state.verify_error_msg}</div>', unsafe_allow_html=True)
 else:
     st.button("인증 완료 ✅", type="primary", use_container_width=True, disabled=True)
-    auth_msg_ph = st.empty()
 
 
 # ==========================================
@@ -508,7 +532,8 @@ if st.button("가입하기", type="primary", use_container_width=True):
     has_error = False
 
     if not st.session_state.is_verified:
-        auth_msg_ph.markdown('<div class="status-msg text-error">이메일 인증을 먼저 진행해주세요.</div>', unsafe_allow_html=True)
+        # 가입하기 눌렀을 때도 예쁜 에러창 활용
+        auth_status_ph.markdown('<div class="custom-alert-box alert-error">🚨 <b>이메일 인증</b>을 먼저 진행해주세요.</div>', unsafe_allow_html=True)
         has_error = True
 
     if not name:
