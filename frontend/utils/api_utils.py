@@ -169,3 +169,36 @@ def api_tts_service(text):
 def api_unlock_dormant(email):
     """휴면 계정 상태를 정상(active)으로 되돌리는 API 호출"""
     return _handle_request("POST", "/auth/unlock", json={"email": email})
+
+
+# ==========================================
+# 📷 프로필 이미지 업로드 통신 함수 (김지우 추가)
+# ==========================================
+def api_update_profile_image(uploaded_file):
+    """마이페이지에서 업로드한 프로필 사진을 백엔드 DB로 전송합니다."""
+    
+    BASE_URL = "http://127.0.0.1:8000/api" 
+    url = f"{BASE_URL}/auth/profile-image"
+    
+    # 1. 내 주머니(세션)에서 로그인 토큰 꺼내기
+    token = st.session_state.get("token")
+    if not token:
+        return False, "로그인 토큰이 없습니다. 다시 로그인해주세요."
+        
+    # 2. 백엔드 문지기에게 보여줄 출입증(헤더) 만들기
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # 3. 사진 파일을 FastAPI가 좋아하는 모양(Multipart)으로 예쁘게 포장하기
+    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
+    
+    # 4. 백엔드로 슝 날리기 🚀
+    try:
+        response = requests.post(url, headers=headers, files=files, timeout=30)
+        
+        if response.status_code == 200:
+            # 성공하면 백엔드가 돌려준 '진짜 이미지 주소'를 뽑아냅니다.
+            return True, response.json().get("profile_image_url")
+        else:
+            return False, response.json().get("detail", "이미지 업로드에 실패했습니다.")
+    except Exception as e:
+        return False, f"서버 연결 오류: {str(e)}"

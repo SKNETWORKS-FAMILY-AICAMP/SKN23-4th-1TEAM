@@ -9,6 +9,7 @@ Modification History:
 - 2026-02-21 (김지우): email 추가, 비밀번호 찾기 관련 스키마 추가
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리, 소셜 로그인 수정
 - 2026-02-23 (양창일): profile_image_url 추가
+- 2026-02-23 (김지우): 마이페이지 연동을 위해 TokenResponse에 email, tier 속성 추가
 """
 
 from pydantic import BaseModel, Field  # 스키마
@@ -27,6 +28,10 @@ class TokenResponse(BaseModel):
     name: str | None = None     # 유저 이름 (프론트 표시용)
     role: str | None = None     # 권한 (user / admin)
     profile_image_url: str | None = None
+    
+    # 🔥 마이페이지(profile.py) 데이터 바인딩을 위해 추가된 부분!
+    email: str | None = None    # 유저 이메일
+    tier: str | None = None     # 유저 등급 (normal / plus)
 
 class MeResponse(BaseModel):
     id: int  # 유저 ID

@@ -15,8 +15,11 @@ from backend.db.session import engine  # engine
 from backend.db.base import Base  # base
 from backend.models import user, refresh_token  # 모델 등록용(임포트)
 from backend.routers import infer, auth, social_auth 
+from fastapi.staticfiles import StaticFiles # 👈 맨 위에 임포트 추가
 
-app = FastAPI()  # 앱
+app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,

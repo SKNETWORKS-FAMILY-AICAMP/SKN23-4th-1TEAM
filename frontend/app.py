@@ -11,6 +11,8 @@ Modification History:
 - 2026-02-23 (양창일): 소셜 로그인 수정, 세션에 사용자이름 추가, profile_image_url 저장
 - 2026-02-23 (김지우): 휴면 계정 로그인 시 복구 모달(Popup) 로직 적용
 - 2026-02-23 (김지우): 아이디/비밀번호 입력 후 엔터키로 로그인 가능하도록 st.form 적용
+- 2026-02-23 (김지우): 휴면 계정 복구 모달(Popup) 로직 수정 
+- 2026-02-23 (김지우): 마이페이지 연동을 위해 로그인 성공 시 세션에 email, tier 정보 추가
 """
 import streamlit as st
 import time
@@ -19,11 +21,9 @@ from utils.config import GOOGLE_URI, KAKAO_URI
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# ==========================================
-# 💎 [신규 기능] 휴면 계정 해제 & 자동 로그인 모달
-# ==========================================
+# 휴면 계정 해제 & 자동 로그인 모달
 @st.dialog("🔒 휴면 계정 안내")
-def dormant_recovery_modal(email, password):  # 🔥 password 인자 추가!
+def dormant_recovery_modal(email, password):
     st.markdown(
         f"""
         <div style="text-align:center; padding: 10px 0 20px 0;">
@@ -43,25 +43,23 @@ def dormant_recovery_modal(email, password):  # 🔥 password 인자 추가!
         if st.button("아니오", use_container_width=True):
             st.rerun() 
     with col2:
-        # 버튼 이름도 퀄리티 있게 변경
         if st.button("예", type="primary", use_container_width=True):
             with st.spinner("계정 활성화 중..."):
-                # 1. 휴면 풀기
+                # 휴면 풀기
                 success, msg = api_unlock_dormant(email)
                 
                 if success:
-                    # 2. 🔥 몰래 가져온 비번으로 즉시 자동 로그인!
+                    # 비번으로 즉시 자동 로그인
                     is_login_success, login_result = api_login(email, password)
                     
                     if is_login_success:
-                        # 3. 토큰 발급받고 세션 세팅
+                        # 토큰 발급받고 세션 세팅
                         st.session_state.new_token = login_result.get("access_token")
                         st.session_state.user = {
                             "name": login_result.get("name"),
                             "role": login_result.get("role"),
                             "profile_image_url": login_result.get("profile_image_url"),
                         }
-                        # 4. 성공 메시지 없이 다이렉트로 home.py 직행!!! 🚀
                         st.switch_page("pages/home.py")
                     else:
                         st.error("자동 로그인에 실패했습니다. 창을 닫고 다시 로그인해주세요.")
@@ -70,9 +68,7 @@ def dormant_recovery_modal(email, password):  # 🔥 password 인자 추가!
                 else:
                     st.error(msg)
 
-# ==========================================
 # 기존 소셜 로그인 및 세션 로직
-# ==========================================
 if "token" not in st.session_state:
     st.session_state.token = None
 
@@ -104,7 +100,6 @@ if st.query_params.get("logout") == "true":
 if "user" not in st.session_state: st.session_state.user = None
 if "show_admin_choice" not in st.session_state: st.session_state.show_admin_choice = False
 
-# --- CSS 스타일 ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
@@ -143,17 +138,13 @@ div[data-testid="stButton"]:first-of-type > button:hover, [data-testid="stFormSu
 st.markdown('<br>', unsafe_allow_html=True)
 st.markdown('<div class="login-logo">AI<span>WORK</span></div>', unsafe_allow_html=True)
 
-# ==========================================
-# 🔥 1. 일반 로그인 폼
-# ==========================================
+# 일반 로그인 폼
 if not st.session_state.get("show_admin_choice"):
-    # ✅ st.form으로 감싸서 엔터키로도 로그인 가능하도록 변경
     with st.form("login_form"):
         username = st.text_input("아이디", placeholder="이메일을 입력하세요")
         password = st.text_input("비밀번호", type="password", placeholder="비밀번호를 입력하세요")
         submitted = st.form_submit_button("로그인", use_container_width=True)
 
-    # ✅ msg_placeholder는 폼 바깥에 위치 (폼 안에 두면 제출 후 사라짐)
     msg_placeholder = st.empty()
 
     if submitted:
@@ -174,6 +165,8 @@ if not st.session_state.get("show_admin_choice"):
                         "name": result.get("name"),
                         "role": result.get("role"),
                         "profile_image_url": result.get("profile_image_url"),
+                        "email": result.get("email"), 
+                        "tier": result.get("tier")    
                     }
                     
                     if result.get("role") == "admin":
@@ -182,10 +175,8 @@ if not st.session_state.get("show_admin_choice"):
                     else:
                         st.switch_page("pages/home.py")
                 else:
-                    # 🔥 휴면 계정이면 모달 띄우기! (password 변수 같이 넘기기)
                     if "휴면" in result:
                         dormant_recovery_modal(username, password)
-                    # 탈퇴 계정은 무조건 차단! (모달 안 띄움)
                     elif "탈퇴" in result:
                         msg_placeholder.markdown(f'<div class="custom-error-msg" style="color:red; font-size:14px; font-weight:bold;">{result}</div>', unsafe_allow_html=True)
                     else:
@@ -201,9 +192,7 @@ if not st.session_state.get("show_admin_choice"):
     </div>
     """, unsafe_allow_html=True)
 
-# ==========================================
-# 🔥 2. 관리자 전용 선택지 모달
-# ==========================================
+# 관리자 전용 선택지 모달
 else:
     st.markdown('<div class="custom-success-box">관리자 권한 인증 완료!<br>이동할 페이지를 선택하세요.</div>', unsafe_allow_html=True)
     

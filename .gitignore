@@ -201,3 +201,16 @@ pj3_venv/
 chroma.sqlite3
 *.bin
 *.toml
+
+# 이미지 파일 (깃 못올라가도록 설정)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# 기타 (지우)
+run_backend.sh
+server_log.txt
+settings.json
+

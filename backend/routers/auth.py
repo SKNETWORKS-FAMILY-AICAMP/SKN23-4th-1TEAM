@@ -12,12 +12,16 @@ Modification History:
 - 2026-02-23 (양창일): profile_image_url 포함
 - 2026-02-23 (김지우): 휴면(dormant)/탈퇴(withdrawn) 계정 로그인 차단 로직 추가
 - 2026-02-23 (김지우): 휴면 계정 해제 API 추가
+- 2026-02-23 (김지우): 마이페이지 연동을 위해 TokenResponse에 email, tier 추가 및 회원 탈퇴(/withdraw) API 추가
+- 2026-02-23 (김지우): 프로필 사진 업로드(/profile-image) API 추가
 """
 
 import os
+import shutil  # 파일 저장을 위해 추가
+import uuid    # 랜덤 파일명 생성을 위해 추가
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header, UploadFile, File # UploadFile, File 추가
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -128,9 +132,12 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
     csrf = new_csrf_token()
     set_auth_cookies(res, refresh, csrf)
 
+    # 🔥 마이페이지용 데이터를 DB에서 안전하게 가져오기
     user_name = (user_obj.name or req.email.split("@")[0]) if user_obj else req.email.split("@")[0]
     user_role = getattr(user_obj, "role", "user") if user_obj else "user"
     user_profile_image_url = getattr(user_obj, "profile_image_url", None) if user_obj else None
+    user_email = getattr(user_obj, "email", req.email) if user_obj else req.email
+    user_tier = getattr(user_obj, "tier", "normal") if user_obj else "normal"
 
     return {
         "access_token": access,
@@ -138,6 +145,8 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
         "name": user_name,
         "role": user_role,
         "profile_image_url": user_profile_image_url,
+        "email": user_email, # 👈 프론트엔드로 전달!
+        "tier": user_tier,   # 👈 프론트엔드로 전달!
     }
 
 @router.post("/logout")
@@ -198,6 +207,8 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
             "name": user_name,
             "role": user_role,
             "profile_image_url": getattr(user_obj, "profile_image_url", None),
+            "email": getattr(user_obj, "email", payload.get("email", "")),
+            "tier": getattr(user_obj, "tier", "normal")
         }
 
     except ExpiredSignatureError:
@@ -250,3 +261,56 @@ def unlock_dormant(req: UnlockRequest, db: Session = Depends(get_db)):
     db.commit()
     
     return {"detail": "휴면 해제 완료"}
+
+class WithdrawRequest(BaseModel):
+    email: str
+
+@router.post("/withdraw")
+def api_withdraw(req: WithdrawRequest, db: Session = Depends(get_db)):
+    """회원 탈퇴 API"""
+    user = db.query(User).filter(User.email == req.email).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    
+    user.status = "withdrawn"
+    db.commit()
+    
+    return {"detail": "회원 탈퇴가 완료되었습니다."}
+
+
+# ==========================================
+# 📷 프로필 사진 업로드 API (김지우 추가)
+# ==========================================
+@router.post("/profile-image")
+def upload_profile_image(
+    req: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    # 1. 토큰으로 현재 요청한 유저 확인
+    user = get_current_user(req, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+    # 2. 백엔드 프로젝트 최상단에 폴더 생성 (없으면 자동 생성)
+    UPLOAD_DIR = "static/profiles"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    # 3. 기존 파일명에서 확장자를 추출하고 고유한 새 이름 만들기
+    ext = file.filename.split(".")[-1]
+    new_filename = f"user_{user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    file_path = os.path.join(UPLOAD_DIR, new_filename)
+
+    # 4. 서버 폴더에 파일 저장
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # 5. DB 업데이트 및 프론트로 경로 반환
+    # 프론트가 브라우저에서 읽을 수 있는 도메인 주소로 저장
+    image_url = f"http://127.0.0.1:8000/static/profiles/{new_filename}"
+    
+    user.profile_image_url = image_url
+    db.commit()
+
+    return {"profile_image_url": image_url}
