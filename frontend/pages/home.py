@@ -9,6 +9,7 @@ Modification History:
 - 2026-02-22 (김지우): stx.CookieManager 타이밍 문제 해결, 쿠키 retry 로직 추가
 - 2026-02-23 (양창일): user_profile_image_url 추가
 - 2026-02-23 (김지우): UI 적용 및 마이페이지(my_info) 라우팅 연결, 프로필 기능 추가
+- 2026-02-24 (유헌상): 채용공고 APi 호출 및 연결
 """
 
 # ─── 경로 설정 ─────────────────────────────────────────────────────────
@@ -23,6 +24,11 @@ st.set_page_config(page_title="AIWORK | 대시보드", page_icon="👾", layout=
 import extra_streamlit_components as stx
 from streamlit_option_menu import option_menu
 from utils.api_utils import api_verify_token
+
+from api.jobs import search_jobs
+from services.jobs_service import build_job_cards_data 
+from components.job_cards import render_job_cards
+
 
 st.markdown("""
 <style>
@@ -228,19 +234,20 @@ if selected == "홈":
 
         with tab1:
             st.markdown("<br>", unsafe_allow_html=True)
-            for company, role, desc in [
-                ("네이버 (NAVER)", "Python 백엔드 신입/경력", "FastAPI와 MSA 환경에서 대규모 트래픽을 처리할 개발자를 모십니다."),
-                ("카카오 (Kakao)", "AI 엔지니어 인턴",        "LLM 기반 서비스를 개발할 AI 엔지니어를 모집합니다."),
-                ("라인 (LINE)",   "백엔드 개발자 (신입)",     "글로벌 메신저 플랫폼의 백엔드 시스템을 함께 만들어갈 분을 찾습니다."),
-            ]:
-                with st.container(border=True):
-                    a, b = st.columns([8, 2])
-                    with a:
-                        st.markdown(f"<p style='font-size:16px; font-weight:700; margin-bottom:4px; color:#111;'>{company} — {role}</p>", unsafe_allow_html=True)
-                        st.markdown(f"<p style='font-size:14px; color:#666; margin:0;'>{desc}</p>", unsafe_allow_html=True)
-                    with b:
-                        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-                        st.button("지원하기", key=f"apply_{company}", use_container_width=True)
+
+            payload = {
+                "startPage": 1,
+                "display": 20,
+            }
+
+            try:
+                data = search_jobs(payload)
+                cards = build_job_cards_data(data)
+                with st.container(height=360):
+                    render_job_cards(cards)
+
+            except Exception as e:
+                st.error(f"채용공고 조회 실패: {e}")
 
         with tab2:
             st.markdown("<br>", unsafe_allow_html=True)
