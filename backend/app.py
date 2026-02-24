@@ -16,6 +16,7 @@ from backend.db.base import Base  # base
 from backend.models import user, refresh_token  # 모델 등록용(임포트)
 from backend.routers import infer, auth, social_auth 
 from fastapi.staticfiles import StaticFiles # 👈 맨 위에 임포트 추가
+from backend.api.v1.endpoints import jobs_api
 
 app = FastAPI()
 
@@ -41,3 +42,4 @@ def on_startup():
 app.include_router(auth.router)
 app.include_router(social_auth.router)
 app.include_router(infer.router)
+app.include_router(jobs_api.router, prefix="/api/v1")

@@ -40,6 +40,10 @@ class Settings(BaseModel):
     NAVER_CLIENT_ID: str = os.getenv("NAVER_CLIENT_ID", "")
     NAVER_CLIENT_SECRET: str = os.getenv("NAVER_CLIENT_SECRET", "")
 
+    WORKNET_URL_BASE: str = os.getenv("WORKNET_URL_BASE")
+    WORKNET_API_KEY: str = os.getenv("WORKNET_API_KEY")
+    WORKNET_TIMEOUT_SEC: int = 10
+
     @property
     def FRONTEND_REDIRECT_URL(self) -> str:
         return f"{self.FRONTEND_BASE_URL}/social/callback"
