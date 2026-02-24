@@ -89,7 +89,7 @@ async def fetch_jobs(params: dict) -> dict:
         ) as client:
             res = await client.get(url, params=qp)
 
-            # ✅ “데이터를 실제로 받아오는지” 확인용 로그
+            # “데이터를 실제로 받아오는지” 확인용 로그
             logger.warning(f"[WORK24] final_url={res.request.url}")
             logger.warning(f"[WORK24] status={res.status_code} content_type={res.headers.get('content-type')}")
             logger.warning(f"[WORK24] body_head={res.text[:200]}")
@@ -108,3 +108,22 @@ async def fetch_jobs(params: dict) -> dict:
         raise ExternalJobsAPIError(f"외부 채용 API 요청 실패: {type(e).__name__}: {e}") from e
     except ET.ParseError as e:
         raise ExternalJobsAPIError("외부 채용 API의 XML 응답 파싱에 실패했습니다.") from e
+    
+
+
+if __name__ == "__main__":
+    import asyncio
+    import json
+
+    async def _test():
+        # 프론트가 보낼 파라미터라고 가정
+        params = {
+            "startPage": 1,
+            "display": 3,
+            # 필요하면 여기에 추가 파라미터
+        }
+
+        data = await fetch_jobs(params)
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+
+    asyncio.run(_test())

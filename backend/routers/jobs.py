@@ -1,3 +1,12 @@
+"""
+File: jobs.py
+Author: 유헌상
+Created: 2026-02-23
+Description: 워크넷 외부 API 호출 API 주소
+
+Modification History:
+- 2026-02-23: 초기 생성
+"""
 from fastapi import APIRouter, HTTPException
 import httpx
 
