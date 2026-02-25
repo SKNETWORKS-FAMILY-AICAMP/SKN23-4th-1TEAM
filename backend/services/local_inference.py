@@ -7,8 +7,9 @@ Description: 로컬 STT(faster-whisper) 및 TTS(Qwen3-TTS) 모듈
              모델 로드 실패 시 OpenAI API로 자동 폴백
 
 Modification History:
-- 2026-02-22 (김다빈): 초기 생성 — faster-whisper STT + Qwen3-TTS + OpenAI 폴백
+- 2026-02-22 (김다빈): 초기 생성 — faster-whisper STT + Qwen3-TTS
 - 2026-02-23 (김다빈): faster-whisper STT 프롬프트 최적화 및 한국어 추론 안정화
+- 2026-02-25 (김다빈): 유료(OpenAI) 폴백 로직 완전 제거 (로컬 전용 전환)
 """
 
 import os
@@ -21,9 +22,7 @@ _EXT_PKG_PATH = "/tmp/fw_pkg"
 if os.path.isdir(_EXT_PKG_PATH) and _EXT_PKG_PATH not in sys.path:
     sys.path.insert(0, _EXT_PKG_PATH)
 
-from openai import OpenAI
-
-_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# OpenAI 클라이언트는 더 이상 사용하지 않음 (로컬 전용)
 
 # ============================================================
 # faster-whisper STT (싱글톤)
@@ -106,13 +105,10 @@ def local_stt(audio_bytes: bytes, language: str = "ko") -> str:
         finally:
             os.unlink(tmp.name)
 
-    # 폴백: OpenAI Whisper API
-    audio_file = io.BytesIO(audio_bytes)
-    audio_file.name = "audio.wav"
-    transcript = _client.audio.transcriptions.create(
-        model="whisper-1", file=audio_file, language=language
+    # 폴백 없음 (로컬 전용)
+    raise RuntimeError(
+        "⚠️ [local_inference] faster-whisper 모델이 로드되지 않아 STT를 수행할 수 없습니다."
     )
-    return transcript.text
 
 
 def local_tts(text: str, voice: str = "echo") -> bytes:
@@ -138,6 +134,7 @@ def local_tts(text: str, voice: str = "echo") -> bytes:
         except Exception as e:
             print(f"⚠️ [local_inference] Qwen3-TTS 추론 실패: {e}")
 
-    # 폴백: OpenAI TTS
-    response = _client.audio.speech.create(model="tts-1", voice=voice, input=text)
-    return response.content
+    # 폴백 없음 (로컬 전용)
+    raise RuntimeError(
+        "⚠️ [local_inference] Qwen3-TTS 모델이 로드되지 않아 TTS를 수행할 수 없습니다."
+    )
