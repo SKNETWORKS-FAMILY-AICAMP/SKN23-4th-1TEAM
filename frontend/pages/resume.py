@@ -86,9 +86,7 @@ hr { border-color: #e2e8f0 !important; margin: 2rem 0 !important; border-width: 
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================
 # 헬퍼 함수
-# ============================================================
 def extract_resume_text(uploaded_file) -> str:
     try:
         import fitz
@@ -105,19 +103,17 @@ user_id = st.session_state.get("user_id", "demo_user")
 if "selected_resume" not in st.session_state:
     st.session_state.selected_resume = None
 
-# ============================================================
-# ⚙️ 팝업 모달: 새 이력서 등록
-# ============================================================
-@st.dialog("🚀 새 이력서 등록 및 AI 분석", width="large")
+# 팝업 모달: 새 이력서 등록
+@st.dialog("새 이력서 등록 및 AI 분석", width="large")
 def setup_modal():
     st.markdown("<p style='color:#64748b; font-size:15px; margin-bottom:20px;'>이력서를 업로드하면 AI가 분석하여 보관함에 영구 저장합니다.</p>", unsafe_allow_html=True)
     
-    selected_role = st.selectbox("🎯 이 이력서는 어떤 직무용인가요?", ["Python 백엔드 개발자", "Java 백엔드 개발자", "AI/ML 엔지니어", "데이터 엔지니어", "프론트엔드 개발자"])
-    uploaded_file = st.file_uploader("📄 PDF 이력서를 올려주세요", type=["pdf", "txt"])
+    selected_role = st.selectbox("이 이력서는 어떤 직무용인가요?", ["Python 백엔드 개발자", "Java 백엔드 개발자", "AI/ML 엔지니어", "데이터 엔지니어", "프론트엔드 개발자"])
+    uploaded_file = st.file_uploader("PDF 이력서를 올려주세요", type=["pdf", "txt"])
     
-    if st.button("✨ 분석 시작 및 저장", type="primary", use_container_width=True):
+    if st.button("분석하기", type="primary", use_container_width=True):
         if not uploaded_file:
-            st.warning("⚠️ 이력서 파일을 업로드해주세요!")
+            st.warning("이력서 파일을 업로드해주세요!")
         else:
             with st.spinner("AI가 이력서를 분석하고 저장 중입니다... (약 10초)"):
                 resume_text = extract_resume_text(uploaded_file)
@@ -134,9 +130,7 @@ def setup_modal():
                 st.toast("이력서가 보관함에 저장되었습니다!", icon="🎉")
                 st.rerun() # 모달 닫고 리스트 갱신
 
-# ============================================================
 # 화면 UI 구현
-# ============================================================
 
 # ─── 상태 1: 이력서 보관함 (리스트 뷰) ───
 if st.session_state.selected_resume is None:
@@ -174,7 +168,7 @@ if st.session_state.selected_resume is None:
             # 카드 아래 액션 버튼들
             c1, c2 = st.columns([3, 1])
             with c1:
-                if st.button("👁️ 대시보드 보기", key=f"view_{r['id']}", use_container_width=True):
+                if st.button("대시보드 보기", key=f"view_{r['id']}", use_container_width=True):
                     st.session_state.selected_resume = r
                     st.rerun()
             with c2:
@@ -204,7 +198,7 @@ else:
     with col_l:
         keywords = data.get("keywords", [])
         badges_html = "".join([f"<div class='tech-badge'>#{k}</div>" for k in keywords])
-        st.markdown(f"<div class='premium-card'><div class='card-header'>🏷️ AI 추출 핵심 기술 스택</div><div class='badge-container'>{badges_html if badges_html else '<div style=\"color:#94a3b8;\">추출된 키워드가 없습니다.</div>'}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='premium-card'><div class='card-header'>AI 추출 핵심 기술 스택</div><div class='badge-container'>{badges_html if badges_html else '<div style=\"color:#94a3b8;\">추출된 키워드가 없습니다.</div>'}</div></div>", unsafe_allow_html=True)
         
         match_rate = data.get("match_rate", 0)
         feedback = data.get("match_feedback", "분석 코멘트가 없습니다.")
@@ -214,14 +208,14 @@ else:
     with col_r:
         questions = data.get("expected_questions", [])
         q_boxes_html = "".join([f"<div class='q-box'><div class='q-num'>Point {i+1}</div><div class='q-text'>{q}</div></div>" for i, q in enumerate(questions)])
-        st.markdown(f"<div class='premium-card' style='border-left: 5px solid #bb38d0;'><div class='card-header'>🎯 면접관의 예상 압박 포인트 TOP 3</div>{q_boxes_html if q_boxes_html else '<div style=\"color:#94a3b8;\">질문을 생성하지 못했습니다.</div>'}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='premium-card' style='border-left: 5px solid #bb38d0;'><div class='card-header'>면접관의 예상 압박 포인트 TOP 3</div>{q_boxes_html if q_boxes_html else '<div style=\"color:#94a3b8;\">질문을 생성하지 못했습니다.</div>'}</div>", unsafe_allow_html=True)
         
-        if st.button("🔥 이 이력서로 모의면접 바로 시작하기", type="primary", use_container_width=True):
+        if st.button("이 이력서로 모의면접 바로 시작하기", type="primary", use_container_width=True):
             # 면접 페이지에서 사용할 수 있도록 세션 세팅
             st.session_state.job_role = target_role
             st.session_state.resume_text = r['resume_text']
             st.switch_page("pages/interview.py")
             
         st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("📄 추출된 이력서 텍스트 원본 확인"):
+        with st.expander("추출된 이력서 텍스트 원본 확인"):
             st.text_area("수정이 불가능한 읽기 전용 텍스트입니다.", r['resume_text'], height=200, disabled=True)
