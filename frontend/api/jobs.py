@@ -1,6 +1,12 @@
 import requests
+import os
+from dotenv import load_dotenv
 
-BACKEND_URL = "http://localhost:8000/api/v1/jobs/search"
+load_dotenv()
+
+# BACKEND_URL = "http://localhost:8000/api/v1/jobs/search"
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")
+BACKEND_URL = f"{BACKEND_BASE_URL}/jobs/search"
 
 
 def search_jobs(payload: dict):

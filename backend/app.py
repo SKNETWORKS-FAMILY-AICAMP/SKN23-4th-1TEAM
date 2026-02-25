@@ -52,5 +52,5 @@ app.include_router(social_auth.router)
 app.include_router(infer.router)        # 👈 infer 라우터 활성화 완료
 
 # 💡 만약 jobs_api 쪽에도 router가 정의되어 있다면 아래 주석을 풀고 사용하세요!
-# app.include_router(jobs_api.router)
+app.include_router(jobs_api.router)
 

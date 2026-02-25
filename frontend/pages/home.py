@@ -320,42 +320,42 @@ if selected == "홈":
 
             except Exception as e:
                 st.error(f"채용공고 조회 실패: {e}")
-            for company, role, desc in [
-                (
-                    "네이버 (NAVER)",
-                    "Python 백엔드 신입/경력",
-                    "FastAPI와 MSA 환경에서 대규모 트래픽을 처리할 개발자를 모십니다.",
-                ),
-                (
-                    "카카오 (Kakao)",
-                    "AI 엔지니어 인턴",
-                    "LLM 기반 서비스를 개발할 AI 엔지니어를 모집합니다.",
-                ),
-                (
-                    "라인 (LINE)",
-                    "백엔드 개발자 (신입)",
-                    "글로벌 메신저 플랫폼의 백엔드 시스템을 함께 만들어갈 분을 찾습니다.",
-                ),
-            ]:
-                with st.container(border=True):
-                    a, b = st.columns([8, 2])
-                    with a:
-                        st.markdown(
-                            f"<p style='font-size:16px; font-weight:700; margin-bottom:4px; color:#111;'>{company} — {role}</p>",
-                            unsafe_allow_html=True,
-                        )
-                        st.markdown(
-                            f"<p style='font-size:14px; color:#666; margin:0;'>{desc}</p>",
-                            unsafe_allow_html=True,
-                        )
-                    with b:
-                        st.markdown(
-                            "<div style='margin-top:10px;'></div>",
-                            unsafe_allow_html=True,
-                        )
-                        st.button(
-                            "지원하기", key=f"apply_{company}", use_container_width=True
-                        )
+            # for company, role, desc in [
+            #     (
+            #         "네이버 (NAVER)",
+            #         "Python 백엔드 신입/경력",
+            #         "FastAPI와 MSA 환경에서 대규모 트래픽을 처리할 개발자를 모십니다.",
+            #     ),
+            #     (
+            #         "카카오 (Kakao)",
+            #         "AI 엔지니어 인턴",
+            #         "LLM 기반 서비스를 개발할 AI 엔지니어를 모집합니다.",
+            #     ),
+            #     (
+            #         "라인 (LINE)",
+            #         "백엔드 개발자 (신입)",
+            #         "글로벌 메신저 플랫폼의 백엔드 시스템을 함께 만들어갈 분을 찾습니다.",
+            #     ),
+            # ]:
+            #     with st.container(border=True):
+            #         a, b = st.columns([8, 2])
+            #         with a:
+            #             st.markdown(
+            #                 f"<p style='font-size:16px; font-weight:700; margin-bottom:4px; color:#111;'>{company} — {role}</p>",
+            #                 unsafe_allow_html=True,
+            #             )
+            #             st.markdown(
+            #                 f"<p style='font-size:14px; color:#666; margin:0;'>{desc}</p>",
+            #                 unsafe_allow_html=True,
+            #             )
+            #         with b:
+            #             st.markdown(
+            #                 "<div style='margin-top:10px;'></div>",
+            #                 unsafe_allow_html=True,
+            #             )
+            #             st.button(
+            #                 "지원하기", key=f"apply_{company}", use_container_width=True
+            #             )
 
         with tab2:
             st.markdown("<br>", unsafe_allow_html=True)
