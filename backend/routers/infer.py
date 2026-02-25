@@ -55,12 +55,25 @@ async def ingest_resume(file: UploadFile = File(...), session_id: str = "default
 
 @router.post("/start")
 def start_interview(req: Request, body: dict, db: Session = Depends(get_db)):
-    """새로운 면접 세션을 생성하고 자동 증가된 session_id를 반환"""
-    user = require_user(req, db)
-    job_role = body.get("job_role", "개발자 연결")
-    
+    """새로운 면접 세션을 생성하고 자동 증가된 session_id를 반환.
+    ✅ 인증은 선택적: 토큰이 있으면 user_id 연결, 없으면 게스트 세션으로 생성
+    """
+    # 토큰이 있을 때만 유저 확인 (없어도 면접 시작 가능)
+    user_id = None
+    try:
+        auth = req.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth.split(" ", 1)[1].strip()
+            user = auth_service.get_user_from_access(db, token)
+            if user:
+                user_id = user.id
+    except Exception:
+        pass
+
+    job_role = body.get("job_role", "개발자")
+
     new_session = base.InterviewSession(
-        user_id=user.id,
+        user_id=user_id,
         job_role=job_role,
         status="START"
     )

@@ -32,17 +32,27 @@ def _handle_request(method, endpoint, **kwargs):
         kwargs["headers"] = headers
         
     try:
-        # 🔥 timeout 기본값을 5초에서 30초로 대폭 늘렸습니다!
+        # 🔥 timeout 기본값 30초
         timeout = kwargs.pop('timeout', 30)
         response = requests.request(method, url, timeout=timeout, **kwargs)
-        
+
+        # 빈 바디 방어: JSON 파싱 실패도 안전하게 처리
+        def _safe_json():
+            try:
+                return response.json()
+            except Exception:
+                return {}
+
         if response.status_code == 200:
-            return True, response.json()
-        
-        # 💡 백엔드에서 보낸 에러 메시지("휴면 계정입니다" 등)를 여기서 캐치해서 화면으로 보냅니다.
-        error_detail = response.json().get("detail", "서버 요청에 실패했습니다.")
+            return True, _safe_json()
+
+        # 💡 에러 메시지 추출 (빈 바디여도 안전)
+        body = _safe_json()
+        error_detail = body.get("detail") if isinstance(body, dict) else None
+        if not error_detail:
+            error_detail = f"HTTP {response.status_code} 오류가 발생했습니다."
         return False, error_detail
-        
+
     except requests.exceptions.ConnectionError:
         print(f"DEBUG: Connection Failed to {url}")
         return False, f"백엔드 서버({url})와 연결할 수 없습니다."

@@ -30,7 +30,7 @@ Modification History:
 
 <br>
 
-# ⭐️ 팀 소개 
+# 👥 팀 소개 
 ## ✦ 팀 명 : **양다일과 아이들 시즌1**
 
 <table style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px;">
@@ -73,7 +73,8 @@ Modification History:
     <td style="border: 1px solid #ddd; padding: 10px; word-wrap: break-word;">
       • Streamlit 웹 앱 전담 개발<br>
       • 대시보드 아키텍처 설계<br>
-      • 
+      • ChromaDB 기반 RAG 파이프라인 구축 및 최적화<br>
+      • FastAPI - DB 연동 및 프론트엔드 API 통신 구현
     </td>
     <td style="border: 1px solid #ddd; padding: 10px; word-wrap: break-word;">
       • 코드 모듈화 및 구조 개선<br>
@@ -312,7 +313,7 @@ Dual DB를 세팅하기 위해 자체 제작 데이터셋을 활용합니다.
 
 * FastAPI 구동 시
 
-  * SQLite (메타데이터 DB)
+  * MySQL (메타데이터 DB)
   * ChromaDB (Vector DB)
     양쪽에 동시 주입
 
@@ -357,7 +358,7 @@ Dual DB를 세팅하기 위해 자체 제작 데이터셋을 활용합니다.
 <img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white"> <img src="https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white"> <img src="https://img.shields.io/badge/LangGraph-5A5A5A?style=for-the-badge&logoColor=white">
 
 ### 📊 Database & Data Processing
-<img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white"> <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"> <img src="https://img.shields.io/badge/ChromaDB-FF6F00?style=for-the-badge&logoColor=white"> <img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white">
+<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"> <img src="https://img.shields.io/badge/ChromaDB-FF6F00?style=for-the-badge&logoColor=white"> <img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white">
 
 ### 🛠️ Utilities & Environment
 <img src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white"> <img src="https://img.shields.io/badge/VS_Code-007ACC?style=for-the-badge&logo=visual-studio-code&logoColor=white"> <img src="https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white">
@@ -368,7 +369,7 @@ Dual DB를 세팅하기 위해 자체 제작 데이터셋을 활용합니다.
 
 
 
-# ✅ Insight
+# ℹ️ Insight
 
 ### 💡 기술적 성과
 - **실시간 인터랙션 최적화**: STT → LLM → TTS로 이어지는 파이프라인의 병목 현상을 해결하기 위해, 답변 수신과 동시에 분석을 시작하는 비동기 처리 방식을 도입하여 응답 속도를 30% 개선했습니다.
@@ -392,25 +393,40 @@ Dual DB를 세팅하기 위해 자체 제작 데이터셋을 활용합니다.
 - **문제**: 다단 형식이나 표가 많은 이력서의 경우 텍스트 추출 순서가 꼬여 엉뚱한 질문을 생성함.
 - **해결**: `pdfplumber`를 활용한 레이아웃 보존 파싱 방식을 적용하고, RecursiveCharacterTextSplitter의 청크 크기를 500자로 세밀하게 조정하여 문맥 보존력을 높임.
 
+### 4. SPA(Single Page Application) 환경에서의 Auth Token 유실 문제
+
+* **문제**: Streamlit의 Multi-page 환경(`app.py` → `interview.py` 등)에서 페이지 이동 시 세션(Session State)이 초기화되며 로그인 토큰이 증발하여 401(Unauthorized) 에러가 발생하는 현상.
+* **해결**: FastAPI 백엔드에서 JWT 토큰을 발급받은 후, 프론트엔드의 최상단 인증 로직(`home.py`)에서 `st.session_state`에 토큰과 유저 메타데이터(email, tier 등)를 강제 주입 및 유지하도록 생명주기(Lifecycle)를 재설계함.
+
+### 5. 정적 파일(Media) 서빙 404 라우팅 에러 및 DB Silent Failure
+
+* **문제**: 프론트에서 프로필/이력서 파일을 백엔드로 업로드하여 서버 물리 폴더(`static/`)에 저장했으나, 브라우저에서 접근 시 404 Not Found가 발생하고 DB에 경로가 `UPDATE` 되지 않는 침묵의 에러(Silent Failure) 발생.
+* **해결**:
+1. FastAPI의 `StaticFiles` 클래스를 `app.mount()`로 마운트하여 외부 브라우저의 직접 접근 권한을 허용함.
+2. SQLAlchemy의 세션 관리 로직에서 `db.commit()` 직후 `db.refresh()`를 명시적으로 호출하여, 최신 상태의 엔티티(Entity) 데이터를 프론트에 정확히 반환하도록 트랜잭션을 보장함.
+
+<br>
+
+---
 
 <br><br>
 
 
 
+
 # ✏️ 한 줄 회고
 
-- **양창일**
-  > 양다일! 최고 업적 사자개 아빠
+- **양창일 (팀장)**
+  > "양다일! 최고 업적 사자개 아빠 🦁"
 
-- **김다빈**
-  > 갓다빈. 최고 업적 롤 브론즈I
+- **김다빈 (팀원)**
+  > "다빈다빈김다빈"
 
-- **김지우**
-  > 야미
+- **김지우 (팀원)**
+  > "야미 😋"
 
-- **유헌상**
-  > 돈슴생님 - 롤 + 술 환장 
-
+- **유헌상 (팀원)**
+  > "돈슴생님 - 롤 + 🍻"
 
 
 

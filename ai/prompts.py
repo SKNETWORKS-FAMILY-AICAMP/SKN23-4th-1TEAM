@@ -19,7 +19,6 @@ SYSTEM_PROMPT_BASE = """
 - 꼬리질문은 CONTEXT/QUESTION_LIST의 근거 범위 안에서만 생성한다.
 """
 
-
 SYSTEM_PROMPT_EVAL = """
 너는 실무 중심의 기술 면접관이자 채점기다. 말투는 간결하고 단정하며, 객관적으로 평가한다.
 
