@@ -336,7 +336,7 @@ defaults = {
     "turn_index": 0,
     "db_scores": [],
     "current_is_followup": False,
-    "user_id": "jiwoo_kim",
+    "user_id": "",
     "pending_question": None,
     "db_questions": [],
     "current_q_idx": 0,

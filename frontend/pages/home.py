@@ -11,6 +11,7 @@ Modification History:
 - 2026-02-23 (김지우): UI 적용 및 마이페이지(my_info) 라우팅 연결, 프로필 기능 추가
 - 2026-02-24 (유헌상): 채용공고 APi 호출 및 연결
 """
+
 import streamlit as st
 import time
 from utils.function import render_memo_board, render_realtime_ai_news
@@ -32,8 +33,9 @@ from utils.function import render_memo_board, render_realtime_ai_news
 ## ───────────────────────────────────────────────────────────────────────
 
 
-
-st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")  # 모든 페이지에 고정 멘트 (utils에 넣기 가능하면 넣기)
+st.set_page_config(
+    page_title="AIWORK", page_icon="👾", layout="wide"
+)  # 모든 페이지에 고정 멘트 (utils에 넣기 가능하면 넣기)
 
 # ─── 서드파티 ──────────────────────────────────────────────────────────
 import extra_streamlit_components as stx
@@ -48,8 +50,6 @@ from components.job_cards import render_job_cards
 
 from backend.services.tavily_service import get_web_context
 from backend.services.llm_service import get_home_guide_response
-
-
 
 
 st.markdown(
@@ -113,26 +113,29 @@ button[kind="secondary"]:hover { background-color: #e9ecef !important; color: #1
 [data-testid="stImage"] img { border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 </style>
 """,
-    unsafe_allow_html=True,)
+    unsafe_allow_html=True,
+)
 
 # ============================= 상단 메뉴바 (유틸로 넣어주시면 감사하겠습니다 !) ==================================
 import streamlit as st
 import base64
 import os
 
+
 # 1. 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode("utf-8")
+
 
 def inject_custom_header():
     # 2. 이미지 절대 경로 설정 (home.py 위치를 기준으로 계산)
     # 현재 파일(home.py)의 상위->상위 폴더 구조에 맞춰 경로를 잘 잡아주셔야 합니다.
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # 예시: home.py가 frontend 폴더 안에 있다면, 상위 폴더로 가서 backend/data/... 로 접근
-    project_root = os.path.dirname(current_dir) 
-    image_path = os.path.join(project_root, "data", "AIWORK.jpg")
-    
+    project_root = os.path.dirname(current_dir)
+    image_path = os.path.join(project_root, "assets", "AIWORK.jpg")
+
     # 3. Base64 문자열 생성
     try:
         img_base64 = get_image_base64(image_path)
@@ -140,7 +143,7 @@ def inject_custom_header():
         img_src = f"data:image/jpeg;base64,{img_base64}"
     except FileNotFoundError:
         st.error(f"이미지 경로를 찾을 수 없습니다: {image_path}")
-        img_src = "" # 에러 시 빈 문자열 처리
+        img_src = ""  # 에러 시 빈 문자열 처리
 
     # 파이썬 f-string을 사용하기 위해 기존 HTML 문자열을 f""" """ 로 감쌉니다.
     header_html = f"""
@@ -238,6 +241,7 @@ def inject_custom_header():
     """
     st.markdown(header_html, unsafe_allow_html=True)
 
+
 # 함수 실행
 inject_custom_header()
 # ============================================================================
@@ -263,7 +267,7 @@ try:
         with open(settings_path, "r", encoding="utf-8") as f:
             g_settings = yaml.safe_load(f) or {}
             if g_settings.get("notice_enabled") and g_settings.get("system_notice"):
-                notice_text = g_settings.get('system_notice')
+                notice_text = g_settings.get("system_notice")
                 st.markdown(
                     f"""
                     <style>
@@ -294,12 +298,10 @@ try:
                         </div>
                     </div>
                     """,
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
 except Exception as e:
     pass
-
-
 
 
 # 쿠키 매니저 및 인증
@@ -489,7 +491,8 @@ if selected == "홈":
                     SKN23-3rd-1TEAM
                 </div>
                 """,
-                unsafe_allow_html=True,)
+                unsafe_allow_html=True,
+            )
 
     # 왼쪽 패널 (정보 및 추천 탭)
     with left_col:
@@ -497,9 +500,7 @@ if selected == "홈":
             f"<h3 style='font-size:22px; font-weight:700; color:#111; margin-bottom:20px;'>반가워요, {user_name}님! 오늘 준비되셨나요?</h3>",
             unsafe_allow_html=True,
         )
-        tab1, tab2, tab3 = st.tabs(
-            ["추천 공고", "백엔드 트렌드", "게시판"]
-        )
+        tab1, tab2, tab3 = st.tabs(["추천 공고", "백엔드 트렌드", "게시판"])
 
         # 채용공고 탭
         with tab1:
@@ -519,15 +520,15 @@ if selected == "홈":
             except Exception as e:
                 st.error(f"채용공고 조회 실패: {e}")
 
-        with tab2: # 📈 백엔드 트렌드 탭
+        with tab2:  # 📈 백엔드 트렌드 탭
             st.markdown("<br>", unsafe_allow_html=True)
-            
+
             # 여기서 실시간 뉴스 함수를 실행!
             render_realtime_ai_news()
-            
+
             st.markdown(
                 "<p style='font-size:11px; color:#aaa; text-align:right; margin-top:20px;'>Powered by Tavily Search Engine</p>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         # 게시판
@@ -544,12 +545,14 @@ if selected == "홈":
 
 import streamlit as st
 
-# ========================================================== 
+# ==========================================================
 # 🤖 AI 커리어 어드바이저 모달 - ULTRA PREMIUM LIGHT THEME
-# ========================================================== 
+# ==========================================================
+
 
 def inject_chatbot_styles():
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     /* ══════════════════════════════════════════════════════
        1. MODAL 창 자체 디자인 (애플/토스 스타일)
@@ -684,14 +687,17 @@ def inject_chatbot_styles():
         transform: scale(1.1) !important;
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 # ─── 세션 초기화 ───
 if "guide_chat" not in st.session_state:
     st.session_state.guide_chat = [
         {
             "role": "assistant",
-            "content": "안녕하세요! **AIWORK 수석 어드바이저**입니다. ✦\n\n플랫폼 사용법, 취업 트렌드, 직무 고민 등 무엇이든 물어보세요. 실시간 웹 검색으로 2026년 최신 데이터를 기반으로 답변드립니다."
+            "content": "안녕하세요! **AIWORK 수석 어드바이저**입니다. ✦\n\n플랫폼 사용법, 취업 트렌드, 직무 고민 등 무엇이든 물어보세요. 실시간 웹 검색으로 2026년 최신 데이터를 기반으로 답변드립니다.",
         }
     ]
 
@@ -703,7 +709,7 @@ def chatbot_modal():
 
     st.markdown(
         '<div class="advisor-badge">실시간 Tavily 웹 검색 연동 · 2026 최신 채용 동향 팩트체크</div>',
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     chat_container = st.container(height=450)
@@ -712,63 +718,70 @@ def chatbot_modal():
         with chat_container:
             if chat["role"] == "assistant":
                 st.markdown(
-                    f'''<div style="display:flex; justify-content:flex-start; margin-bottom:16px; gap:12px;">
+                    f"""<div style="display:flex; justify-content:flex-start; margin-bottom:16px; gap:12px;">
                         <div style="font-size:32px; line-height:1; margin-top:20px;">🤖</div>
                         <div style="display:flex; flex-direction:column; max-width:85%;">
                             <div class="sender-label">AI 어드바이저</div>
                             <div class="ai-bubble">{chat["content"]}</div>
                         </div>
-                    </div>''', unsafe_allow_html=True
+                    </div>""",
+                    unsafe_allow_html=True,
                 )
             else:
                 st.markdown(
-                    f'''<div style="display:flex; justify-content:flex-end; margin-bottom:16px; gap:12px;">
+                    f"""<div style="display:flex; justify-content:flex-end; margin-bottom:16px; gap:12px;">
                         <div style="display:flex; flex-direction:column; align-items:flex-end; max-width:85%;">
                             <div class="sender-label" style="color:#94a3b8!important;">사용자</div>
                             <div class="user-bubble">{chat["content"]}</div>
                         </div>
                         <div style="font-size:32px; line-height:1; margin-top:20px;">🧑‍💻</div>
-                    </div>''', unsafe_allow_html=True
+                    </div>""",
+                    unsafe_allow_html=True,
                 )
 
-    if prompt := st.chat_input("예: 데이터 엔지니어 요새 전망 어때? / AIWORK는 어떻게 써?"):
+    if prompt := st.chat_input(
+        "예: 데이터 엔지니어 요새 전망 어때? / AIWORK는 어떻게 써?"
+    ):
         # 1. 사용자 질문을 세션에 저장
         st.session_state.guide_chat.append({"role": "user", "content": prompt})
-        
+
         with chat_container:
             # 2. 사용자 말풍선 즉시 렌더링
             st.markdown(
-                f'''<div style="display:flex; justify-content:flex-end; margin-bottom:16px; gap:12px;">
+                f"""<div style="display:flex; justify-content:flex-end; margin-bottom:16px; gap:12px;">
                     <div style="display:flex; flex-direction:column; align-items:flex-end; max-width:85%;">
                         <div class="sender-label" style="color:#94a3b8!important;">사용자</div>
                         <div class="user-bubble">{prompt}</div>
                     </div>
                     <div style="font-size:32px; line-height:1; margin-top:20px;">🧑‍💻</div>
-                </div>''', unsafe_allow_html=True
+                </div>""",
+                unsafe_allow_html=True,
             )
-            
+
             # 3. AI 답변 대기 및 생성
             with st.spinner("웹을 탐색하며 트렌드를 분석 중입니다... 🌐"):
                 web_info = get_web_context(prompt)
                 ai_reply = get_home_guide_response(prompt, web_info)
-                
+
             # 🚨 [수정 및 추가된 부분] AI 답변을 받아왔으니, 화면에 즉시 말풍선으로 그려줍니다!
             st.markdown(
-                f'''<div style="display:flex; justify-content:flex-start; margin-bottom:16px; gap:12px;">
+                f"""<div style="display:flex; justify-content:flex-start; margin-bottom:16px; gap:12px;">
                     <div style="font-size:32px; line-height:1; margin-top:20px;">🤖</div>
                     <div style="display:flex; flex-direction:column; max-width:85%;">
                         <div class="sender-label">AI 어드바이저</div>
                         <div class="ai-bubble">{ai_reply}</div>
                     </div>
-                </div>''', unsafe_allow_html=True
+                </div>""",
+                unsafe_allow_html=True,
             )
-                
+
         # 4. 세션에 AI 답변 저장 (나중에 모달을 껐다 켜도 대화가 유지되도록)
         st.session_state.guide_chat.append({"role": "assistant", "content": ai_reply})
 
 
 # 플로팅 챗봇 버튼 (FAB) 랜더링 및 CSS 스나이퍼 타겟팅
-st.markdown("""
+st.markdown(
+    """
 <style>
 /* ✨ 다른 UI는 절대 깨지 않으면서 버튼만 우측 하단에 고정하는 CSS */
 div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] {
@@ -807,10 +820,11 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
     position: absolute !important;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 st.markdown('<div id="fab-marker"></div>', unsafe_allow_html=True)
 if st.button("chatbot_trigger_btn", key="fab_btn"):
     chatbot_modal()
-

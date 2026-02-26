@@ -2,15 +2,21 @@ import requests
 import os
 from dotenv import load_dotenv
 
+
 def search_jobs(payload: dict):
     # 매 호출 시마다 최신 환경변수를 로드하여 캐싱 현상 방지
     load_dotenv(override=True)
-    
-    backend_base_url = os.getenv("BACKEND_BASE_URL", "http://127.0.0.1:8000")
-    backend_url = f"{backend_base_url}/jobs/search"
-    
+
+    # .env 파일에 등록된 API_BASE_URL (http://localhost:8000/api 등) 또는 직접 대상 URL 조합
+    api_base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api")
+    # /api 가 포함되어 있는지 여부에 따라 /jobs 처리
+    if api_base_url.rstrip("/").endswith("/api"):
+        backend_url = f"{api_base_url.replace('/api', '')}/jobs/search"
+    else:
+        backend_url = f"{api_base_url}/jobs/search"
+
     print(f"Requesting jobs API at: {backend_url} with payload: {payload}")
-    
+
     res = requests.post(backend_url, json=payload, timeout=20)
     if not res.ok:
         try:
