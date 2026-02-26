@@ -12,7 +12,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 # ─── ChromaDB 클라이언트 초기화 ───────────────────────────────
-_CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
+_CHROMA_PATH = os.getenv("CHROMA_PATH", "./backend/chroma_db")
 _COLLECTION_NAME = "resumes"
 
 # OpenAI 임베딩 함수 (text-embedding-3-small 사용, 저렴 + 충분한 품질)

@@ -13,19 +13,42 @@ Modification History:
 - 2026-02-23 (김지우): 아이디/비밀번호 입력 후 엔터키로 로그인 가능하도록 st.form 적용
 - 2026-02-23 (김지우): 휴면 계정 복구 모달(Popup) 로직 수정
 - 2026-02-23 (김지우): 마이페이지 연동을 위해 로그인 성공 시 세션에 email, tier 정보 추가
+- 2026-02-25 (김지우): 쿠키 기반 자동 로그인(Route Protection) 로직 추가 및 경고창 픽스
 """
-
 import streamlit as st
 import time
+import yaml
+import os
+import extra_streamlit_components as stx 
+
 from utils.api_utils import api_login, api_verify_token, api_unlock_dormant
 from utils.config import GOOGLE_URI, KAKAO_URI
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# --- 글로벌 관리자 설정 (점검 모드) 읽기 ---
-import yaml
-import os
+# ==========================================================
+# 🍪 쿠키 매니저 세팅 (경고창 없는 세션 방식 적용)
+# ==========================================================
+if "cookie_manager" not in st.session_state:
+    st.session_state.cookie_manager = stx.CookieManager()
 
+cookie_manager = st.session_state.cookie_manager
+
+# ==========================================================
+# 🚀 자동 로그인 (Route Protection) 로직
+# ==========================================================
+access_token = cookie_manager.get("access_token")
+
+# 토큰이 존재한다면 로그인 폼을 그리기 전에 즉시 홈으로 강제 이동!
+if access_token:
+    st.session_state["is_logged_in"] = True
+    st.switch_page("pages/home.py") 
+    st.stop() # 🛑 아래의 로그인 창 코드가 아예 실행되지 않도록 차단!
+
+
+# ==========================================================
+# 🛠️ 관리자 및 점검 모드 로직
+# ==========================================================
 settings_path = os.path.join(os.path.dirname(__file__), "utils", "admin_settings.yaml")
 global_settings = {
     "maintenance_mode": False,
@@ -53,8 +76,6 @@ if (
 
 # 점검 모드 활성화 시 (관리자 제외 모두 차단)
 if global_settings.get("maintenance_mode") and not is_admin_logged_in:
-    # 예외: 만약 현재 "admin 로그인 시도 중"이라면 점검 화면을 뚫고 지나가야 함
-    # (일반적으로는 로그인 폼 자체를 막아버릴 수 있으나, 관리자 접속을 위해 숨김 URL이나 특정 폼이 필요함)
     st.markdown(
         """
     <div style="text-align:center; padding: 50px 20px;">
@@ -66,7 +87,6 @@ if global_settings.get("maintenance_mode") and not is_admin_logged_in:
         unsafe_allow_html=True,
     )
 
-    # 관리자 비상 로그인용 폼 (토글 등으로 숨길 수도 있지만 심플하게 구현)
     with st.expander("관리자 접속", expanded=False):
         with st.form("admin_emergency_login"):
             a_user = st.text_input("아이디")
@@ -82,7 +102,9 @@ if global_settings.get("maintenance_mode") and not is_admin_logged_in:
     st.stop()
 
 
-# 휴면 계정 해제 & 자동 로그인 모달
+# ==========================================================
+# 🔒 휴면 계정 해제 모달 로직
+# ==========================================================
 @st.dialog("🔒 휴면 계정 안내")
 def dormant_recovery_modal(email, password):
     st.markdown(
@@ -106,16 +128,17 @@ def dormant_recovery_modal(email, password):
     with col2:
         if st.button("예", type="primary", use_container_width=True):
             with st.spinner("계정 활성화 중..."):
-                # 휴면 풀기
                 success, msg = api_unlock_dormant(email)
 
                 if success:
-                    # 비번으로 즉시 자동 로그인
                     is_login_success, login_result = api_login(email, password)
 
                     if is_login_success:
-                        # 토큰 발급받고 세션 세팅
                         st.session_state.new_token = login_result.get("access_token")
+                        
+                        # 🔥 쿠키에 토큰 영구 저장!
+                        cookie_manager.set("access_token", login_result.get("access_token"), key="set_token_dormant")
+                        
                         st.session_state.user = {
                             "name": login_result.get("name"),
                             "role": login_result.get("role"),
@@ -123,16 +146,16 @@ def dormant_recovery_modal(email, password):
                         }
                         st.switch_page("pages/home.py")
                     else:
-                        st.error(
-                            "자동 로그인에 실패했습니다. 창을 닫고 다시 로그인해주세요."
-                        )
+                        st.error("자동 로그인에 실패했습니다. 창을 닫고 다시 로그인해주세요.")
                         time.sleep(1.5)
                         st.rerun()
                 else:
                     st.error(msg)
 
 
-# 기존 소셜 로그인 및 세션 로직
+# ==========================================================
+# 🔗 소셜 로그인 및 세션 검증 로직
+# ==========================================================
 if "token" not in st.session_state:
     st.session_state.token = None
 
@@ -143,6 +166,9 @@ if social_token:
 
     ok, result = api_verify_token(social_token)
     if ok:
+        # 🔥 소셜 로그인 시에도 쿠키 발급
+        cookie_manager.set("access_token", social_token, key="set_token_social")
+        
         st.session_state.user = {
             "name": result.get("name") or "사용자",
             "role": result.get("role") or "user",
@@ -156,6 +182,7 @@ if social_token:
         st.query_params.clear()
 
 if st.query_params.get("logout") == "true":
+    cookie_manager.delete("access_token") # 🔥 로그아웃 시 쿠키도 파기
     st.session_state.clear()
     st.query_params.clear()
     time.sleep(0.1)
@@ -166,6 +193,10 @@ if "user" not in st.session_state:
 if "show_admin_choice" not in st.session_state:
     st.session_state.show_admin_choice = False
 
+
+# ==========================================================
+# 🎨 UI 렌더링 (CSS & HTML)
+# ==========================================================
 st.markdown(
     """
 <style>
@@ -235,6 +266,10 @@ if not st.session_state.get("show_admin_choice"):
 
                 if is_success:
                     st.session_state.new_token = result.get("access_token")
+                    
+                    # 🔥 로그인 성공 시 브라우저 쿠키에 토큰을 구워줍니다!
+                    cookie_manager.set("access_token", result.get("access_token"), key="set_token_normal")
+                    
                     st.session_state.user = {
                         "name": result.get("name"),
                         "role": result.get("role"),

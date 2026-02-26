@@ -18,13 +18,141 @@ if backend_dir not in sys.path:
 from services.llm_service import analyze_resume_comprehensive
 from db.database import init_db, save_user_resume, get_user_resumes, delete_user_resume
 
-st.set_page_config(page_title="내 이력서 보관함", page_icon="📄", layout="wide")
+st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
 # DB 초기화 시도
 try:
     init_db()
 except:
     pass
+
+
+# ============================= 상단 메뉴바 ~! ==================================
+import streamlit as st
+import base64
+import os
+
+# 1. 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
+def get_image_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode("utf-8")
+
+def inject_custom_header():
+    # 2. 이미지 절대 경로 설정 (home.py 위치를 기준으로 계산)
+    # 현재 파일(home.py)의 상위->상위 폴더 구조에 맞춰 경로를 잘 잡아주셔야 합니다.
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 예시: home.py가 frontend 폴더 안에 있다면, 상위 폴더로 가서 backend/data/... 로 접근
+    project_root = os.path.dirname(current_dir) 
+    image_path = os.path.join(project_root, "data", "AIWORK.jpg")
+    
+    # 3. Base64 문자열 생성
+    try:
+        img_base64 = get_image_base64(image_path)
+        # JPEG 이미지일 경우 data:image/jpeg;base64, 를 붙여줍니다.
+        img_src = f"data:image/jpeg;base64,{img_base64}"
+    except FileNotFoundError:
+        st.error(f"이미지 경로를 찾을 수 없습니다: {image_path}")
+        img_src = "" # 에러 시 빈 문자열 처리
+
+    # 파이썬 f-string을 사용하기 위해 기존 HTML 문자열을 f""" """ 로 감쌉니다.
+    header_html = f"""
+    <style>
+    /* 상단 여백 조절 */
+    .block-container {{
+        padding-top: 100px !important; 
+    }}
+    
+    /* 헤더 전체 컨테이너 */
+    .custom-header {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 72px;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        border-bottom: 1px solid #e2e8f0;
+        z-index: 999999;
+        font-family: 'Pretendard', sans-serif;
+    }}
+
+    /* 왼쪽 로고 영역 */
+    .header-logo {{
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+    }}
+    .header-logo img {{
+        height: 28px; 
+        width: auto;
+        object-fit: contain;
+    }}
+
+    /* 가운데 메뉴 영역 */
+    .header-menu {{
+        display: flex;
+        gap: 40px;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }}
+    .header-menu a {{
+        text-decoration: none;
+        color: #111111;
+        font-size: 16px;
+        font-weight: 600;
+        transition: color 0.2s;
+    }}
+    .header-menu a:hover {{
+        color: #bb38d0; 
+    }}
+
+    /* 오른쪽 유틸리티 영역 */
+    .header-utils {{
+        display: flex;
+        align-items: center;
+    }}
+    .icon-group {{
+        display: flex;
+        font-size: 24px;
+    }}
+    .icon-group a {{
+        text-decoration: none;
+        color: #333333;
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+    .icon-group a:hover {{
+        transform: scale(1.1);
+    }}
+    </style>
+    <div class="custom-header">
+        <a href="/home" target="_self" class="header-logo">
+            <img src="{img_src}" alt="AIWORK 로고">
+        </a>
+        <div class="header-menu">
+            <a href="/interview" target="_self">AI면접</a>
+            <a href="/resume" target="_self">이력서</a>
+            <a href="/mypage" target="_self">내 기록</a>
+            <a href="/my_info" target="_self">마이페이지</a>
+        </div>
+        <div class="header-utils">
+            <div class="icon-group">
+                <a href="/my_info" target="_self" title="마이페이지">👤</a>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(header_html, unsafe_allow_html=True)
+
+# 함수 실행
+inject_custom_header()
+# ============================================================================
 
 # ============================================================
 # 💅 CSS 스타일링

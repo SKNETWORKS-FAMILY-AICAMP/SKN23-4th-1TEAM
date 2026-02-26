@@ -26,6 +26,133 @@ try:
 except Exception:
     pass
 
+# ============================= 상단 메뉴바 ~! ==================================
+import streamlit as st
+import base64
+import os
+
+# 1. 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
+def get_image_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode("utf-8")
+
+def inject_custom_header():
+    # 2. 이미지 절대 경로 설정 (home.py 위치를 기준으로 계산)
+    # 현재 파일(home.py)의 상위->상위 폴더 구조에 맞춰 경로를 잘 잡아주셔야 합니다.
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 예시: home.py가 frontend 폴더 안에 있다면, 상위 폴더로 가서 backend/data/... 로 접근
+    project_root = os.path.dirname(current_dir) 
+    image_path = os.path.join(project_root, "data", "AIWORK.jpg")
+    
+    # 3. Base64 문자열 생성
+    try:
+        img_base64 = get_image_base64(image_path)
+        # JPEG 이미지일 경우 data:image/jpeg;base64, 를 붙여줍니다.
+        img_src = f"data:image/jpeg;base64,{img_base64}"
+    except FileNotFoundError:
+        st.error(f"이미지 경로를 찾을 수 없습니다: {image_path}")
+        img_src = "" # 에러 시 빈 문자열 처리
+
+    # 파이썬 f-string을 사용하기 위해 기존 HTML 문자열을 f""" """ 로 감쌉니다.
+    header_html = f"""
+    <style>
+    /* 상단 여백 조절 */
+    .block-container {{
+        padding-top: 100px !important; 
+    }}
+    
+    /* 헤더 전체 컨테이너 */
+    .custom-header {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 72px;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        border-bottom: 1px solid #e2e8f0;
+        z-index: 999999;
+        font-family: 'Pretendard', sans-serif;
+    }}
+
+    /* 왼쪽 로고 영역 */
+    .header-logo {{
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+    }}
+    .header-logo img {{
+        height: 28px; 
+        width: auto;
+        object-fit: contain;
+    }}
+
+    /* 가운데 메뉴 영역 */
+    .header-menu {{
+        display: flex;
+        gap: 40px;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }}
+    .header-menu a {{
+        text-decoration: none;
+        color: #111111;
+        font-size: 16px;
+        font-weight: 600;
+        transition: color 0.2s;
+    }}
+    .header-menu a:hover {{
+        color: #bb38d0; 
+    }}
+
+    /* 오른쪽 유틸리티 영역 */
+    .header-utils {{
+        display: flex;
+        align-items: center;
+    }}
+    .icon-group {{
+        display: flex;
+        font-size: 24px;
+    }}
+    .icon-group a {{
+        text-decoration: none;
+        color: #333333;
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+    .icon-group a:hover {{
+        transform: scale(1.1);
+    }}
+    </style>
+    <div class="custom-header">
+        <a href="/home" target="_self" class="header-logo">
+            <img src="{img_src}" alt="AIWORK 로고">
+        </a>
+        <div class="header-menu">
+            <a href="/interview" target="_self">AI면접</a>
+            <a href="/resume" target="_self">이력서</a>
+            <a href="/mypage" target="_self">내 기록</a>
+            <a href="/my_info" target="_self">마이페이지</a>
+        </div>
+        <div class="header-utils">
+            <div class="icon-group">
+                <a href="/my_info" target="_self" title="마이페이지">👤</a>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(header_html, unsafe_allow_html=True)
+
+# 함수 실행
+inject_custom_header()
+# ============================================================================
+
 # ============================================================
 # CSS
 # ============================================================
@@ -42,7 +169,17 @@ html, body, .stApp,
 .block-container { max-width: 760px !important; padding-top: 1.5rem !important; padding-bottom: 4rem !important; }
 h1, h2, h3, p, div, span, label { color: #333 !important; }
 
-.page-title { font-size: 24px; font-weight: 700; color: #bb38d0 !important; margin-bottom: 4px; }
+
+
+.hero-title { font-size: 38px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 12px; margin-top: 10px; }
+.hero-title span { background: linear-gradient(135deg, #bb38d0, #8b1faa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-subtitle { font-size: 16px; color: #64748b; margin-bottom: 40px; font-weight: 500; }
+
+
+
+.page-title { font-size: 38px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 12px; margin-top: 10px; }
+.page-titlespan { background: linear-gradient(135deg, #bb38d0, #8b1faa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.page-subtitle { font-size: 16px; color: #64748b; margin-bottom: 40px; font-weight: 500; }
 .page-sub   { font-size: 13px; color: #888 !important; margin-bottom: 24px; }
 
 /* ─── 세션 카드 ─── */
@@ -97,16 +234,17 @@ hr { border-color: #eee !important; }
 </style>
 """, unsafe_allow_html=True)
 
+
+st.markdown("<br><br><br>", unsafe_allow_html=True)
+
 # ─── 유저 ID (실제 서비스: st.session_state.user["id"]) ───────
 user_id = st.session_state.get("user_id", "demo_user")
 
-st.markdown('<div class="page-title">📋 내 면접 기록</div>', unsafe_allow_html=True)
-st.markdown('<div class="page-sub">지금까지 진행한 모의 면접 결과를 확인하세요.</div>', unsafe_allow_html=True)
+st.markdown("<div class='hero-title'>내 <span>면접 기록</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='hero-subtitle'>지금까지 진행한 모의 면접 결과를 확인하세요.</div>", unsafe_allow_html=True)
+    
 
-col_back, _ = st.columns([1, 4])
-with col_back:
-    if st.button("← 홈"):
-        st.switch_page("app.py")
+
 
 st.markdown("---")
 
@@ -139,7 +277,7 @@ for s in sessions:
         score_html = f'<span class="score-badge">{display_score:.1f}점 / 100</span>'
     else:
         score_html = '<span class="score-badge no-score">채점 중</span>'
-    resume_tag = "📄 이력서 사용" if s["resume_used"] else ""
+    resume_tag = "이력서 사용" if s["resume_used"] else ""
     ended = s["ended_at"].strftime("%Y.%m.%d %H:%M") if s["ended_at"] else "진행 중"
 
     st.markdown(f"""
@@ -166,7 +304,7 @@ for s in sessions:
 if st.session_state.selected_session_id:
     sid = st.session_state.selected_session_id
     st.markdown("---")
-    st.markdown(f"### 📝 세션 #{sid} 상세 기록")
+    st.markdown(f"### 세션 #{sid} 상세 기록")
 
     try:
         details = get_details_by_session(sid)
@@ -203,7 +341,7 @@ if st.session_state.selected_session_id:
             st.markdown("<br>", unsafe_allow_html=True)
 
         for d in details:
-            followup_tag = '<div class="followup-tag">💡 꼬리질문</div>' if d["is_followup"] else ""
+            followup_tag = '<div class="followup-tag">꼬리질문</div>' if d["is_followup"] else ""
             # 개별 점수: 0~10 스케일 그대로 표시
             if d["score"] is not None:
                 sc = float(d["score"])
