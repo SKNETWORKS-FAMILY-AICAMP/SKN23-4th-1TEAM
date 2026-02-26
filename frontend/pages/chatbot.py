@@ -35,7 +35,46 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+import fitz
 from openai import OpenAI
+
+from db.database import (
+    init_db,
+    create_session,
+    end_session,
+    save_detail,
+    get_questions_by_role,
+    get_common_questions,
+)
+from services.rag_service import store_resume, clear_resume_for_session
+from services.llm_service import (
+    evaluate_and_respond,
+    generate_evaluation,
+    extract_keywords_from_resume,
+)
+
+try:
+    init_db()
+except Exception as e:
+    pass
+
+
+def extract_resume_text(uploaded_file):
+    if uploaded_file is None:
+        return ""
+    try:
+        if uploaded_file.name.endswith(".pdf"):
+            doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+            text = ""
+            for page in doc:
+                text += page.get_text()
+            return text.strip()
+        elif uploaded_file.name.endswith(".txt"):
+            return uploaded_file.read().decode("utf-8").strip()
+    except Exception as e:
+        st.error(f"이력서 텍스트 추출 중 오류 발생: {e}")
+    return ""
+
 
 # streamlit-realtime-audio 임포트
 try:
@@ -291,73 +330,32 @@ defaults = {
     "voice_turn_active": False,
     "voice_turn_index": 0,
     "realtime_greeted": False,
+    "persona_style": "깐깐한 기술팀장",
+    "resume_text": "",
+    "db_session_id": None,
+    "turn_index": 0,
+    "db_scores": [],
+    "current_is_followup": False,
+    "user_id": "jiwoo_kim",
+    "pending_question": None,
+    "db_questions": [],
+    "current_q_idx": 0,
+    "current_followup_count": 0,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-
-def build_system_prompt(job_role, difficulty, q_count):
-    return {
-        "role": "system",
-        "content": f"""당신은 {job_role} 포지션 전문 면접관입니다.
-난이도: {difficulty} | 총 질문 수: {q_count}개
-
-[면접 진행 규칙]
-1. 첫 인사 후 "간단하게 자기소개 부탁드립니다"로 시작
-2. 지원자 답변에 대해 짧은 리액션 후 다음 질문
-   - 좋은 답변: "네, 좋은 답변이네요."
-   - 보통: "네, 이해했습니다."
-   - 부족: "조금 더 구체적으로 설명해주실 수 있을까요?"
-3. 매 답변마다 꼬리질문 1개로 깊이 확인
-4. 충분하면 자연스럽게 새 주제로 전환
-5. 기술 질문과 경험 질문을 섞어 출제
-
-[대화 스타일]
-- 전문적이면서 따뜻한 톤
-- 한 번에 하나의 질문만
-- 답변 핵심을 짚어 꼬리질문
-
-[종료 조건]
-- {q_count}개 이상 메인 질문 완료 후 마무리
-- 마지막에 간단한 총평 + 인사
-- 마지막 메시지 끝에 [INTERVIEW_END] 태그 추가""",
-    }
+st.sidebar.markdown("### 👤 내 정보 설정")
+input_id = st.sidebar.text_input("사용자 ID (이름)", value=st.session_state["user_id"])
+if input_id:
+    st.session_state["user_id"] = input_id
+    st.sidebar.success(f"현재 접속자: {input_id}님 🟢")
+else:
+    st.sidebar.warning("ID를 입력해주세요!")
 
 
-def render_message(role, content):
-    if role == "user":
-        st.markdown(
-            f'<div style="display:flex;justify-content:flex-end;margin-bottom:4px;">'
-            f'<div class="user-bubble">{content}</div></div>',
-            unsafe_allow_html=True,
-        )
-    elif role == "assistant":
-        st.markdown(
-            f'<div style="display:flex;justify-content:flex-start;margin-bottom:4px;">'
-            f'<div style="display:flex;flex-direction:column;">'
-            f'<div class="sender-label">AI 면접관</div>'
-            f'<div class="ai-bubble">{content}</div>'
-            f"</div></div>",
-            unsafe_allow_html=True,
-        )
-
-
-def get_ai_response(messages, job_role, difficulty, q_count):
-    sys_prompt = build_system_prompt(job_role, difficulty, q_count)
-    api_messages = [sys_prompt] + messages
-    try:
-        if client:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=api_messages,
-                max_tokens=600,
-                temperature=0.7,
-            )
-            return response.choices[0].message.content
-        return "LLM 연결 실패 (OPENAI_API_KEY 확인)"
-    except Exception as e:
-        return f"응답 오류: {e}"
+# build_system_prompt와 get_ai_response 함수는 evaluate_and_respond로 대체되므로 삭제합니다.
 
 
 def transcribe_audio(audio_bytes: bytes) -> str:
@@ -402,46 +400,32 @@ def generate_tts(text):
         return None
 
 
-def generate_evaluation(messages, job_role, difficulty):
-    conversation_log = ""
-    for m in messages:
-        role_str = "면접관" if m["role"] == "assistant" else "지원자"
-        conversation_log += f"{role_str}: {m['content']}\n\n"
-
-    eval_prompt = f"""다음은 {job_role} 포지션 기술 면접 대화입니다. 난이도: {difficulty}
-
-아래 형식에 맞춰 면접 평가를 작성해주세요:
-
-## 종합 평가
-- **총점**: XX/100점
-- **결과**: 합격 / 보류 / 불합격
-
-## 강점
-1. (구체적 강점)
-2. (구체적 강점)
-
-## 개선이 필요한 부분
-1. (구체적 약점 + 개선 방법)
-2. (구체적 약점 + 개선 방법)
-
-## 추천 학습 주제
-- (면접에서 부족했던 부분 관련 학습 주제 2~3가지)
-
----
-대화 내용:
-{conversation_log}"""
-
-    try:
-        if client:
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "user", "content": eval_prompt}],
-                max_tokens=1200,
-            )
-            return response.choices[0].message.content
-        return "평가 결과를 생성할 수 없습니다."
-    except Exception as e:
-        return f"평가 오류: {e}"
+def render_message(
+    role: str, content: str, is_followup: bool = False, score: float | None = None
+):
+    if role == "user":
+        score_badge = (
+            f'<div class="score-mini">✦ {score:.1f}/10</div>'
+            if score is not None
+            else ""
+        )
+        st.markdown(
+            f'<div style="display:flex;justify-content:flex-end;flex-direction:column;align-items:flex-end;margin-bottom:4px;">'
+            f'<div class="user-bubble">{content}</div>{score_badge}</div>',
+            unsafe_allow_html=True,
+        )
+    elif role == "assistant":
+        followup_badge = (
+            '<div class="followup-badge">💡 꼬리질문 포함</div>' if is_followup else ""
+        )
+        st.markdown(
+            f'<div style="display:flex;justify-content:flex-start;margin-bottom:4px;">'
+            f'<div style="display:flex;flex-direction:column;">'
+            f'<div class="sender-label">AI 면접관</div>{followup_badge}'
+            f'<div class="ai-bubble">{content}</div>'
+            f"</div></div>",
+            unsafe_allow_html=True,
+        )
 
 
 # ============================================================
@@ -483,6 +467,12 @@ if not st.session_state.chatbot_started:
 
     st.markdown("---")
 
+    persona_style = st.radio(
+        "면접관 스타일",
+        ["깐깐한 기술팀장", "부드러운 인사담당자", "스타트업 CTO"],
+        horizontal=True,
+    )
+
     col1, col2 = st.columns(2)
     with col1:
         job_role = st.selectbox(
@@ -503,6 +493,18 @@ if not st.session_state.chatbot_started:
 
     q_count = st.slider("질문 수", 3, 10, 5)
 
+    st.markdown(
+        "**📄 이력서 업로드 <span style='color:#e53e3e;font-size:13px;'>(필수)</span>**",
+        unsafe_allow_html=True,
+    )
+    uploaded_resume = st.file_uploader(
+        "PDF/TXT 이력서", type=["pdf", "txt"], label_visibility="collapsed"
+    )
+    if uploaded_resume:
+        st.success(f"'{uploaded_resume.name}' 업로드 완료 ✅")
+    else:
+        st.warning("⚠️ 이력서를 업로드해야 면접을 시작할 수 있습니다.")
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     is_realtime = "실시간" in mode
@@ -510,19 +512,73 @@ if not st.session_state.chatbot_started:
         st.error("streamlit-realtime-audio가 설치되지 않았습니다.")
         st.stop()
 
-    if st.button("면접 시작하기", type="primary", use_container_width=True):
+    if st.button(
+        "면접 시작하기",
+        type="primary",
+        use_container_width=True,
+        disabled=not bool(uploaded_resume),
+    ):
         st.session_state.interview_mode = "realtime" if is_realtime else "text"
         st.session_state.chatbot_started = True
         st.session_state.job_role = job_role
         st.session_state.difficulty = difficulty
         st.session_state.q_count = q_count
+        st.session_state.persona_style = persona_style
+        st.session_state.resume_text = extract_resume_text(uploaded_resume)
+
+        try:
+            db_session_id = create_session(
+                user_id=st.session_state["user_id"],
+                job_role=job_role,
+                difficulty=difficulty,
+                persona=persona_style,
+                resume_used=bool(st.session_state.resume_text),
+            )
+        except Exception as e:
+            st.warning(f"DB 연결 실패: {e}")
+            db_session_id = None
+        st.session_state.db_session_id = db_session_id
+
+        # 2. 이력서 RAG 저장
+        if st.session_state.resume_text and db_session_id:
+            with st.spinner("이력서 저장 중..."):
+                store_resume(st.session_state.resume_text, user_id=str(db_session_id))
+
+        # 3. 질문 풀(DB)에서 질문 로드
+        try:
+            from db.database import get_questions_by_resume_keywords
+
+            common_qs = get_common_questions(limit=1)
+            if st.session_state.resume_text:
+                resume_keywords = extract_keywords_from_resume(
+                    st.session_state.resume_text
+                )
+                tech_qs = get_questions_by_resume_keywords(
+                    job_role, difficulty, resume_keywords, limit=q_count - 1
+                )
+            else:
+                tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
+
+            db_questions = [q["question"] for q in common_qs] + [
+                q["question"] for q in tech_qs
+            ]
+            if not db_questions:
+                raise ValueError("DB에 해당 직무/난이도의 질문 데이터가 없습니다.")
+        except Exception as e:
+            print(f"⚠️ 임시 질문 대체: {e}")
+            db_questions = ["간단하게 자기소개를 부탁드립니다."] + [
+                f"{job_role} 관련 핵심 기술을 설명해주세요." for _ in range(q_count - 1)
+            ]
+
+        st.session_state.db_questions = db_questions
+        st.session_state.current_q_idx = 0
+
+        first_q = db_questions[0]
+        greeting = f"안녕하세요! 오늘 {job_role} ({difficulty}) 면접을 진행할 면접관입니다. 총 {q_count}개의 큰 질문과 그에 대한 꼬리질문이 이어집니다.\n\n첫 번째 질문입니다.\n**{first_q}**"
 
         if not is_realtime:
-            greeting = (
-                "안녕하세요, 반갑습니다. 저는 오늘 면접을 진행하게 된 AI 면접관입니다. "
-                "편하게 답변해 주시면 됩니다. 먼저, 간단하게 자기소개를 부탁드립니다."
-            )
             st.session_state.messages.append({"role": "assistant", "content": greeting})
+            st.session_state.pending_question = first_q
 
         st.rerun()
 
@@ -534,6 +590,15 @@ if not st.session_state.chatbot_started:
 # ============================================================
 if st.session_state.interview_ended:
     st.session_state.last_processed_audio = None
+
+    scores = st.session_state.db_scores
+    total_score = round((sum(scores) / len(scores)) * 10, 1) if scores else 0.0
+
+    if st.session_state.db_session_id:
+        try:
+            end_session(st.session_state.db_session_id, total_score)
+        except:
+            pass
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(
@@ -551,6 +616,7 @@ if st.session_state.interview_ended:
                 st.session_state.messages,
                 st.session_state.get("job_role", "개발자"),
                 st.session_state.get("difficulty", "미들"),
+                st.session_state.get("resume_text", ""),
             )
 
     st.markdown(st.session_state.evaluation_result)
@@ -587,6 +653,9 @@ if st.session_state.interview_mode == "realtime":
     job_role = st.session_state.get("job_role", "Python 백엔드 개발자")
     difficulty = st.session_state.get("difficulty", "미들")
     q_count = st.session_state.get("q_count", 5)
+    persona_style = st.session_state.get("persona_style", "깐깐한 기술팀장")
+    resume_text = st.session_state.get("resume_text", "")
+    has_resume = "📄 이력서 포함" if resume_text else "이력서 없음"
 
     st.markdown(
         f"""
@@ -594,7 +663,7 @@ if st.session_state.interview_mode == "realtime":
         <div class="chat-header-icon">🎙️</div>
         <div>
             <div class="chat-header-name">AI 면접관 · 음성 턴제</div>
-            <div class="chat-header-info">{job_role} · {difficulty} · {q_count}문항</div>
+            <div class="chat-header-info">{job_role} · {difficulty} · {q_count}문항 · [{persona_style}] · {has_resume}</div>
         </div>
     </div>
     """,
@@ -617,16 +686,20 @@ if st.session_state.interview_mode == "realtime":
         st.error("OPENAI_API_KEY 환경변수가 필요합니다.")
         st.stop()
 
+    resume_context = ""
+    if resume_text:
+        resume_context = f"\n\n지원자 이력서 내용 일부:\n{resume_text[:800]}\n이력서를 바탕으로 관련성 있는 꼬리질문을 구성하세요."
+
     instructions = f"""당신은 {job_role} 전문 면접관입니다. 한국어로 기술 면접을 진행하세요.
-난이도: {difficulty}. 총 {q_count}개 질문.
+난이도: {difficulty}. 총 {q_count}개 질문. 면접관 스타일: {persona_style}.
 
 규칙:
 1. 면접관이 먼저 짧게 인사하고 자기소개를 요청
 2. 답변을 들은 뒤 기술적 꼬리질문 1~2개
 3. 각 답변에 간단한 피드백 후 다음 질문
 4. {q_count}개 질문 완료 후 종합 평가
-5. 자연스럽고 전문적인 톤 유지
-6. 반드시 한국어로만 대화"""
+5. '{persona_style}' 스타일의 전문적인 톤 유지
+6. 반드시 한국어로만 대화{resume_context}"""
     realtime_model = os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")
 
     html = """
@@ -1352,6 +1425,9 @@ if st.session_state.interview_mode == "realtime":
 job_role = st.session_state.get("job_role", "Python 백엔드 개발자")
 difficulty = st.session_state.get("difficulty", "미들")
 q_count = st.session_state.get("q_count", 5)
+persona_style = st.session_state.get("persona_style", "깐깐한 기술팀장")
+resume_text = st.session_state.get("resume_text", "")
+has_resume = "📄 이력서 포함" if resume_text else "이력서 없음"
 
 # 채팅 헤더
 st.markdown(
@@ -1360,7 +1436,7 @@ st.markdown(
     <div class="chat-header-icon">🎯</div>
     <div>
         <div class="chat-header-name">AI 면접관</div>
-        <div class="chat-header-info">{job_role} · {difficulty} · {q_count}문항</div>
+        <div class="chat-header-info">{job_role} · {difficulty} · {q_count}문항 · [{persona_style}] · {has_resume}</div>
     </div>
 </div>
 """,
@@ -1369,7 +1445,12 @@ st.markdown(
 
 # 메시지 렌더링
 for message in st.session_state.messages:
-    render_message(message["role"], message["content"])
+    render_message(
+        message["role"],
+        message["content"],
+        is_followup="💡" in message.get("content", ""),
+        score=message.get("score"),
+    )
 
 # TTS 자동 재생
 if "latest_audio_content" in st.session_state:
@@ -1380,20 +1461,70 @@ if "latest_audio_content" in st.session_state:
 prompt = st.chat_input("답변을 입력하세요...")
 
 if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    prev_question = st.session_state.pending_question or "면접 질문"
+    st.session_state.messages.append({"role": "user", "content": prompt, "score": None})
 
-    with st.spinner("면접관이 답변을 준비하고 있습니다..."):
-        ai_reply = get_ai_response(
-            st.session_state.messages, job_role, difficulty, q_count
+    with st.spinner("답변을 분석하고 꼬리질문을 준비 중입니다..."):
+        db_qs = st.session_state.get("db_questions", [])
+        idx = st.session_state.get("current_q_idx", 0)
+        next_q = db_qs[idx + 1] if idx + 1 < len(db_qs) else None
+
+        eval_res = evaluate_and_respond(
+            question=prev_question,
+            answer=prompt,
+            job_role=job_role,
+            difficulty=difficulty,
+            persona_style=persona_style,
+            user_id=st.session_state.user_id,
+            resume_text=resume_text,
+            next_main_question=next_q,
+            followup_count=st.session_state.current_followup_count,
         )
+
+        score = eval_res["score"]
+        feedback = eval_res["feedback"]
+        ai_reply = eval_res["reply_text"]
+        is_followup = eval_res["is_followup"]
+
+        st.session_state.db_scores.append(score)
+        st.session_state.messages[-1]["score"] = score
+
+        if st.session_state.db_session_id:
+            try:
+                save_detail(
+                    st.session_state.db_session_id,
+                    st.session_state.turn_index,
+                    prev_question,
+                    prompt,
+                    st.session_state.current_is_followup,
+                    score,
+                    feedback,
+                )
+                st.session_state.turn_index += 1
+            except Exception as e:
+                print(f"DB save error: {e}")
+
+        if is_followup:
+            st.session_state.current_followup_count += 1
+        else:
+            st.session_state.current_followup_count = 0
 
         if "[INTERVIEW_END]" in ai_reply:
             st.session_state.interview_ended = True
             ai_reply = ai_reply.replace("[INTERVIEW_END]", "").strip()
+        if "[NEXT_MAIN]" in ai_reply:
+            st.session_state.current_q_idx += 1
+            ai_reply = ai_reply.replace("[NEXT_MAIN]", "").strip()
 
+        st.session_state.current_is_followup = is_followup
         st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+        st.session_state.pending_question = ai_reply
 
     st.rerun()
+
+if st.session_state.db_scores:
+    avg = sum(st.session_state.db_scores) / len(st.session_state.db_scores)
+    st.caption(f"현재 평균: **{avg:.1f} / 10** ({len(st.session_state.db_scores)}문항)")
 
 # 종료 버튼
 st.markdown("<br>", unsafe_allow_html=True)
