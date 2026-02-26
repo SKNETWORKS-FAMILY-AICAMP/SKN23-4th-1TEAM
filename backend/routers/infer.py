@@ -8,13 +8,16 @@ Modification History:
 - 2026-02-15: 초기 생성
 - 2026-02-22: RAG + DB 질문 풀 기반 AI 면접 실행 및 기록 API 통합, 면접 종료 시 최종 점수 계산 및 세션 정보 업데이트
 """
+import os
 from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from openai import OpenAI
 from backend.db.session import get_db
 from backend.db import base  # JobCategory, QuestionPool, InterviewDetail 등 포함
 from backend.schemas.infer_schema import InferRequest, InferResponse
 from backend.services.rag_service import get_ai_service  # 통합된 AI 서비스
+from backend.services.llm_service import evaluate_and_respond
 from backend.services import auth_service
 from backend.models.user import User
 
@@ -207,13 +210,65 @@ from fastapi.responses import Response
 
 @router.post("/tts")
 def text_to_speech(body: dict):
-    """텍스트를 받아 OpenAI TTS 음성 바이너리로 응답"""
+    """텍스트를 받아 음성 바이너리로 응답 (로컬 TTS 우선, 실패 시 OpenAI 폴백)"""
     text = body.get("text", "")
     if not text:
         raise HTTPException(status_code=400, detail="텍스트가 제공되지 않았습니다.")
     
     try:
+        # 1) 로컬 TTS 우선
         audio_content = _get_ai().tts_voice(text)
         return Response(content=audio_content, media_type="audio/mpeg")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"TTS 생성 실패: {str(e)}")
+        # 2) OpenAI 폴백
+        try:
+            api_key = os.getenv("OPENAI_API_KEY", "")
+            if not api_key:
+                raise RuntimeError("OPENAI_API_KEY가 설정되지 않았습니다.")
+            client = OpenAI(api_key=api_key)
+            tts_response = client.audio.speech.create(
+                model="tts-1",
+                voice="alloy",
+                input=text,
+            )
+            return Response(content=tts_response.content, media_type="audio/mpeg")
+        except Exception as e2:
+            raise HTTPException(
+                status_code=500,
+                detail=f"TTS 생성 실패: local={str(e)} | openai={str(e2)}",
+            )
+
+
+@router.post("/evaluate-turn")
+def evaluate_turn(body: dict):
+    """
+    Realtime STT 결과 텍스트를 현재 평가 엔진(evaluate_and_respond)으로 채점/다음 질문 생성.
+    """
+    question = body.get("question", "면접 질문")
+    answer = body.get("answer", "")
+    job_role = body.get("job_role", "Python 백엔드 개발자")
+    difficulty = body.get("difficulty", "미들")
+    persona_style = body.get("persona_style", "깐깐한 기술팀장")
+    user_id = str(body.get("user_id", "guest"))
+    resume_text = body.get("resume_text")
+    next_main_question = body.get("next_main_question")
+    followup_count = int(body.get("followup_count", 0))
+
+    if not answer or not str(answer).strip():
+        raise HTTPException(status_code=400, detail="answer가 비어 있습니다.")
+
+    try:
+        result = evaluate_and_respond(
+            question=question,
+            answer=answer,
+            job_role=job_role,
+            difficulty=difficulty,
+            persona_style=persona_style,
+            user_id=user_id,
+            resume_text=resume_text,
+            next_main_question=next_main_question,
+            followup_count=followup_count,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"평가 실패: {str(e)}")

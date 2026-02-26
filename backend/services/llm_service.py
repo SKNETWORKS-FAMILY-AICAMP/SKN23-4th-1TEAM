@@ -17,7 +17,7 @@ import os
 import json
 import re
 from openai import OpenAI
-from services.rag_service import get_resume_context_for_question
+from backend.services.rag_service import get_resume_context_for_question
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
 
