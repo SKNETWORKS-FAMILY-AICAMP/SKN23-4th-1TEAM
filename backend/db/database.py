@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
     started_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ended_at     TIMESTAMP NULL,
     resume_used  TINYINT(1) DEFAULT 0
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    -- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 5. interview_details 테이블

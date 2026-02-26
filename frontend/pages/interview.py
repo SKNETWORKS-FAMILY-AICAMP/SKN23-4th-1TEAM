@@ -11,6 +11,10 @@ import os
 import sys
 from dotenv import load_dotenv
 
+import json
+import streamlit.components.v1 as components
+from utils.webcam_box import webcam_box
+
 # ─── 1. 커스텀 헤더 주입 함수 ───
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
@@ -358,3 +362,772 @@ if st.session_state.interview_mode == "text":
     if st.button("면접 종료 및 평가받기 📊", use_container_width=True):
         st.session_state.interview_ended = True
         st.rerun()
+        
+if st.session_state.interview_mode == "realtime":
+    job_role = st.session_state.get("job_role", "Python 백엔드 개발자")
+    difficulty = st.session_state.get("difficulty", "미들")
+    q_count = st.session_state.get("q_count", 5)
+    persona_style = st.session_state.get("persona_style", "깐깐한 기술팀장")
+    resume_text = st.session_state.get("resume_text", "")
+    has_resume = "📄 이력서 포함" if resume_text else "이력서 없음"
+
+    st.markdown(
+        f"""
+    <div class="chat-header">
+        <div class="chat-header-icon">🎙️</div>
+        <div>
+            <div class="chat-header-name">AI 면접관 · 음성 턴제</div>
+            <div class="chat-header-info">{job_role} · {difficulty} · {q_count}문항 · [{persona_style}] · {has_resume}</div>
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+    <div class="realtime-guide">
+        <strong>사용 방법</strong><br>
+        <strong>시작</strong>을 누르고 답변한 뒤 <strong>중지</strong>를 누르세요.<br>
+        중지 순간 STT로 변환 후, 그 텍스트를 기반으로 면접관이 답변합니다.
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        st.error("OPENAI_API_KEY 환경변수가 필요합니다.")
+        st.stop()
+
+    resume_context = ""
+    if resume_text:
+        resume_context = f"\n\n지원자 이력서 내용 일부:\n{resume_text[:800]}\n이력서를 바탕으로 관련성 있는 꼬리질문을 구성하세요."
+
+    instructions = f"""당신은 {job_role} 전문 면접관입니다. 한국어로 기술 면접을 진행하세요.
+난이도: {difficulty}. 총 {q_count}개 질문. 면접관 스타일: {persona_style}.
+
+규칙:
+1. 면접관이 먼저 짧게 인사하고 자기소개를 요청
+2. 답변을 들은 뒤 기술적 꼬리질문 1~2개
+3. 각 답변에 간단한 피드백 후 다음 질문
+4. {q_count}개 질문 완료 후 종합 평가
+5. '{persona_style}' 스타일의 전문적인 톤 유지
+6. 반드시 한국어로만 대화{resume_context}"""
+    realtime_model = os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")
+
+    html = """
+<div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+    <button id="btnConnect" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;">연결</button>
+    <button id="btnStart" style="padding:10px 14px;border-radius:8px;border:none;background:#bb38d0;color:#fff;cursor:pointer;" disabled>시작</button>
+    <button id="btnStop" style="padding:10px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;" disabled>중지</button>
+    <button id="btnEnd" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;" disabled>종료</button>
+    <button id="btnDownload" style="padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;" disabled>스크립트 다운로드</button>
+  </div>
+  <div id="status" style="font-size:13px;color:#666;margin-bottom:8px;">대기 중</div>
+  <div style="font-size:13px;font-weight:700;color:#444;margin:6px 0;">대화창</div>
+  <div id="chat" style="height:340px;overflow:auto;background:#fafafa;border:1px solid #ddd;border-radius:10px;padding:10px;"></div>
+  <audio id="remoteAudio" autoplay></audio>
+</div>
+<script>
+(function() {
+  const API_KEY = __API_KEY__;
+  const MODEL = __MODEL__;
+  const INSTRUCTIONS = __INSTRUCTIONS__;
+
+  const btnConnect = document.getElementById("btnConnect");
+  const btnStart = document.getElementById("btnStart");
+  const btnStop = document.getElementById("btnStop");
+  const btnEnd = document.getElementById("btnEnd");
+  const btnDownload = document.getElementById("btnDownload");
+  const statusEl = document.getElementById("status");
+  const chatEl = document.getElementById("chat");
+  const remoteAudio = document.getElementById("remoteAudio");
+
+  let pc = null;
+  let dc = null;
+  let stream = null;
+  let remoteStream = null;
+  let micTrack = null;
+  let connected = false;
+  let recording = false;
+  let committing = false;
+  let awaitingResponse = false;
+  let currentAssistantDiv = null;
+  let pendingUserBubble = null;
+  let pendingAssistantAudioTarget = null;
+  const lines = [];
+  const seenUserItems = new Set();
+  const userAudioClips = [];
+  const assistantAudioClips = [];
+  let mediaRecorder = null;
+  let assistantRecorder = null;
+  let currentChunks = [];
+  let assistantChunks = [];
+  let recorderMime = "";
+  let pendingUserAudioTarget = null;
+  let assistantStopTimer = null;
+  let assistantWaitingAudioDone = false;
+  let assistantSpeaking = false;
+  let audioCtx = null;
+  let remoteAnalyser = null;
+  let remoteData = null;
+  let silenceCheckTimer = null;
+  let lastNonSilentAt = 0;
+
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  function setButtons() {
+    btnConnect.disabled = connected;
+    btnStart.disabled = !connected || recording || committing || assistantSpeaking;
+    btnStop.disabled = !connected || !recording;
+    btnEnd.disabled = !connected;
+    btnDownload.disabled = lines.length === 0;
+  }
+
+  function appendBubble(role, text) {
+    const row = document.createElement("div");
+    row.style.margin = "8px 0";
+    row.style.display = "flex";
+    row.style.justifyContent = role === "user" ? "flex-end" : "flex-start";
+
+    const bubble = document.createElement("div");
+    bubble.style.maxWidth = "80%";
+    bubble.style.padding = "10px 12px";
+    bubble.style.borderRadius = "12px";
+    bubble.style.whiteSpace = "pre-wrap";
+    bubble.style.fontSize = "14px";
+    bubble.style.lineHeight = "1.5";
+    if (role === "user") {
+      bubble.style.background = "#bb38d0";
+      bubble.style.color = "#fff";
+    } else {
+      bubble.style.background = "#fff";
+      bubble.style.border = "1px solid #eee";
+      bubble.style.color = "#333";
+    }
+    const textEl = document.createElement("span");
+    textEl.textContent = text;
+    bubble.appendChild(textEl);
+    bubble._textEl = textEl;
+    row.appendChild(bubble);
+    chatEl.appendChild(row);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    lines.push(`[${role === "user" ? "지원자" : "AI 면접관"}] ${text}`);
+    setButtons();
+    return bubble;
+  }
+
+  function attachAudioControls(targetBubble, clip) {
+    if (!targetBubble) return;
+    const wrap = document.createElement("div");
+    wrap.style.marginTop = "6px";
+    wrap.style.display = "flex";
+    wrap.style.gap = "8px";
+    wrap.style.alignItems = "center";
+    wrap.style.flexWrap = "wrap";
+
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.src = clip.url;
+    audio.style.height = "28px";
+
+    const btn = document.createElement("button");
+    btn.textContent = "다운로드";
+    btn.style.padding = "4px 8px";
+    btn.style.border = "1px solid #ddd";
+    btn.style.borderRadius = "6px";
+    btn.style.background = "#fff";
+    btn.style.cursor = "pointer";
+    btn.addEventListener("click", () => {
+      const a = document.createElement("a");
+      a.href = clip.url;
+      a.download = clip.filename;
+      a.click();
+    });
+
+    wrap.appendChild(audio);
+    wrap.appendChild(btn);
+    targetBubble.appendChild(wrap);
+  }
+
+  async function ensureAssistantClipFromText(targetBubble) {
+    if (!targetBubble) return null;
+    if (targetBubble._assistantClip) return targetBubble._assistantClip;
+    const text = (targetBubble._textEl ? targetBubble._textEl.textContent : targetBubble.textContent || "").trim();
+    if (!text) return null;
+    const res = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "tts-1",
+        voice: "alloy",
+        input: text
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`TTS 생성 실패: ${res.status} ${t}`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const ts = new Date();
+    const filename = `assistant_tts_${ts.toISOString().replace(/[:.]/g, "-")}.mp3`;
+    targetBubble._assistantClip = { url, filename };
+    return targetBubble._assistantClip;
+  }
+
+  function attachAssistantTextControls(targetBubble) {
+    if (!targetBubble || targetBubble._assistantControlsAttached) return;
+    targetBubble._assistantControlsAttached = true;
+
+    const wrap = document.createElement("div");
+    wrap.style.marginTop = "6px";
+    wrap.style.display = "flex";
+    wrap.style.gap = "8px";
+    wrap.style.alignItems = "center";
+    wrap.style.flexWrap = "wrap";
+
+    const listenBtn = document.createElement("button");
+    listenBtn.textContent = "다시듣기";
+    listenBtn.style.padding = "4px 8px";
+    listenBtn.style.border = "1px solid #ddd";
+    listenBtn.style.borderRadius = "6px";
+    listenBtn.style.background = "#fff";
+    listenBtn.style.cursor = "pointer";
+
+    const downloadBtn = document.createElement("button");
+    downloadBtn.textContent = "저장";
+    downloadBtn.style.padding = "4px 8px";
+    downloadBtn.style.border = "1px solid #ddd";
+    downloadBtn.style.borderRadius = "6px";
+    downloadBtn.style.background = "#fff";
+    downloadBtn.style.cursor = "pointer";
+
+    const setBusy = (busy) => {
+      listenBtn.disabled = busy;
+      downloadBtn.disabled = busy;
+      if (busy) {
+        listenBtn.textContent = "생성 중...";
+      } else {
+        listenBtn.textContent = "다시듣기";
+      }
+    };
+
+    listenBtn.addEventListener("click", async () => {
+      try {
+        setBusy(true);
+        const clip = await ensureAssistantClipFromText(targetBubble);
+        const a = new Audio(clip.url);
+        await a.play();
+      } catch (e) {
+        setStatus(`면접관 TTS 오류: ${e.message || e}`);
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    downloadBtn.addEventListener("click", async () => {
+      try {
+        setBusy(true);
+        const clip = await ensureAssistantClipFromText(targetBubble);
+        const a = document.createElement("a");
+        a.href = clip.url;
+        a.download = clip.filename;
+        a.click();
+      } catch (e) {
+        setStatus(`면접관 저장 오류: ${e.message || e}`);
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    wrap.appendChild(listenBtn);
+    wrap.appendChild(downloadBtn);
+    targetBubble.appendChild(wrap);
+  }
+
+  function updateAssistantDelta(delta) {
+    if (!currentAssistantDiv) {
+      currentAssistantDiv = appendBubble("assistant", "");
+      lines.pop();
+    }
+    if (currentAssistantDiv._textEl) {
+      currentAssistantDiv._textEl.textContent += delta;
+    } else {
+      currentAssistantDiv.textContent += delta;
+    }
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function finalizeAssistant() {
+    if (!currentAssistantDiv) return;
+    const txt = currentAssistantDiv._textEl
+      ? currentAssistantDiv._textEl.textContent
+      : currentAssistantDiv.textContent;
+    lines.push(`[AI 면접관] ${txt}`);
+    attachAssistantTextControls(currentAssistantDiv);
+    currentAssistantDiv = null;
+    setButtons();
+  }
+
+  function startAssistantRecording() {
+    if (assistantStopTimer) {
+      clearTimeout(assistantStopTimer);
+      assistantStopTimer = null;
+    }
+    assistantWaitingAudioDone = false;
+    assistantSpeaking = true;
+    setButtons();
+    if (!assistantRecorder || assistantRecorder.state !== "inactive") return;
+    assistantChunks = [];
+    assistantRecorder.start(1000);
+    lastNonSilentAt = Date.now();
+  }
+
+  function stopAssistantRecording() {
+    if (!assistantRecorder || assistantRecorder.state !== "recording") return;
+    if (assistantStopTimer) clearTimeout(assistantStopTimer);
+    if (silenceCheckTimer) clearInterval(silenceCheckTimer);
+    // audio.done 이벤트가 누락되면 무음 감지 기반으로 정지
+    silenceCheckTimer = setInterval(() => {
+      if (!assistantRecorder || assistantRecorder.state !== "recording") {
+        clearInterval(silenceCheckTimer);
+        silenceCheckTimer = null;
+        return;
+      }
+      if (remoteAnalyser && remoteData) {
+        remoteAnalyser.getByteTimeDomainData(remoteData);
+        let sum = 0;
+        for (let i = 0; i < remoteData.length; i++) {
+          const v = (remoteData[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / remoteData.length);
+        if (rms > 0.006) lastNonSilentAt = Date.now();
+      }
+      if (Date.now() - lastNonSilentAt > 2200) {
+        stopAssistantRecordingNow();
+      }
+    }, 120);
+    // 최종 안전장치
+    assistantStopTimer = setTimeout(() => {
+      stopAssistantRecordingNow();
+    }, 5000);
+  }
+
+  function stopAssistantRecordingNow() {
+    if (silenceCheckTimer) {
+      clearInterval(silenceCheckTimer);
+      silenceCheckTimer = null;
+    }
+    if (assistantStopTimer) {
+      clearTimeout(assistantStopTimer);
+      assistantStopTimer = null;
+    }
+    if (assistantRecorder && assistantRecorder.state === "recording") {
+      assistantRecorder.stop();
+    }
+    assistantWaitingAudioDone = false;
+    assistantSpeaking = false;
+    setStatus("응답 완료. 다음 발화를 시작하세요.");
+    setButtons();
+  }
+
+  function sendEvent(evt) {
+    if (!(dc && dc.readyState === "open")) return false;
+    dc.send(JSON.stringify(evt));
+    return true;
+  }
+
+  async function connect() {
+    try {
+      setStatus("마이크 권한 요청 중...");
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micTrack = stream.getAudioTracks()[0];
+      micTrack.enabled = false;
+      if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        recorderMime = "audio/webm;codecs=opus";
+      } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+        recorderMime = "audio/webm";
+      } else {
+        recorderMime = "";
+      }
+      mediaRecorder = new MediaRecorder(stream, recorderMime ? { mimeType: recorderMime } : undefined);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) currentChunks.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(currentChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+        currentChunks = [];
+        if (blob.size > 0) {
+          const url = URL.createObjectURL(blob);
+          const ts = new Date();
+          const name = `user_turn_${ts.toISOString().replace(/[:.]/g, "-")}.webm`;
+          const clip = { url, filename: name };
+          userAudioClips.push(clip);
+          if (pendingUserAudioTarget) {
+            attachAudioControls(pendingUserAudioTarget, clip);
+            pendingUserAudioTarget = null;
+          }
+          setStatus("발언 음성 저장됨");
+        } else {
+          setStatus("발언 음성 저장 실패 (녹음 데이터 없음)");
+        }
+      };
+
+      pc = new RTCPeerConnection();
+      pc.addTrack(micTrack, stream);
+      pc.ontrack = (e) => {
+        remoteStream = e.streams[0];
+        remoteAudio.srcObject = remoteStream;
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(remoteStream);
+          remoteAnalyser = audioCtx.createAnalyser();
+          remoteAnalyser.fftSize = 1024;
+          remoteData = new Uint8Array(remoteAnalyser.fftSize);
+          src.connect(remoteAnalyser);
+        } catch (_) {}
+        if (!assistantRecorder && remoteStream) {
+          assistantRecorder = new MediaRecorder(
+            remoteStream,
+            recorderMime ? { mimeType: recorderMime } : undefined
+          );
+          assistantRecorder.ondataavailable = (ev) => {
+            if (ev.data && ev.data.size > 0) assistantChunks.push(ev.data);
+          };
+          assistantRecorder.onstop = () => {
+            const blob = new Blob(assistantChunks, {
+              type: assistantRecorder.mimeType || "audio/webm",
+            });
+            assistantChunks = [];
+            if (blob.size > 0) {
+              const url = URL.createObjectURL(blob);
+              const ts = new Date();
+              const name = `assistant_turn_${ts
+                .toISOString()
+                .replace(/[:.]/g, "-")}.webm`;
+              const clip = { url, filename: name };
+              assistantAudioClips.push(clip);
+            }
+          };
+        }
+      };
+
+      dc = pc.createDataChannel("oai-events");
+      dc.onclose = () => {
+        connected = false;
+        recording = false;
+        committing = false;
+        setStatus("데이터 채널이 종료되었습니다.");
+        setButtons();
+      };
+      dc.onerror = () => {
+        setStatus("데이터 채널 오류");
+      };
+      dc.onopen = () => {
+        connected = true;
+        setStatus("연결 완료. 시작을 누르면 발화가 전송됩니다.");
+        setButtons();
+        sendEvent({
+          type: "session.update",
+          session: {
+            instructions: INSTRUCTIONS,
+            modalities: ["audio", "text"],
+            turn_detection: null,
+            input_audio_transcription: { model: "whisper-1" }
+          }
+        });
+        awaitingResponse = true;
+        startAssistantRecording();
+        sendEvent({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions: "면접관으로서 한 문장 인사 후 자기소개를 요청하세요."
+          }
+        });
+        appendBubble("assistant", "안녕하세요. AI 면접관입니다. 시작을 누르고 답변 후 중지를 눌러 제출해주세요.");
+      };
+
+      dc.onmessage = (event) => {
+        let data = null;
+        try { data = JSON.parse(event.data); } catch (_) { return; }
+        if (!data || !data.type) return;
+
+        // 중지 전에는 어떤 자동 응답도 강제로 취소한다.
+        if (recording && !awaitingResponse && data.type.startsWith("response.")) {
+          sendEvent({ type: "response.cancel" });
+          setStatus("녹음 유지 중... 중지를 눌러 제출하세요.");
+          return;
+        }
+
+        if (data.type === "input_audio_buffer.committed") {
+          setStatus("제출 완료. 면접관 응답 생성 중...");
+          return;
+        }
+
+        if (data.type === "conversation.item.input_audio_transcription.failed") {
+          committing = false;
+          setStatus("음성 인식 실패. 다시 시작해서 말씀해 주세요.");
+          setButtons();
+          return;
+        }
+
+        if (data.type === "conversation.item.input_audio_transcription.completed") {
+          if (recording && !awaitingResponse) {
+            // 중지 전 자동 STT 이벤트는 무시 (턴 분할 방지)
+            return;
+          }
+          if (data.transcript && data.transcript.trim()) {
+            if (pendingUserBubble) {
+              if (pendingUserBubble._textEl) {
+                pendingUserBubble._textEl.textContent = data.transcript.trim();
+              } else {
+                pendingUserBubble.textContent = data.transcript.trim();
+              }
+              lines.pop();
+              lines.push(`[지원자] ${data.transcript.trim()}`);
+              pendingUserBubble = null;
+              setButtons();
+            } else {
+              appendBubble("user", data.transcript.trim());
+            }
+          }
+          return;
+        }
+
+        if (data.type === "conversation.item.created") {
+          const item = data.item || {};
+          if (item.id && seenUserItems.has(item.id)) return;
+          if (item.role === "user") {
+            let userText = "";
+            const parts = Array.isArray(item.content) ? item.content : [];
+            for (const p of parts) {
+              if (p?.transcript) userText += p.transcript;
+              else if (p?.text) userText += p.text;
+            }
+            userText = (userText || "").trim();
+            if (userText) {
+              if (item.id) seenUserItems.add(item.id);
+              if (pendingUserBubble) {
+                if (pendingUserBubble._textEl) {
+                  pendingUserBubble._textEl.textContent = userText;
+                } else {
+                  pendingUserBubble.textContent = userText;
+                }
+                lines.pop();
+                lines.push(`[지원자] ${userText}`);
+                pendingUserBubble = null;
+                setButtons();
+              } else {
+                appendBubble("user", userText);
+              }
+            }
+          }
+          return;
+        }
+
+        if (
+          data.type === "response.output_audio_transcript.delta" ||
+          data.type === "response.audio_transcript.delta" ||
+          data.type === "response.text.delta" ||
+          data.type === "response.output_text.delta"
+        ) {
+          if (!awaitingResponse) return;
+          const d = data.delta || "";
+          if (d) updateAssistantDelta(d);
+          return;
+        }
+
+        if (
+          data.type === "response.output_audio_transcript.done" ||
+          data.type === "response.output_text.done"
+        ) {
+          if (!awaitingResponse) return;
+          finalizeAssistant();
+          return;
+        }
+
+        if (data.type === "response.done") {
+          if (!awaitingResponse) return;
+          committing = false;
+          awaitingResponse = false;
+          // 텍스트 done은 오디오 재생 종료보다 빠를 수 있어 대기 상태로 전환
+          assistantWaitingAudioDone = true;
+          stopAssistantRecording();
+          if (!currentAssistantDiv) {
+            const out = data.response?.output || [];
+            let fullText = "";
+            for (const item of out) {
+              const parts = Array.isArray(item?.content) ? item.content : [];
+              for (const p of parts) {
+                if (p?.transcript) fullText += p.transcript;
+                else if (p?.text) fullText += p.text;
+              }
+            }
+            fullText = (fullText || "").trim();
+            if (fullText) {
+              const b = appendBubble("assistant", fullText);
+              attachAssistantTextControls(b);
+            }
+          }
+          finalizeAssistant();
+          setStatus("면접관 음성 재생 중...");
+          setButtons();
+          return;
+        }
+        // response.audio.done은 내부 청크 완료 단위로 여러 번 올 수 있어
+        // 중간 끊김을 유발한다. 실제 종료는 무음 감지(stopAssistantRecording)로 처리.
+        if (data.type === "error") {
+          stopAssistantRecordingNow();
+          setStatus("오류: " + (data.error?.message || "unknown"));
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const sdpResponse = await fetch(`https://api.openai.com/v1/realtime?model=${encodeURIComponent(MODEL)}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${API_KEY}`,
+          "Content-Type": "application/sdp"
+        },
+        body: offer.sdp
+      });
+
+      if (!sdpResponse.ok) {
+        const errText = await sdpResponse.text();
+        throw new Error(`Realtime 연결 실패: ${sdpResponse.status} ${errText}`);
+      }
+
+      const answerSdp = await sdpResponse.text();
+      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+      setStatus("데이터 채널 연결 중...");
+    } catch (err) {
+      setStatus("연결 오류: " + (err?.message || err));
+      console.error(err);
+    }
+  }
+
+  function startTurn() {
+    if (!connected || !micTrack || committing) return;
+    awaitingResponse = false;
+    sendEvent({
+      type: "session.update",
+      session: {
+        turn_detection: null,
+        input_audio_transcription: { model: "whisper-1" }
+      }
+    });
+    micTrack.enabled = true;
+    recording = true;
+    if (mediaRecorder && mediaRecorder.state === "inactive") {
+      currentChunks = [];
+      mediaRecorder.start(1000);
+    }
+    sendEvent({ type: "input_audio_buffer.clear" });
+    setStatus("녹음 중... 중지를 누르면 제출됩니다.");
+    setButtons();
+  }
+
+  function stopTurn() {
+    if (!connected || !micTrack || !recording || committing) return;
+    micTrack.enabled = false;
+    recording = false;
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+    }
+    committing = true;
+    setButtons();
+    setStatus("제출 중...");
+    pendingUserBubble = appendBubble("user", "(음성 제출 중...)");
+    pendingUserAudioTarget = pendingUserBubble;
+    // 마지막 오디오 프레임이 전송 버퍼에 반영되도록 짧게 대기 후 commit
+    setTimeout(() => {
+      if (!connected) {
+        committing = false;
+        return;
+      }
+      const ok = sendEvent({ type: "input_audio_buffer.commit" });
+      if (!ok) {
+        committing = false;
+        if (pendingUserBubble) {
+          if (pendingUserBubble._textEl) {
+            pendingUserBubble._textEl.textContent = "(제출 실패)";
+          } else {
+            pendingUserBubble.textContent = "(제출 실패)";
+          }
+          lines.pop();
+          lines.push("[지원자] (제출 실패)");
+          pendingUserBubble = null;
+        }
+        setStatus("제출 실패: 채널이 닫혀 있습니다.");
+        setButtons();
+        return;
+      }
+      sendEvent({
+        type: "response.create",
+        response: { modalities: ["audio", "text"] }
+      });
+      awaitingResponse = true;
+      startAssistantRecording();
+    }, 250);
+  }
+
+  function endSession() {
+    try {
+      recording = false;
+      committing = false;
+      connected = false;
+      if (micTrack) micTrack.enabled = false;
+      if (dc) dc.close();
+      if (pc) pc.close();
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      stopAssistantRecordingNow();
+      if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
+    } catch (_) {}
+    dc = null;
+    pc = null;
+    stream = null;
+    micTrack = null;
+    setStatus("세션 종료됨");
+    setButtons();
+  }
+
+  function downloadScript() {
+    const blob = new Blob([lines.join("\\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "interview_realtime.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  btnConnect.addEventListener("click", connect);
+  btnStart.addEventListener("click", startTurn);
+  btnStop.addEventListener("click", stopTurn);
+  btnEnd.addEventListener("click", endSession);
+  btnDownload.addEventListener("click", downloadScript);
+  setButtons();
+})();
+</script>
+"""
+    html = (
+        html.replace("__API_KEY__", json.dumps(api_key))
+        .replace("__MODEL__", json.dumps(realtime_model))
+        .replace("__INSTRUCTIONS__", json.dumps(instructions))
+    )
+    components.html(html, height=520, scrolling=False)
+    webcam_box(height=520)
+
+    st.stop()
