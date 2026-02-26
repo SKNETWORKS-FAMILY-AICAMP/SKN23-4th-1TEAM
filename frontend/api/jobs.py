@@ -2,16 +2,16 @@ import requests
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
-
-# BACKEND_URL = "http://localhost:8000/api/v1/jobs/search"
-BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")
-BACKEND_URL = f"{BACKEND_BASE_URL}/jobs/search"
-
-
 def search_jobs(payload: dict):
-    print(payload)
-    res = requests.post(BACKEND_URL, json=payload, timeout=20)
+    # 매 호출 시마다 최신 환경변수를 로드하여 캐싱 현상 방지
+    load_dotenv(override=True)
+    
+    backend_base_url = os.getenv("BACKEND_BASE_URL", "http://127.0.0.1:8000")
+    backend_url = f"{backend_base_url}/jobs/search"
+    
+    print(f"Requesting jobs API at: {backend_url} with payload: {payload}")
+    
+    res = requests.post(backend_url, json=payload, timeout=20)
     if not res.ok:
         try:
             detail = res.json().get("detail", res.text)
