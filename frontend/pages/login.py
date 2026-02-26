@@ -26,29 +26,25 @@ from utils.config import GOOGLE_URI, KAKAO_URI
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# ==========================================================
-# 🍪 쿠키 매니저 세팅 (경고창 없는 세션 방식 적용)
-# ==========================================================
+
+# 쿠키 매니저 세팅 (경고창 없는 세션 방식 적용)
 if "cookie_manager" not in st.session_state:
     st.session_state.cookie_manager = stx.CookieManager()
 
 cookie_manager = st.session_state.cookie_manager
 
-# ==========================================================
-# 🚀 자동 로그인 (Route Protection) 로직
-# ==========================================================
+
+# 자동 로그인 (Route Protection) 로직
 access_token = cookie_manager.get("access_token")
 
 # 토큰이 존재한다면 로그인 폼을 그리기 전에 즉시 홈으로 강제 이동!
 if access_token:
     st.session_state["is_logged_in"] = True
     st.switch_page("pages/home.py") 
-    st.stop() # 🛑 아래의 로그인 창 코드가 아예 실행되지 않도록 차단!
+    st.stop() # 아래의 로그인 창 코드가 아예 실행되지 않도록 차단!
 
 
-# ==========================================================
-# 🛠️ 관리자 및 점검 모드 로직
-# ==========================================================
+# 관리자 및 점검 모드 로직
 settings_path = os.path.join(os.path.dirname(__file__), "utils", "admin_settings.yaml")
 global_settings = {
     "maintenance_mode": False,
@@ -102,9 +98,7 @@ if global_settings.get("maintenance_mode") and not is_admin_logged_in:
     st.stop()
 
 
-# ==========================================================
-# 🔒 휴면 계정 해제 모달 로직
-# ==========================================================
+# 휴면 계정 해제 모달 로직
 @st.dialog("🔒 휴면 계정 안내")
 def dormant_recovery_modal(email, password):
     st.markdown(
@@ -136,7 +130,7 @@ def dormant_recovery_modal(email, password):
                     if is_login_success:
                         st.session_state.new_token = login_result.get("access_token")
                         
-                        # 🔥 쿠키에 토큰 영구 저장!
+                        # 쿠키에 토큰 영구 저장
                         cookie_manager.set("access_token", login_result.get("access_token"), key="set_token_dormant")
                         
                         st.session_state.user = {
@@ -153,9 +147,7 @@ def dormant_recovery_modal(email, password):
                     st.error(msg)
 
 
-# ==========================================================
-# 🔗 소셜 로그인 및 세션 검증 로직
-# ==========================================================
+# 소셜 로그인 및 세션 검증 로직
 if "token" not in st.session_state:
     st.session_state.token = None
 
@@ -166,7 +158,7 @@ if social_token:
 
     ok, result = api_verify_token(social_token)
     if ok:
-        # 🔥 소셜 로그인 시에도 쿠키 발급
+        # 소셜 로그인 시에도 쿠키 발급
         cookie_manager.set("access_token", social_token, key="set_token_social")
         
         st.session_state.user = {
@@ -182,7 +174,7 @@ if social_token:
         st.query_params.clear()
 
 if st.query_params.get("logout") == "true":
-    cookie_manager.delete("access_token") # 🔥 로그아웃 시 쿠키도 파기
+    cookie_manager.delete("access_token") # 로그아웃 시 쿠키도 없애기
     st.session_state.clear()
     st.query_params.clear()
     time.sleep(0.1)
@@ -194,9 +186,7 @@ if "show_admin_choice" not in st.session_state:
     st.session_state.show_admin_choice = False
 
 
-# ==========================================================
-# 🎨 UI 렌더링 (CSS & HTML)
-# ==========================================================
+# UI 렌더링 (CSS & HTML)
 st.markdown(
     """
 <style>
@@ -267,7 +257,7 @@ if not st.session_state.get("show_admin_choice"):
                 if is_success:
                     st.session_state.new_token = result.get("access_token")
                     
-                    # 🔥 로그인 성공 시 브라우저 쿠키에 토큰을 구워줍니다!
+                    # 로그인 성공 시 브라우저 쿠키에 토큰을 구움
                     cookie_manager.set("access_token", result.get("access_token"), key="set_token_normal")
                     
                     st.session_state.user = {

@@ -1,36 +1,64 @@
 """
 File: pages/profile.py
 Author: 김지우
-Description: 네이티브 앱 감성(토스/스타일) 마이페이지 (회원 정보 수정)
+Created: 2026-02-24
+Description: 마이페이지
+
+Modification History:
+- 2026-02-24 (김지우): 초기 틀 생성
+- 2026-02-26 (김지우): 전체적인 코드 확인 및 수정 작업
 """
 import streamlit as st
 import time
-from utils.api_utils import api_update_profile_image
-
-# (임시) 백엔드 API 유틸리티 모듈 연결
-from utils.api_utils import _handle_request
+from utils.api_utils import api_update_profile_image, _handle_request, api_verify_token
 from utils.function import inject_custom_header
+import extra_streamlit_components as stx
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
+
+# 로그인 세션 체크 전에 꼭 지정. (위치 변경 금지)
 inject_custom_header()
 
-# ==========================================
-# 🔐 1. 로그인 세션 체크 및 DB 데이터 매핑
-# ==========================================
-if "user" not in st.session_state or st.session_state.user is None:
-    st.warning("로그인이 필요한 페이지입니다.")
-    st.stop()
+# 쿠키 매니저를 통해 접속 토큰(쿠키) 확인
+cookie_manager = stx.CookieManager(key="myinfo_cookie_manager")
+token = cookie_manager.get("access_token")
 
-# 🔥 백엔드(DB)에서 가져온 로그인 세션 정보를 그대로 변수에 꽂아줍니다!
+# 로그인 세션 체크 및 복구 (쿠키 기반)
+if "user" not in st.session_state or st.session_state.user is None:
+    if token:
+        is_valid, result = api_verify_token(token)
+        if is_valid:
+            st.session_state.user = {
+                "name": result.get("name"),
+                "role": result.get("role", "user"),
+                "profile_image_url": result.get("profile_image_url"),
+                "email": result.get("email", ""),
+                "tier": result.get("tier", "normal"),
+            }
+            st.session_state.token = token
+            st.rerun() # 세션 정보 로딩 후 화면 새로고침
+        else:
+            st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
+            time.sleep(1)
+            st.switch_page("app.py")
+    else:
+        if not st.session_state.get("_cookie_retry_myinfo"):
+            st.session_state["_cookie_retry_myinfo"] = True
+            time.sleep(0.4)
+            st.rerun() # 처음 렌더링 시 쿠키를 바로 못 읽으므로 재시도
+        else:
+            st.warning("로그인이 필요한 페이지입니다.")
+            time.sleep(1)
+            st.switch_page("app.py")
+
+# DB 로그인 세션 정보를 변수에 저장
 user = st.session_state.user
 user_name = user.get("name", "이름 없음")
-user_email = user.get("email", "이메일 정보 없음") # DB의 실제 이메일
-user_tier = user.get("tier", "normal") # DB의 실제 등급
+user_email = user.get("email", "이메일 정보 없음") 
+user_tier = user.get("tier", "normal")
 profile_url = user.get("profile_image_url") or "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
 
-# ==========================================
-# 🎨 2. 앱 감성 커스텀 CSS (탈퇴 버튼 개쩌는 스타일 포함)
-# ==========================================
+# CSS (탈퇴버튼)
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
@@ -65,7 +93,7 @@ st.markdown("""
 .list-value { font-size: 16px; color: #111; font-weight: 500; }
 .list-arrow { position: absolute; right: 0; top: 50%; transform: translateY(-50%); color: #adb5bd; font-size: 18px; }
 
-/* 🔥 하단 탈퇴 버튼을 app.py의 비밀번호 찾기 링크처럼 위장시키는 마법의 CSS */
+/* 하단 탈퇴 버튼을 app.py의 비밀번호 찾기 링크처럼 위장시키는 마법의 CSS */
 .withdraw-wrapper div[data-testid="stButton"] button {
     background: transparent !important;
     border: none !important;
@@ -85,33 +113,29 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 💎 3. 팝업(모달) 로직 정의
-# ==========================================
-@st.dialog("📷 프로필 사진 올리기")
+
+# 팝업(모달) 로직 정의
+@st.dialog("프로필 사진 올리기")
 def upload_photo_dialog():
     uploaded_file = st.file_uploader("이미지 파일 선택", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
     
     if uploaded_file:
         st.image(uploaded_file, caption="미리보기", width=150)
         
-        if st.button("DB에 영구 적용하기", type="primary", use_container_width=True):
+        if st.button("적용하기", type="primary", use_container_width=True):
             with st.spinner("서버에 사진을 저장하는 중입니다..."):
-                
-                # 🔥 눈속임 끄고, 진짜 백엔드 API로 파일 전송!
                 is_success, result_url_or_msg = api_update_profile_image(uploaded_file)
                 
                 if is_success:
-                    # 백엔드가 DB에 저장하고 돌려준 '진짜 이미지 주소'를 세션에 업데이트
                     st.session_state.user["profile_image_url"] = result_url_or_msg
                     
-                    st.success("프로필 사진이 DB에 완벽하게 저장되었습니다! 🎉")
+                    st.success("프로필 사진이 변경되었습니다.")
                     time.sleep(1)
                     st.rerun() # 새로고침
                 else:
                     st.error(f"실패: {result_url_or_msg}")
 
-@st.dialog("🔒 비밀번호 변경")
+@st.dialog("비밀번호 변경")
 def change_password_dialog():
     st.markdown("<p style='font-size:13px; color:#555;'>안전을 위해 기존 비밀번호를 먼저 입력해주세요.</p>", unsafe_allow_html=True)
     old_pw = st.text_input("현재 비밀번호", type="password")
@@ -131,13 +155,12 @@ def change_password_dialog():
                 time.sleep(1)
                 st.rerun()
 
-# 🔥 개쩌는 디자인의 회원 탈퇴 경고 모달
-@st.dialog("🚨 탈퇴 확인")
+@st.dialog("탈퇴 확인")
 def withdraw_dialog(email):
     st.markdown(
         f"""
         <div style="text-align:center; padding: 10px 0 20px 0;">
-            <div style="font-size: 40px; margin-bottom: 10px;">😢</div>
+            <div style="font-size: 40px; margin-bottom: 10px;">👾</div>
             <p style="font-size:15px; color:#333; line-height:1.6; margin-bottom:15px;">
                 <b>{email}</b> 계정을 정말 탈퇴하시겠습니까?<br>
                 <span style="color:#e74c3c; font-size:13px;">등록된 데이터는 접근이 차단되며, 30일 후 파기됩니다.</span>
@@ -149,20 +172,18 @@ def withdraw_dialog(email):
     
     col1, col2 = st.columns(2)
     with col1:
-        # 아니오 누르면 모달이 그냥 스르륵 닫힙니다 (rerun)
-        if st.button("아니오 (유지)", use_container_width=True):
+        if st.button("아니오", use_container_width=True):
             st.rerun() 
     with col2:
-        if st.button("예 (탈퇴 확정)", type="primary", use_container_width=True):
+        if st.button("예", type="primary", use_container_width=True):
             with st.spinner("탈퇴 처리 중..."):
                 _handle_request("POST", "/auth/withdraw", json={"email": email})
                 time.sleep(1.5)
-                st.session_state.clear() # 세션 초기화 (로그아웃)
-                st.switch_page("app.py") # 로그인 화면으로 쫓아냄
+                st.session_state.clear() 
+                st.switch_page("app.py")
 
 # ==========================================
 # 📱 4. UI 렌더링 시작
-# ==========================================
 
 # [헤더]
 st.markdown("""

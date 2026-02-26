@@ -17,7 +17,7 @@ env_path = os.path.join(backend_dir, ".env")
 
 load_dotenv(dotenv_path=env_path, override=True)
 
-# ─── DB 연결 설정 (.env에서 읽기) ─────────────────────────────
+# DB 연결 설정 (.env에서 읽기)
 DB_CONFIG = {
     "host":     os.getenv("DB_HOST",     "localhost"),
     "port":     int(os.getenv("DB_PORT", "3306")),
@@ -28,7 +28,7 @@ DB_CONFIG = {
     "cursorclass": DictCursor,
 }
 
-# ─── DDL: 테이블 정의 (요청하신 SQL 완벽 통합 버전) ────────────────
+# DDL
 DDL = """
 -- 1. users 테이블 (ALTER 내용까지 한 번에 깔끔하게 생성)
 CREATE TABLE IF NOT EXISTS users (
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(20) DEFAULT 'user',             
     name VARCHAR(100) NULL,                      
     password VARCHAR(255) NULL,                  
-    tier VARCHAR(20) DEFAULT 'normal',           -- 🔥 추가됨 (회원 등급)
-    status VARCHAR(20) DEFAULT 'active',         -- 🔥 추가됨 (계정 상태)
-    profile_image_url VARCHAR(512) NULL,         -- 🔥 추가됨 (프로필 이미지)
+    tier VARCHAR(20) DEFAULT 'normal',           
+    status VARCHAR(20) DEFAULT 'active',         
+    profile_image_url VARCHAR(512) NULL,         
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -69,16 +69,16 @@ CREATE TABLE IF NOT EXISTS question_pool (
 -- 4. interview_sessions 테이블
 CREATE TABLE IF NOT EXISTS interview_sessions (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    user_id      VARCHAR(100), -- 🚨 주의: 현재 파이썬 코드 호환성을 위해 VARCHAR 유지
+    user_id      VARCHAR(100),
     job_role     VARCHAR(100),
     difficulty   VARCHAR(20),
     persona      VARCHAR(50),
     total_score  FLOAT DEFAULT 0.0,
-    status       VARCHAR(20) DEFAULT 'START', -- 🔥 추가됨
+    status       VARCHAR(20) DEFAULT 'START', 
     started_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ended_at     TIMESTAMP NULL,
     resume_used  TINYINT(1) DEFAULT 0
-    -- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE -- 🚨 로그인 연동 시 주석 해제 요망
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 5. interview_details 테이블
@@ -89,10 +89,10 @@ CREATE TABLE IF NOT EXISTS interview_details (
     question        TEXT, -- 기존 파이썬 변수명 호환 (question_text 대체)
     answer          TEXT, -- 기존 파이썬 변수명 호환 (answer_text 대체)
     is_followup     TINYINT(1) DEFAULT 0,
-    response_time   INT DEFAULT NULL,   -- 🔥 추가됨
+    response_time   INT DEFAULT NULL,  
     score           FLOAT DEFAULT NULL,
     feedback        TEXT,
-    sentiment_score FLOAT DEFAULT NULL, -- 🔥 추가됨
+    sentiment_score FLOAT DEFAULT NULL, 
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS user_resumes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
-# ─── 커넥션 컨텍스트 매니저 ───────────────────────────────────
+# 커넥션 컨텍스트 매니저
 @contextmanager
 def get_connection():
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")

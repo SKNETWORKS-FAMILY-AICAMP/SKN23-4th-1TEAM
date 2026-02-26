@@ -9,6 +9,7 @@ Modification History:
 """
 
 import streamlit as st
+st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
 # login.py로 바로 이동
 st.switch_page("pages/login.py")

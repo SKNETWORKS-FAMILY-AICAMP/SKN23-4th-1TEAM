@@ -8,6 +8,8 @@ Modification History:
 - 2026-02-20 (김다빈): 초기 틀 생성
 - 2026-02-21 (김지우): SMTP 이메일 인증 로직 및 세션 기반 단계별 비밀번호 재설정 UI 구현
 - 2026-02-22 (김지우) : Back/Front 구분 
+- 2026-02-26 (김지우) : 비밀번호 찾기 페이지 전체적인 코드 확인 및 수정 작업 (최종)
+
 """
 
 import streamlit as st
@@ -118,9 +120,7 @@ def send_auth_email(receiver_email, auth_code):
         return False, f"알 수 없는 에러 발생: {str(e)}"
 
 
-# ==========================================
 # CSS (sign_up.py와 동일한 풀 스타일)
-# ==========================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
@@ -158,7 +158,7 @@ input[type="text"]:focus, input[type="password"]:focus {
     outline: none !important; box-shadow: 0 0 0 2px rgba(187,56,208,0.12) !important;
 }
 
-/* 🌟 메인 보라색 버튼 */
+/* 메인 보라색 버튼 */
 [data-testid="stButton"] > button[kind="primary"] {
     background-color: #bb38d0 !important; color: #fff !important; border: none !important;
     border-radius: 6px !important; height: 50px !important; font-size: 16px !important;
@@ -182,7 +182,7 @@ div[data-testid="stButton"] > button:hover { background-color: #872a96 !importan
 
 .info-text  { font-size: 14px; color: #666; text-align: center; margin-bottom: 20px; }
 
-/* 🌟 sign_up.py와 동일한 메시지 스타일 */
+/* sign_up.py와 동일한 메시지 스타일 */
 .status-msg { font-size: 13px; text-align: center; margin-top: 0px; margin-bottom: 12px; font-weight: 500; }
 .field-msg  { font-size: 12px; margin-top: -12px; margin-bottom: 12px; margin-left: 4px; font-weight: 500; }
 .text-success { color: #2ecc71; }
@@ -191,22 +191,20 @@ div[data-testid="stButton"] > button:hover { background-color: #872a96 !importan
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 💎 모달: 비밀번호 변경 완료
-# ==========================================
+# 모달: 비밀번호 변경 완료
 @st.dialog("비밀번호 변경 완료", width="small")
 def pw_reset_success_modal():
     st.markdown(
         """
         <div style="text-align: center; padding: 20px 0;">
-            <div style="font-size: 50px; margin-bottom: 10px;">🔓</div>
+            <div style="font-size: 50px; margin-bottom: 10px;">👾</div>
             <h2 style="color: #bb38d0; font-weight: 700; margin-bottom: 15px;">변경 완료!</h2>
             <p style="font-size: 16px; color: #333; line-height: 1.5;">
                 비밀번호가 성공적으로 변경되었습니다.<br>
                 새 비밀번호로 로그인해주세요.
             </p>
             <p style="font-size: 13px; color: #888; margin-top: 25px;">
-                3초 후 로그인 페이지로 자동 이동합니다... 🚀
+                3초 후 로그인 페이지로 자동 이동합니다...
             </p>
         </div>
         """,
