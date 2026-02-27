@@ -34,7 +34,7 @@ if "cookie_manager" not in st.session_state:
 cookie_manager = st.session_state.cookie_manager
 
 
-# 자동 로그인 (Route Protection) 로직
+# 자동 로그인 로직
 access_token = cookie_manager.get("access_token")
 
 # 토큰이 존재한다면 로그인 폼을 그리기 전에 즉시 홈으로 강제 이동!
@@ -99,7 +99,7 @@ if global_settings.get("maintenance_mode") and not is_admin_logged_in:
 
 
 # 휴면 계정 해제 모달 로직
-@st.dialog("🔒 휴면 계정 안내")
+@st.dialog("휴면 계정 안내")
 def dormant_recovery_modal(email, password):
     st.markdown(
         f"""

@@ -1,5 +1,12 @@
-# 파일 경로: utils/function.py
+"""
+File: function.py
+Author: 김지우
+Created: 2026-02-26
+Description: 기능 함수 모듈
 
+Modification History:
+- 2026-02-26 (김지우): 초기 틀 생성
+"""
 import streamlit as st
 import random
 import time 
@@ -7,7 +14,8 @@ import sys
 import os
 import base64
 
-# 1. 프로젝트 루트 경로 및 backend 경로 추가
+
+# 프로젝트 루트 경로 및 backend 경로 추가
 current_dir = os.path.dirname(os.path.abspath(__file__))
 frontend_dir = os.path.dirname(current_dir)
 project_root = os.path.dirname(frontend_dir)
@@ -18,7 +26,7 @@ if project_root not in sys.path:
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
-# 2. 서비스 모듈 임포트
+# 서비스 모듈 임포트
 try:
     from backend.services.tavily_service import get_web_context
 except ImportError as e:
@@ -31,20 +39,18 @@ try:
 except Exception:
     pass
 
-# 1. 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
+# 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode("utf-8")
 
 def inject_custom_header():
-    # 2. 이미지 절대 경로 설정 (home.py 위치를 기준으로 계산)
-    # 현재 파일(home.py)의 상위->상위 폴더 구조에 맞춰 경로를 잘 잡아주셔야 합니다.
+    import os
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    # 예시: home.py가 frontend 폴더 안에 있다면, 상위 폴더로 가서 backend/data/... 로 접근
-    project_root = os.path.dirname(current_dir) 
-    image_path = os.path.join(project_root, "assets", "AIWORK.jpg")
+    frontend_root = os.path.dirname(current_dir)
+    image_path = os.path.join(frontend_root, "assets", "AIWORK.jpg")
     
-    # 3. Base64 문자열 생성
+    # Base64 문자열 생성
     try:
         img_base64 = get_image_base64(image_path)
         # JPEG 이미지일 경우 data:image/jpeg;base64, 를 붙여줍니다.
@@ -156,17 +162,57 @@ def inject_custom_header():
 def render_memo_board(current_user_name="익명"):
     """
     모두의 메모장 (방명록) UI를 렌더링하는 함수입니다.
-    현재는 st.session_state를 이용해 프론트엔드 단에서만 임시 저장됩니다.
     """
-    
-    # --- 1. 메모장 데이터 초기화 ---
-    if "memos" not in st.session_state:
-        st.session_state.memos = [
+    import random
+    import sys
+    import os
+    import streamlit as st
+
+    # DB 경로 임포트 (파일 위치에 따라 조정)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(current_dir))
+    if project_root not in sys.path:
+        sys.path.append(project_root)
+
+    try:
+        from backend.db.database import save_memo, get_all_memos
+    except Exception as e:
+        st.error(f"DB 임포트 에러: {e}")
+        return
+
+    # --- 1. DB에서 실시간으로 메모 불러오기 ---
+    try:
+        memos = get_all_memos(limit=30) # 최신 30개만!
+    except Exception as e:
+        st.warning(f"메모를 불러오는 중 오류 발생: {e}")
+        memos = []
+
+    # DB가 완전히 비어있을 때 보여줄 웰컴 메시지
+    if not memos:
+        default_memos = [
             {"author": "시스템", "content": "🎉 AIWORK에 오신 것을 환영합니다! 자유롭게 발자취를 남겨주세요.", "color": "#FDF4FF", "border": "#FAE8FF", "text_color": "#BB38D0"},
             {"author": "김다빈", "content": "다들 프로젝트 준비 화이팅입니다!! 💻", "color": "#FFF9C4", "border": "#FFF59D", "text_color": "#5D4037"},
-            {"author": "익명", "content": "어제 백엔드 직무 모의면접 해봤는데 꼬리질문 진짜 매섭네요... 덜덜", "color": "#E1F5FE", "border": "#B3E5FC", "text_color": "#01579B"},
+            {"author": "사자개🦁", "content": "크르르르르릉클르컹커커컹ㅋ컬ㅋ", "color": "#E1F5FE", "border": "#B3E5FC", "text_color": "#01579B"},
         ]
-
+        
+        for m in default_memos:
+            try:
+                save_memo(
+                    author=m["author"],
+                    content=m["content"],
+                    color=m["color"],
+                    border=m["border"],
+                    text_color=m["text_color"]
+                )
+            except Exception as e:
+                st.error(f"초기 메모 DB 저장 실패: {e}")
+                
+        # DB에 저장이 끝났으니 새로 들어간 데이터를 포함해서 다시 불러옵니다!
+        try:
+            memos = get_all_memos(limit=30)
+        except Exception:
+            memos = default_memos
+            
     # --- 2. 메모 입력 폼 ---
     with st.container(border=True):
         st.markdown("<p style='font-size:16px; font-weight:700; color:#111; margin-bottom:10px;'>댓글</p>", unsafe_allow_html=True)
@@ -188,88 +234,50 @@ def render_memo_board(current_user_name="익명"):
                 ]
                 picked_color = random.choice(colors)
                 
-                # 새 메모를 리스트의 맨 앞(0번 인덱스)에 추가
-                st.session_state.memos.insert(0, {
-                    "author": current_user_name,
-                    "content": new_memo_text,
-                    "color": picked_color["color"],
-                    "border": picked_color["border"],
-                    "text_color": picked_color["text_color"]
-                })
+                try:
+                    save_memo(
+                        author=current_user_name,
+                        content=new_memo_text,
+                        color=picked_color["color"],
+                        border=picked_color["border"],
+                        text_color=picked_color["text_color"]
+                    )
+                except Exception as e:
+                    st.error(f"메모 저장 실패: {e}")
                 
-                # ✨ 선입선출 (FIFO): 메모가 30개를 초과하면 가장 오래된(맨 뒤에 있는) 메모 삭제
-                if len(st.session_state.memos) > 30:
-                    st.session_state.memos = st.session_state.memos[:30]
-                    
-                st.rerun()
+                st.rerun() # 저장 후 즉시 화면 새로고침하여 반영
 
     # --- 3. 메모장 게시판 렌더링 (HTML/CSS) ---
     memo_html = """
     <style>
-    /* ✨ 스크롤이 가능한 전체 컨테이너 설정 */
     .scrollable-memo-container {
-        max-height: 450px; /* 이 높이를 넘어가면 스크롤이 생깁니다 */
-        overflow-y: auto;
-        padding-right: 12px;
-        margin-top: 10px;
+        max-height: 450px; overflow-y: auto; padding-right: 12px; margin-top: 10px;
     }
-    
-    /* 스크롤바 예쁘게 다듬기 (Webkit 브라우저 전용) */
-    .scrollable-memo-container::-webkit-scrollbar {
-        width: 8px;
-    }
-    .scrollable-memo-container::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .scrollable-memo-container::-webkit-scrollbar-thumb {
-        background-color: #e2e8f0;
-        border-radius: 10px;
-    }
-    .scrollable-memo-container::-webkit-scrollbar-thumb:hover {
-        background-color: #cbd5e1;
-    }
-
-    .memo-board {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        padding-bottom: 20px;
-    }
+    .scrollable-memo-container::-webkit-scrollbar { width: 8px; }
+    .scrollable-memo-container::-webkit-scrollbar-track { background: transparent; }
+    .scrollable-memo-container::-webkit-scrollbar-thumb { background-color: #e2e8f0; border-radius: 10px; }
+    .scrollable-memo-container::-webkit-scrollbar-thumb:hover { background-color: #cbd5e1; }
+    .memo-board { display: flex; flex-wrap: wrap; gap: 16px; padding-bottom: 20px; }
     .memo-card {
-        flex: 1 1 calc(33.333% - 16px);
-        min-width: 220px;
-        padding: 16px;
-        border-radius: 2px 16px 16px 16px;
-        box-shadow: 2px 4px 12px rgba(0,0,0,0.05);
-        position: relative;
-        transition: transform 0.2s;
+        flex: 1 1 calc(33.333% - 16px); min-width: 220px; padding: 16px;
+        border-radius: 2px 16px 16px 16px; box-shadow: 2px 4px 12px rgba(0,0,0,0.05);
+        position: relative; transition: transform 0.2s;
     }
-    .memo-card:hover {
-        transform: translateY(-4px) rotate(-1deg);
-        box-shadow: 4px 8px 16px rgba(0,0,0,0.08);
-    }
+    .memo-card:hover { transform: translateY(-4px) rotate(-1deg); box-shadow: 4px 8px 16px rgba(0,0,0,0.08); }
     .memo-author {
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        border-bottom: 1px dashed rgba(0,0,0,0.1);
-        padding-bottom: 4px;
-        display: flex;
-        justify-content: space-between;
+        font-size: 12px; font-weight: 700; margin-bottom: 8px;
+        border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 4px;
+        display: flex; justify-content: space-between;
     }
-    .memo-content {
-        font-size: 14px;
-        line-height: 1.5;
-        font-weight: 500;
-        word-break: keep-all;
-    }
+    .memo-content { font-size: 14px; line-height: 1.5; font-weight: 500; word-break: keep-all; }
     </style>
     
     <div class="scrollable-memo-container">
         <div class="memo-board">
     """
 
-    for memo in st.session_state.memos:
+    for memo in memos:
+        # DB에서 가져온 최신 순 데이터로 카드 렌더링
         memo_html += f"""
             <div class="memo-card" style="background-color: {memo['color']}; border: 1px solid {memo['border']}; color: {memo['text_color']};">
                 <div class="memo-author">

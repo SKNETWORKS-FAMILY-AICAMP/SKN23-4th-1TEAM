@@ -134,7 +134,7 @@ def get_connection():
     finally:
         conn.close()
 
-# ─── DB 초기화 (앱 시작 시 1회 호출) ─────────────────────────
+# DB 초기화 (앱 시작 시 1회 호출) 
 def init_db():
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -143,7 +143,7 @@ def init_db():
                 if stmt:
                     cur.execute(stmt)
 
-# ─── 세션 CRUD ────────────────────────────────────
+# 세션 CRUD
 def create_session(user_id: str, job_role: str, difficulty: str = "미들",
                    persona: str = "깐깐한 기술팀장", resume_used: bool = False) -> int:
     with get_connection() as conn:
@@ -204,7 +204,7 @@ def get_details_by_session(session_id: int) -> list[dict]:
             )
             return cur.fetchall()
 
-# ─── question_pool 헬퍼 ───────────
+# question_pool 헬퍼
 def get_questions_by_role(job_role: str, difficulty: str,
                           q_type: str = "기술", limit: int = 3) -> list[dict]:
     diff_map = {"주니어": "Easy", "미들": "Medium", "시니어": "Hard"}
@@ -271,9 +271,7 @@ def get_questions_by_resume_keywords(job_role: str, difficulty: str, keywords: l
                         if len(results) == limit: break
             return results
 
-# =====================================================================
-# 🔥 이력서(Resume) 보관함 CRUD 기능 추가
-# =====================================================================
+# 이력서 보관함 CRUD 기능 추가
 def save_user_resume(user_id: str, title: str, job_role: str, resume_text: str, analysis_result: dict) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -304,3 +302,29 @@ def delete_user_resume(resume_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM user_resumes WHERE id=%s", (resume_id,))
+
+
+# 게시판 CRUD 기능
+def save_memo(author: str, content: str, color: str, border: str, text_color: str):
+    """새로운 메모를 DB에 저장합니다."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO guestbook_memos (author, content, color, border, text_color)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (author, content, color, border, text_color)
+            )
+
+def get_all_memos(limit: int = 30) -> list[dict]:
+    """가장 최근에 작성된 메모들을 DB에서 불러옵니다 (기본 30개)."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT author, content, color, border, text_color, created_at
+                   FROM guestbook_memos
+                   ORDER BY created_at DESC
+                   LIMIT %s""",
+                (limit,)
+            )
+            return cur.fetchall()
+
