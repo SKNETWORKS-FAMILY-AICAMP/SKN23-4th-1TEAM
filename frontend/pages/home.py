@@ -44,7 +44,7 @@ from utils.api_utils import api_verify_token
 import yaml
 import os
 
-from api.jobs import search_jobs
+from api.jobs import search_jobs, get_latest_resume
 from services.jobs_service import build_job_cards_data
 from components.job_cards import render_job_cards
 
@@ -336,8 +336,10 @@ if "user" in st.session_state and st.session_state.user is not None:
     pass
 elif token:
     is_valid, result = api_verify_token(token)
+    print('유저정보', result)
     if is_valid:
         st.session_state.user = {
+            "id": result.get("id"),
             "name": result.get("name"),
             "role": result.get("role", "user"),
             "profile_image_url": result.get("profile_image_url"),
@@ -501,7 +503,8 @@ if selected == "홈":
             unsafe_allow_html=True,
         )
         tab1, tab2, tab3 = st.tabs(["추천 공고", "백엔드 트렌드", "게시판"])
-
+        user_id = st.session_state.user.get('id')
+        
         # 채용공고 탭
         with tab1:
             st.markdown("<br>", unsafe_allow_html=True)
@@ -510,8 +513,31 @@ if selected == "홈":
                 "startPage": 1,
                 "display": 20,
             }
+            user_id = st.session_state.get("user_id")
+
+            if not user_id:
+                st.info('정보를 불러오는 중...')
+                time.sleep(0.5)
+                st.rerun()
 
             try:
+                parsed = {}
+
+                resume_cache = f'resume_latest:{user_id}'
+
+                if resume_cache not in st.session_state:
+                    st.session_state[resume_cache] = get_latest_resume(user_id=user_id)
+                    st.rerun()
+
+                resume = st.session_state.get(resume_cache)
+
+                if resume:                   # 이력서가 존재하면, 관련 직무 공채 출력
+                    job_role = resume.get("job_role")
+                    analysis_result = resume.get("analysis_result")
+                    if job_role and analysis_result:
+                        parsed = {"job_role": job_role, 'keywords': analysis_result.get('keywords', '') } 
+                payload.update({k: v for k, v in parsed.items() if v is not None})
+                print('페이로드', payload)
                 data = search_jobs(payload)
                 cards = build_job_cards_data(data)
                 with st.container(height=450):
