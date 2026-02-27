@@ -35,13 +35,26 @@ cookie_manager = st.session_state.cookie_manager
 
 
 # 자동 로그인 로직
+# 자동 로그인 로직
 access_token = cookie_manager.get("access_token")
 
-# 토큰이 존재한다면 로그인 폼을 그리기 전에 즉시 홈으로 강제 이동!
 if access_token:
-    st.session_state["is_logged_in"] = True
-    st.switch_page("pages/home.py") 
-    st.stop() # 아래의 로그인 창 코드가 아예 실행되지 않도록 차단!
+    ok, result = api_verify_token(access_token)
+    
+    if ok:
+        st.session_state["user_id"] = result.get("id")
+        st.session_state.user = {
+            "name": result.get("name") or "사용자",
+            "role": result.get("role") or "user",
+            "profile_image_url": result.get("profile_image_url"),
+            "email": result.get("email"),
+            "tier": result.get("tier", "normal")
+        }
+        st.session_state["is_logged_in"] = True
+        st.switch_page("pages/home.py") 
+        st.stop()
+    else:
+        cookie_manager.delete("access_token")
 
 
 # 관리자 및 점검 모드 로직
@@ -133,6 +146,8 @@ def dormant_recovery_modal(email, password):
                         # 쿠키에 토큰 영구 저장
                         cookie_manager.set("access_token", login_result.get("access_token"), key="set_token_dormant")
                         
+                        st.session_state["user_id"] = login_result.get("id")  # 추가함 ^^
+
                         st.session_state.user = {
                             "name": login_result.get("name"),
                             "role": login_result.get("role"),
@@ -161,6 +176,8 @@ if social_token:
         # 소셜 로그인 시에도 쿠키 발급
         cookie_manager.set("access_token", social_token, key="set_token_social")
         
+        st.session_state["user_id"] = result.get("id")  # 추가함 ^^
+
         st.session_state.user = {
             "name": result.get("name") or "사용자",
             "role": result.get("role") or "user",
@@ -260,6 +277,8 @@ if not st.session_state.get("show_admin_choice"):
                     # 로그인 성공 시 브라우저 쿠키에 토큰을 구움
                     cookie_manager.set("access_token", result.get("access_token"), key="set_token_normal")
                     
+                    st.session_state["user_id"] = result.get("id")  # 추가함 ^^
+
                     st.session_state.user = {
                         "name": result.get("name"),
                         "role": result.get("role"),

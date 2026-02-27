@@ -24,6 +24,10 @@ from pathlib import Path
 import json
 import streamlit.components.v1 as components
 from utils.webcam_box import webcam_box
+from utils.function import require_login
+
+require_login()
+
 
 # 외부 패키지 경로
 _EXT_PKG_PATH = "/tmp/fw_pkg"

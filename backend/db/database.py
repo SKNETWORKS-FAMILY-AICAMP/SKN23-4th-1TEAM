@@ -1,8 +1,14 @@
 """
 File: db/database.py
-Description: MySQL 연결 관리 + 테이블 초기화 + CRUD 헬퍼
-             (users 테이블 및 신규 통계/상태 컬럼 완벽 통합 적용)
+Author: 김지우
+Created: 2026-02-27
+Description: DB 모델들의 기본 뼈대
+
+Modification History:
+- 2026-02-24: 벡엔드 DB 모델 정의
+- 2026-02-27 (김지우) :  기존 User 모델 외에 직무 분류, 질문 풀, 면접 기록 테이블 추가
 """
+
 
 import os
 import json 
@@ -17,7 +23,7 @@ env_path = os.path.join(backend_dir, ".env")
 
 load_dotenv(dotenv_path=env_path, override=True)
 
-# DB 연결 설정 (.env에서 읽기)
+# ─── DB 연결 설정 (.env에서 읽기) ─────────────────────────────
 DB_CONFIG = {
     "host":     os.getenv("DB_HOST",     "localhost"),
     "port":     int(os.getenv("DB_PORT", "3306")),
@@ -28,9 +34,8 @@ DB_CONFIG = {
     "cursorclass": DictCursor,
 }
 
-# DDL
+# ─── DDL: 테이블 정의 ────────────────
 DDL = """
--- 1. users 테이블 (ALTER 내용까지 한 번에 깔끔하게 생성)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -45,7 +50,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 2. job_categories 테이블
 CREATE TABLE IF NOT EXISTS job_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     main_category VARCHAR(50),
@@ -53,7 +57,6 @@ CREATE TABLE IF NOT EXISTS job_categories (
     target_role VARCHAR(50) UNIQUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 3. question_pool 테이블
 CREATE TABLE IF NOT EXISTS question_pool (
     id INT AUTO_INCREMENT PRIMARY KEY,
     category_id INT,
@@ -66,10 +69,9 @@ CREATE TABLE IF NOT EXISTS question_pool (
     FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 4. interview_sessions 테이블
 CREATE TABLE IF NOT EXISTS interview_sessions (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    user_id      VARCHAR(100),
+    user_id      INT, 
     job_role     VARCHAR(100),
     difficulty   VARCHAR(20),
     persona      VARCHAR(50),
@@ -77,17 +79,16 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
     status       VARCHAR(20) DEFAULT 'START', 
     started_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ended_at     TIMESTAMP NULL,
-    resume_used  TINYINT(1) DEFAULT 0
-    -- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    resume_used  TINYINT(1) DEFAULT 0,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 5. interview_details 테이블
 CREATE TABLE IF NOT EXISTS interview_details (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     session_id      INT NOT NULL,
     turn_index      INT NOT NULL,
-    question        TEXT, -- 기존 파이썬 변수명 호환 (question_text 대체)
-    answer          TEXT, -- 기존 파이썬 변수명 호환 (answer_text 대체)
+    question        TEXT, 
+    answer          TEXT, 
     is_followup     TINYINT(1) DEFAULT 0,
     response_time   INT DEFAULT NULL,  
     score           FLOAT DEFAULT NULL,
@@ -97,19 +98,29 @@ CREATE TABLE IF NOT EXISTS interview_details (
     FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 6. user_resumes 테이블 (이력서 보관함)
 CREATE TABLE IF NOT EXISTS user_resumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(100) NOT NULL,
+    user_id INT NOT NULL, 
     title VARCHAR(255) NOT NULL,
     job_role VARCHAR(100),
     resume_text MEDIUMTEXT,
     analysis_result JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_resumes FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS guestbook_memos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    author VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    color VARCHAR(20),
+    border VARCHAR(20),
+    text_color VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
-# 커넥션 컨텍스트 매니저
+# ─── 커넥션 컨텍스트 매니저 ───────────────────────────────────
 @contextmanager
 def get_connection():
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -120,7 +131,7 @@ def get_connection():
         "port":     int(os.getenv("DB_PORT", "3306")),
         "user":     os.getenv("DB_USER",     "root"),
         "password": os.getenv("DB_PASSWORD", ""),
-        "db":       os.getenv("DB_NAME",     "ai_interview"), # DB명 수정 적용됨
+        "db":       os.getenv("DB_NAME",     "ai_interview"),
         "charset":  "utf8mb4",
         "cursorclass": DictCursor,
     }
@@ -134,7 +145,7 @@ def get_connection():
     finally:
         conn.close()
 
-# DB 초기화 (앱 시작 시 1회 호출) 
+# ─── DB 초기화 ─────────────────────────
 def init_db():
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -143,8 +154,8 @@ def init_db():
                 if stmt:
                     cur.execute(stmt)
 
-# 세션 CRUD
-def create_session(user_id: str, job_role: str, difficulty: str = "미들",
+# ─── 세션 CRUD ────────────────────────────────────
+def create_session(user_id: int, job_role: str, difficulty: str = "미들",
                    persona: str = "깐깐한 기술팀장", resume_used: bool = False) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -168,7 +179,6 @@ def save_detail(session_id: int, turn_index: int, question: str,
                 answer: str, is_followup: bool,
                 score: float | None = None, feedback: str | None = None,
                 response_time: int | None = None, sentiment_score: float | None = None):
-    # 🔥 파라미터에 response_time과 sentiment_score를 추가 지원하도록 업데이트했습니다.
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -178,7 +188,7 @@ def save_detail(session_id: int, turn_index: int, question: str,
                 (session_id, turn_index, question, answer, int(is_followup), score, feedback, response_time, sentiment_score),
             )
 
-def get_sessions_by_user(user_id: str) -> list[dict]:
+def get_sessions_by_user(user_id: int) -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -204,7 +214,7 @@ def get_details_by_session(session_id: int) -> list[dict]:
             )
             return cur.fetchall()
 
-# question_pool 헬퍼
+# ─── question_pool 헬퍼 ───────────
 def get_questions_by_role(job_role: str, difficulty: str,
                           q_type: str = "기술", limit: int = 3) -> list[dict]:
     diff_map = {"주니어": "Easy", "미들": "Medium", "시니어": "Hard"}
@@ -271,8 +281,8 @@ def get_questions_by_resume_keywords(job_role: str, difficulty: str, keywords: l
                         if len(results) == limit: break
             return results
 
-# 이력서 보관함 CRUD 기능 추가
-def save_user_resume(user_id: str, title: str, job_role: str, resume_text: str, analysis_result: dict) -> int:
+# ─── 이력서 보관함 CRUD ─────────────────────────────────────
+def save_user_resume(user_id: int, title: str, job_role: str, resume_text: str, analysis_result: dict) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
             json_str = json.dumps(analysis_result, ensure_ascii=False)
@@ -283,7 +293,7 @@ def save_user_resume(user_id: str, title: str, job_role: str, resume_text: str, 
             )
             return conn.insert_id()
 
-def get_user_resumes(user_id: str) -> list[dict]:
+def get_user_resumes(user_id: int) -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -303,10 +313,8 @@ def delete_user_resume(resume_id: int):
         with conn.cursor() as cur:
             cur.execute("DELETE FROM user_resumes WHERE id=%s", (resume_id,))
 
-
-# 게시판 CRUD 기능
+# ─── 방명록(게시판) CRUD ────────────────────────────────────
 def save_memo(author: str, content: str, color: str, border: str, text_color: str):
-    """새로운 메모를 DB에 저장합니다."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -316,7 +324,6 @@ def save_memo(author: str, content: str, color: str, border: str, text_color: st
             )
 
 def get_all_memos(limit: int = 30) -> list[dict]:
-    """가장 최근에 작성된 메모들을 DB에서 불러옵니다 (기본 30개)."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -327,4 +334,3 @@ def get_all_memos(limit: int = 30) -> list[dict]:
                 (limit,)
             )
             return cur.fetchall()
-

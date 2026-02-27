@@ -142,6 +142,7 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
     return {
         "access_token": access,
         "token_type": "bearer",
+        "id" : user_id,
         "name": user_name,
         "role": user_role,
         "profile_image_url": user_profile_image_url,
@@ -204,6 +205,7 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
         user_role = getattr(user_obj, "role", "user")
 
         return {
+            "id": user_obj.id,
             "name": user_name,
             "role": user_role,
             "profile_image_url": getattr(user_obj, "profile_image_url", None),

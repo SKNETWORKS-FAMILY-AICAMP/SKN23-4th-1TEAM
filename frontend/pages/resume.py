@@ -17,10 +17,11 @@ if backend_dir not in sys.path:
 
 from services.llm_service import analyze_resume_comprehensive
 from db.database import init_db, save_user_resume, get_user_resumes, delete_user_resume
-from utils.function import inject_custom_header
+from utils.function import inject_custom_header, require_login 
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 inject_custom_header()
+user_id = require_login()
 
 # DB 초기화 시도
 try:
@@ -108,7 +109,6 @@ def extract_resume_text(uploaded_file) -> str:
 
 
 # 상태 관리
-user_id = st.session_state.get("user_id", "demo_user")
 if "selected_resume" not in st.session_state:
     st.session_state.selected_resume = None
 
@@ -178,7 +178,7 @@ if st.session_state.selected_resume is None:
     with cols[0]:
         st.markdown("<div class='new-resume-card'>", unsafe_allow_html=True)
         if st.button(
-            "➕\n\n새 이력서 분석하기", use_container_width=True, key="btn_new_resume"
+            "➕\n\n등록하기", use_container_width=True, key="btn_new_resume"
         ):
             setup_modal()
         st.markdown("</div>", unsafe_allow_html=True)

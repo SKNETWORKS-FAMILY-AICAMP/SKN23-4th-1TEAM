@@ -12,31 +12,32 @@ Modification History:
 - 2026-02-23 (김지우): 마이페이지 연동을 위해 TokenResponse에 email, tier 속성 추가
 """
 
-from pydantic import BaseModel, Field  # 스키마
+from pydantic import BaseModel, Field  
+from typing import Optional
+
 
 class SignupRequest(BaseModel):
-    email: str = Field(min_length=3, max_length=255)  # 유저 Email
-    password: str = Field(min_length=8, max_length=128)  # 비번
+    email: str = Field(min_length=3, max_length=255)  
+    password: str = Field(min_length=8, max_length=128)  
 
 class LoginRequest(BaseModel):
-    email: str  # 이메일(아이디)
-    password: str  # 비번
+    email: str  
+    password: str  
 
 class TokenResponse(BaseModel):
-    access_token: str           # 액세스 토큰
-    token_type: str = "bearer"  # 타입
-    name: str | None = None     # 유저 이름 (프론트 표시용)
-    role: str | None = None     # 권한 (user / admin)
+    access_token: str          
+    token_type: str = "bearer"  
+    id: int                     
+    name: str | None = None    
+    role: str | None = None     
     profile_image_url: str | None = None
-    
-    # 🔥 마이페이지(profile.py) 데이터 바인딩을 위해 추가된 부분!
-    email: str | None = None    # 유저 이메일
-    tier: str | None = None     # 유저 등급 (normal / plus)
+    email: str | None = None    
+    tier: str | None = None     
 
 class MeResponse(BaseModel):
-    id: int  # 유저 ID
-    email: str # 유저 Email
-    name: str | None = None # 유저명
+    id: int  
+    email: str 
+    name: str | None = None 
 
 # 추가 부분 (김지우)
 class ResetEmailRequest(BaseModel):

@@ -11,18 +11,26 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(current_dir))
 backend_dir = os.path.join(root_dir, "backend")
+
+# sys.path에 경로 강제 주입 (tavily_service 등 백엔드 모듈 접근용)
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
 import streamlit as st
 from dotenv import load_dotenv
 from db.database import init_db, get_sessions_by_user, get_details_by_session
-from utils.function import inject_custom_header
-
+from utils.function import inject_custom_header, require_login
 
 load_dotenv()
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
+
+# 1. 헤더 그리기
 inject_custom_header()
+
+# 🚨 2. 만능 문지기 출동! (알아서 쿠키 복구하고, 비로그인 유저는 튕겨냄)
+user_id = require_login()
 
 try:
     init_db()
@@ -30,7 +38,8 @@ except Exception:
     pass
 
 
-# CSS
+# ============================================================
+# 💅 CSS 스타일링
 # ============================================================
 st.markdown("""
 <style>
@@ -45,13 +54,9 @@ html, body, .stApp,
 .block-container { max-width: 760px !important; padding-top: 1.5rem !important; padding-bottom: 4rem !important; }
 h1, h2, h3, p, div, span, label { color: #333 !important; }
 
-
-
 .hero-title { font-size: 38px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 12px; margin-top: 10px; }
 .hero-title span { background: linear-gradient(135deg, #bb38d0, #8b1faa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hero-subtitle { font-size: 16px; color: #64748b; margin-bottom: 40px; font-weight: 500; }
-
-
 
 .page-title { font-size: 38px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 12px; margin-top: 10px; }
 .page-titlespan { background: linear-gradient(135deg, #bb38d0, #8b1faa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -113,19 +118,15 @@ hr { border-color: #eee !important; }
 
 st.markdown("<br><br><br>", unsafe_allow_html=True)
 
-# ─── 유저 ID (실제 서비스: st.session_state.user["id"]) ───────
-user_id = st.session_state.get("user_id", "demo_user")
-
+# ─── 타이틀 ───────────────────────────────────────────────────
 st.markdown("<div class='hero-title'>내 <span>면접 기록</span></div>", unsafe_allow_html=True)
 st.markdown("<div class='hero-subtitle'>지금까지 진행한 모의 면접 결과를 확인하세요.</div>", unsafe_allow_html=True)
-    
-
-
 
 st.markdown("---")
 
 # ─── 세션 목록 조회 ───────────────────────────────────────────
 try:
+    # 🔥 방금 문지기한테 받은 진짜 user_id (정수) 로 DB를 조회합니다!
     sessions = get_sessions_by_user(user_id)
 except Exception as e:
     st.error(f"DB 연결 오류: {e}")

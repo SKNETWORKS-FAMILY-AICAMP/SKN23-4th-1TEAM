@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from utils.webcam_box import webcam_box
 from utils.config import API_BASE_URL
+from utils.function import require_login, inject_custom_header  # 👈 문지기 함수 임포트!
 
 
 # 경로 설정
@@ -43,6 +44,12 @@ from services.llm_service import (
     generate_evaluation,
 )
 from services.rag_service import clear_resume_for_session, store_resume
+
+
+# ─── 페이지 기본 설정 및 로그인 검증 ─────────────────────────
+st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
+
+
 
 
 def get_image_base64(image_path: str) -> str:
@@ -96,6 +103,8 @@ def inject_custom_header() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+inject_custom_header()
 
 
 def extract_resume_text(uploaded_file) -> str:
@@ -208,7 +217,7 @@ def process_answer(answer_text: str) -> None:
         job_role=st.session_state.job_role,
         difficulty=st.session_state.difficulty,
         persona_style=st.session_state.persona_style,
-        user_id=st.session_state.user_id,
+        user_id=st.session_state.user_id, # 🔥 이제 여기에 안전한 진짜 숫자 ID가 들어갑니다!
         resume_text=st.session_state.resume_text,
         next_main_question=next_q,
         followup_count=st.session_state.current_followup_count,
@@ -252,10 +261,6 @@ def process_answer(answer_text: str) -> None:
     if tts:
         st.session_state.latest_audio_content = tts
 
-
-# 페이지 시작
-st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
-inject_custom_header()
 
 try:
     init_db()
@@ -315,6 +320,14 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+require_login()  # 로그인 안 된 사용자는 여기서 튕겨냅니다.
+
+if "user" in st.session_state and st.session_state.user:
+    current_user_id = st.session_state.user.get("id")
+else:
+    current_user_id = None
+
+
 defaults = {
     "messages": [],
     "interview_ended": False,
@@ -331,7 +344,7 @@ defaults = {
     "current_is_followup": False,
     "db_questions": [],
     "current_q_idx": 0,
-    "user_id": "jiwoo_kim",
+    "user_id": current_user_id, # 🔥 문지기 함수에서 받아온 진짜 ID를 기본값으로 세팅!
     "latest_audio_content": None,
     "last_voice_hash": None,
 }
@@ -339,12 +352,13 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-st.sidebar.markdown("### 👤 내 정보 설정")
-input_id = st.sidebar.text_input("사용자 ID (이름)", value=st.session_state["user_id"])
-if input_id:
-    st.session_state["user_id"] = input_id
-else:
-    st.sidebar.warning("ID를 입력해주세요!")
+
+# 💡 내 정보 설정 사이드바는 이제 사용자가 마음대로 ID를 고칠 수 없도록 수정/숨김 처리하는 것이 좋습니다.
+# 여기서는 지우고, 대신 로그인된 이름이나 이메일을 보여주도록 살짝 변경했습니다.
+st.sidebar.markdown("### 👤 접속 정보")
+st.sidebar.info(f"사용자 고유 번호: {st.session_state.user_id}번")
+if "user" in st.session_state and st.session_state.user:
+    st.sidebar.text(f"이름: {st.session_state.user.get('name', '사용자')}")
 
 
 if not st.session_state.chatbot_started:
@@ -391,13 +405,14 @@ if not st.session_state.chatbot_started:
             resume_text = extract_resume_text(uploaded_resume) if uploaded_resume else None
             try:
                 db_session_id = create_session(
-                    user_id=st.session_state["user_id"],
+                    user_id=st.session_state["user_id"], # 🔥 진짜 숫자 ID가 DB로 넘어갑니다!
                     job_role=job_role,
                     difficulty=difficulty,
                     persona=persona_style,
                     resume_used=bool(resume_text),
                 )
-            except Exception:
+            except Exception as e:
+                st.error(f"세션 생성 오류: {e}")
                 db_session_id = None
 
             if resume_text and db_session_id:

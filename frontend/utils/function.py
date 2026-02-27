@@ -13,6 +13,8 @@ import time
 import sys
 import os
 import base64
+import extra_streamlit_components as stx
+from utils.api_utils import api_verify_token
 
 
 # 프로젝트 루트 경로 및 backend 경로 추가
@@ -38,6 +40,56 @@ try:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
 except Exception:
     pass
+
+
+# interview.py & resume.py 에 쓰임.
+def require_login():
+    """
+    로그인 상태를 완벽하게 검증하고, 
+    새로고침으로 세션이 날아갔다면 쿠키를 통해 자동 복구까지 해주는 만능 문지기입니다.
+    """
+    # 1. 이미 주머니(세션)에 출입증(user_id)과 내 정보(user)가 있다면? 하이패스 통과! 🏎️
+    if "user_id" in st.session_state and isinstance(st.session_state["user_id"], int) and "user" in st.session_state:
+        return st.session_state["user_id"]
+
+    # 2. 세션이 비어있다면 (새로고침 됨), 브라우저에 남은 쿠키를 뒤져봅니다.
+    cookie_manager = stx.CookieManager(key="global_auth_cookie")
+    token = cookie_manager.get("access_token")
+
+    if token:
+        # 백엔드에 "이 쿠키(토큰) 유효한가요?" 물어보기
+        is_valid, result = api_verify_token(token)
+        if is_valid:
+            # 🔥 잃어버린 기억(세션) 완벽 복구!
+            st.session_state["user_id"] = result.get("id")
+            st.session_state.user = {
+                "name": result.get("name"),
+                "role": result.get("role", "user"),
+                "profile_image_url": result.get("profile_image_url"),
+                "email": result.get("email", ""),
+                "tier": result.get("tier", "normal"),
+            }
+            st.session_state.token = token
+            
+            # 복구 완료했으니 출입증(id) 반환
+            return st.session_state["user_id"]
+        else:
+            st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
+            time.sleep(1)
+            st.switch_page("pages/login.py")
+            st.stop()
+    else:
+        # Streamlit CookieManager 특성상 처음 렌더링 시 값을 못 읽을 수 있으므로 1회 재시도
+        if not st.session_state.get("_cookie_retry_global"):
+            st.session_state["_cookie_retry_global"] = True
+            time.sleep(0.4)
+            st.rerun()
+        else:
+            st.warning("⚠️ 로그인이 필요한 서비스입니다.")
+            time.sleep(1)
+            st.switch_page("pages/login.py")
+            st.stop()
+
 
 # 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
 def get_image_base64(image_path):

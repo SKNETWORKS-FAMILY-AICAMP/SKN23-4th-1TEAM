@@ -1,5 +1,5 @@
 """
-File: pages/profile.py
+File: pages/my_info.py
 Author: 김지우
 Created: 2026-02-24
 Description: 마이페이지
@@ -7,58 +7,31 @@ Description: 마이페이지
 Modification History:
 - 2026-02-24 (김지우): 초기 틀 생성
 - 2026-02-26 (김지우): 전체적인 코드 확인 및 수정 작업
+- 2026-02-27 (김지우): 만능 문지기(require_login) 적용 및 로직 최적화 🚀
 """
 import streamlit as st
 import time
-from utils.api_utils import api_update_profile_image, _handle_request, api_verify_token
-from utils.function import inject_custom_header
-import extra_streamlit_components as stx
+from utils.api_utils import api_update_profile_image, _handle_request
+from utils.function import inject_custom_header, require_login
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# 로그인 세션 체크 전에 꼭 지정. (위치 변경 금지)
+# 1. 헤더 그리기
 inject_custom_header()
 
-# 쿠키 매니저를 통해 접속 토큰(쿠키) 확인
-cookie_manager = stx.CookieManager(key="myinfo_cookie_manager")
-token = cookie_manager.get("access_token")
+# 🚨 2. 만능 문지기 출동! (알아서 쿠키 복구하고, 비로그인 유저는 튕겨냄)
+user_id = require_login()
 
-# 로그인 세션 체크 및 복구 (쿠키 기반)
-if "user" not in st.session_state or st.session_state.user is None:
-    if token:
-        is_valid, result = api_verify_token(token)
-        if is_valid:
-            st.session_state.user = {
-                "name": result.get("name"),
-                "role": result.get("role", "user"),
-                "profile_image_url": result.get("profile_image_url"),
-                "email": result.get("email", ""),
-                "tier": result.get("tier", "normal"),
-            }
-            st.session_state.token = token
-            st.rerun() # 세션 정보 로딩 후 화면 새로고침
-        else:
-            st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
-            time.sleep(1)
-            st.switch_page("app.py")
-    else:
-        if not st.session_state.get("_cookie_retry_myinfo"):
-            st.session_state["_cookie_retry_myinfo"] = True
-            time.sleep(0.4)
-            st.rerun() # 처음 렌더링 시 쿠키를 바로 못 읽으므로 재시도
-        else:
-            st.warning("로그인이 필요한 페이지입니다.")
-            time.sleep(1)
-            st.switch_page("app.py")
-
-# DB 로그인 세션 정보를 변수에 저장
+# 3. 마음 편하게 DB 데이터 사용 시작!
 user = st.session_state.user
 user_name = user.get("name", "이름 없음")
 user_email = user.get("email", "이메일 정보 없음") 
 user_tier = user.get("tier", "normal")
 profile_url = user.get("profile_image_url") or "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
 
-# CSS (탈퇴버튼)
+# ============================================================
+# 💅 CSS 스타일링 (탈퇴버튼 등)
+# ============================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
@@ -114,7 +87,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# ============================================================
 # 팝업(모달) 로직 정의
+# ============================================================
 @st.dialog("프로필 사진 올리기")
 def upload_photo_dialog():
     uploaded_file = st.file_uploader("이미지 파일 선택", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
@@ -182,8 +157,10 @@ def withdraw_dialog(email):
                 st.session_state.clear() 
                 st.switch_page("app.py")
 
+
 # ==========================================
 # 📱 4. UI 렌더링 시작
+# ==========================================
 
 # [헤더]
 st.markdown("""
