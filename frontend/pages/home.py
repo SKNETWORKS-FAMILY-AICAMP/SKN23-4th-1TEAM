@@ -307,15 +307,29 @@ except Exception as e:
 # 쿠키 매니저 및 인증
 cookie_manager = stx.CookieManager(key="home_cookie_manager")
 
+
+def get_cookie_token_with_retry(
+    retries: int = 5, delay: float = 0.1
+) -> str | None:
+    for _ in range(retries):
+        try:
+            token = cookie_manager.get("access_token")
+        except Exception:
+            token = None
+
+        if token:
+            return token
+
+        time.sleep(delay)
+
+    return None
+
 if "new_token" in st.session_state:
     token = st.session_state.new_token
     cookie_manager.set("access_token", token, secure=False, same_site="lax")
     del st.session_state["new_token"]
 else:
-    try:
-        token = cookie_manager.get("access_token")
-    except Exception:
-        token = None
+    token = get_cookie_token_with_retry()
 
 
 def force_logout(msg: str):
@@ -350,13 +364,7 @@ elif token:
     else:
         force_logout(f"🔒 {result}")
 else:
-    if not st.session_state.get("_cookie_retry"):
-        st.session_state["_cookie_retry"] = True
-        time.sleep(0.4)
-        st.rerun()
-    else:
-        del st.session_state["_cookie_retry"]
-        force_logout("로그인이 필요한 서비스입니다. 2초 후 이동합니다.")
+    force_logout("로그인이 필요한 서비스입니다. 2초 후 이동합니다.")
 
 # 유저 정보 바인딩
 user_info = st.session_state.user or {}
@@ -513,12 +521,11 @@ if selected == "홈":
                 "startPage": 1,
                 "display": 20,
             }
-            user_id = st.session_state.get("user_id")
+            user_id = user_id or st.session_state.get("user_id")
 
             if not user_id:
                 st.info('정보를 불러오는 중...')
-                time.sleep(0.5)
-                st.rerun()
+                st.stop()
 
             try:
                 parsed = {}
@@ -527,7 +534,6 @@ if selected == "홈":
 
                 if resume_cache not in st.session_state:
                     st.session_state[resume_cache] = get_latest_resume(user_id=user_id)
-                    st.rerun()
 
                 resume = st.session_state.get(resume_cache)
 
