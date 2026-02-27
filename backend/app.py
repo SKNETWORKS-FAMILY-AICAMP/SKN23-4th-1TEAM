@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from backend.db.session import engine
 from backend.db.base import Base
 from backend.models import user, refresh_token
+from backend.api.v1.endpoints import resume_api
 
 # ─── 라우터 임포트 ─────────────────────────────────────────
 from backend.routers import auth, social_auth, infer
@@ -53,4 +54,4 @@ app.include_router(infer.router)        # 👈 infer 라우터 활성화 완료
 
 # 💡 만약 jobs_api 쪽에도 router가 정의되어 있다면 아래 주석을 풀고 사용하세요!
 app.include_router(jobs_api.router)
-
+app.include_router(resume_api.router)
