@@ -18,17 +18,20 @@ from utils.function import render_memo_board, render_realtime_ai_news
 
 
 # # ─── 경로 설정 ─────────────────────────────────────────────────────────
-# import sys, os, time
+import sys, os, time
 
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# frontend_dir = os.path.dirname(current_dir)
-# root_dir = os.path.dirname(frontend_dir)
-# backend_dir = os.path.join(root_dir, "backend")
 
-# if backend_dir not in sys.path:
-#     sys.path.append(backend_dir)
-# if frontend_dir not in sys.path:
-#     sys.path.append(frontend_dir)
+current_dir = os.path.dirname(os.path.abspath(__file__))      # 위치: frontend/pages
+frontend_dir = os.path.dirname(current_dir)                     # 위치: frontend
+root_dir = os.path.dirname(frontend_dir)                        # 위치: SKN23-3rd-1TEAM (최상위)
+backend_dir = os.path.join(root_dir, "backend")
+
+# sys.path에 경로를 강제로 주입!
+
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
 
 ## ───────────────────────────────────────────────────────────────────────
 
@@ -48,7 +51,7 @@ from api.jobs import search_jobs, get_latest_resume
 from services.jobs_service import build_job_cards_data
 from components.job_cards import render_job_cards
 
-from backend.services.tavily_service import get_web_context
+from backend.services.tavily_service import get_web_context_first, get_web_context_second
 from backend.services.llm_service import get_home_guide_response
 
 
@@ -792,7 +795,7 @@ def chatbot_modal():
 
             # 3. AI 답변 대기 및 생성
             with st.spinner("웹을 탐색하며 트렌드를 분석 중입니다... 🌐"):
-                web_info = get_web_context(prompt)
+                web_info = get_web_context_first(prompt)
                 ai_reply = get_home_guide_response(prompt, web_info)
 
             # 🚨 [수정 및 추가된 부분] AI 답변을 받아왔으니, 화면에 즉시 말풍선으로 그려줍니다!
@@ -860,3 +863,4 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
 st.markdown('<div id="fab-marker"></div>', unsafe_allow_html=True)
 if st.button("chatbot_trigger_btn", key="fab_btn"):
     chatbot_modal()
+

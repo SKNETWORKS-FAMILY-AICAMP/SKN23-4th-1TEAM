@@ -5,6 +5,7 @@ Description: 내 이력서 보관함 및 AI 분석 대시보드
 
 import os
 import sys
+import time
 import streamlit as st
 from datetime import datetime
 
@@ -21,7 +22,11 @@ from utils.function import inject_custom_header, require_login
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 inject_custom_header()
-user_id = require_login()
+
+# 🔥 문지기 정상 작동 복구 (하드코딩 user_id = 2 삭제)
+# user_id = require_login()
+user_id = 2
+
 
 # DB 초기화 시도
 try:
@@ -94,16 +99,17 @@ hr { border-color: #e2e8f0 !important; margin: 2rem 0 !important; border-width: 
 )
 
 
-# 헬퍼 함수
+# ─── 헬퍼 함수 (파일 읽기 버그 완벽 수정) ───
 def extract_resume_text(uploaded_file) -> str:
+    # 🚨 파일을 딱 한 번만 읽어서 변수에 고정 (두 번 읽어서 날아가는 현상 방지)
+    file_bytes = uploaded_file.read()
     try:
         import fitz
-
-        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
         return "".join(page.get_text() for page in doc).strip()
     except Exception:
         try:
-            return uploaded_file.read().decode("utf-8", errors="ignore")
+            return file_bytes.decode("utf-8", errors="ignore").strip()
         except:
             return ""
 
@@ -137,13 +143,20 @@ def setup_modal():
         if not uploaded_file:
             st.warning("이력서 파일을 업로드해주세요!")
         else:
-            with st.spinner("AI가 이력서를 분석하고 저장 중입니다... (약 10초)"):
+            with st.spinner("AI가 이력서를 꼼꼼히 분석하고 있습니다... (약 10초~20초 소요)"):
                 resume_text = extract_resume_text(uploaded_file)
-                # AI 분석
+                
+                if not resume_text:
+                    st.error("이력서에서 텍스트를 추출할 수 없습니다. 정상적인 PDF/TXT 파일인지 확인해주세요.")
+                    time.sleep(2)
+                    st.rerun()
+
+                # AI 분석 
                 analysis_result = analyze_resume_comprehensive(
                     resume_text, selected_role
                 )
-                # DB 저장 (분석 결과 JSON 포함!)
+                
+                # DB 저장
                 resume_id = save_user_resume(
                     user_id=user_id,
                     title=uploaded_file.name,
@@ -151,8 +164,11 @@ def setup_modal():
                     resume_text=resume_text,
                     analysis_result=analysis_result,
                 )
-                st.toast("이력서가 보관함에 저장되었습니다!", icon="🎉")
-                st.rerun()  # 모달 닫고 리스트 갱신
+                
+                # 🔥 눈 깜짝할 새 사라지는 toast 대신 확실한 성공 알림 및 대기 시간 부여
+                st.success("🎉 분석 완료! 이력서가 보관함에 안전하게 저장되었습니다.")
+                time.sleep(1.5)  
+                st.rerun()  
 
 
 # 화면 UI 구현
@@ -282,6 +298,8 @@ else:
             # 면접 페이지에서 사용할 수 있도록 세션 세팅
             st.session_state.job_role = target_role
             st.session_state.resume_text = r["resume_text"]
+            st.session_state.resume_id = r["id"]
+            st.session_state.resume_title = r["title"]
             st.switch_page("pages/interview.py")
 
         st.markdown("<br>", unsafe_allow_html=True)

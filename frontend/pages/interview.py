@@ -320,7 +320,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-require_login()  # 로그인 안 된 사용자는 여기서 튕겨냅니다.
+# require_login()  # 로그인 안 된 사용자는 여기서 튕겨냅니다.
 
 if "user" in st.session_state and st.session_state.user:
     current_user_id = st.session_state.user.get("id")
@@ -352,13 +352,42 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+@st.dialog("면접 결과 리포트")
+def evaluation_modal():
+    scores = st.session_state.db_scores
+    total_score = round((sum(scores) / len(scores)) * 10, 1) if scores else 0.0
+    st.markdown(
+        f'<div class="score-circle"><span class="score-number">{total_score}</span><span class="score-label">/ 100</span></div>',
+        unsafe_allow_html=True,
+    )
 
-# 💡 내 정보 설정 사이드바는 이제 사용자가 마음대로 ID를 고칠 수 없도록 수정/숨김 처리하는 것이 좋습니다.
-# 여기서는 지우고, 대신 로그인된 이름이나 이메일을 보여주도록 살짝 변경했습니다.
-st.sidebar.markdown("### 👤 접속 정보")
-st.sidebar.info(f"사용자 고유 번호: {st.session_state.user_id}번")
-if "user" in st.session_state and st.session_state.user:
-    st.sidebar.text(f"이름: {st.session_state.user.get('name', '사용자')}")
+    if not st.session_state.get("resume_used", False):
+        st.warning("이력서를 연동하지 않은 자율 면접이므로, 직무/이력서 매칭률 점수 및 이력서 기반 포트폴리오 평가는 제공되지 않습니다.")
+        eval_resume_text = None
+    else:
+        eval_resume_text = st.session_state.get("resume_text")
+
+    if st.session_state.evaluation_result is None:
+        with st.spinner("AI가 분석 중입니다..."):
+            st.session_state.evaluation_result = generate_evaluation(
+                st.session_state.messages,
+                st.session_state.get("job_role"),
+                st.session_state.get("difficulty"),
+                eval_resume_text,
+            )
+
+    st.markdown(st.session_state.evaluation_result)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("다시 시작", type="primary", use_container_width=True):
+            for k, v in defaults.items():
+                st.session_state[k] = v
+            st.rerun()
+    with col2:
+        if st.button("내 기록 보러가기", use_container_width=True):
+            st.switch_page("pages/mypage.py")
 
 
 if not st.session_state.chatbot_started:
@@ -388,63 +417,108 @@ if not st.session_state.chatbot_started:
             ],
         )
     with col2:
-        difficulty = st.selectbox("난이도 선택", ["주니어", "미들", "시니어"], index=1)
+        difficulty = st.selectbox("난이도 선택", ["상", "중", "하"], index=1)
     q_count = st.slider("질문 수", 3, 10, 5)
 
-    st.markdown("**📄 이력서 업로드 <span style='color:#e53e3e;font-size:13px;'>(필수)</span>**", unsafe_allow_html=True)
-    uploaded_resume = st.file_uploader("PDF/TXT 이력서", type=["pdf", "txt"], label_visibility="collapsed")
+    has_saved_resume = bool(st.session_state.get("resume_id"))
+    saved_resume_title = st.session_state.get("resume_title", "이력서")
+    
+    manual_tech_stack = None
+    uploaded_resume = None
 
+    if has_saved_resume:
+        st.info(f"선택하신 '{saved_resume_title}' 이력서를 기반으로 면접이 진행됩니다.")
+        if st.button("선택 해제하고 직접 입력하기", use_container_width=False):
+            st.session_state.resume_id = None
+            st.session_state.resume_text = None
+            st.session_state.resume_title = None
+            st.rerun()
+    else:
+        input_method = st.radio("데이터 입력 방식", ["직접 입력", "이력서 첨부"], horizontal=True)
+        
+        if input_method == "직접 입력":
+            st.markdown("**📄 보유 기술 스택 및 핵심 프로젝트 경험**", unsafe_allow_html=True)
+            manual_tech_stack = st.text_area("예: Spring Boot, JPA, React 경험이 있습니다.", placeholder="면접에서 어필할 핵심 기술이나 프로젝트 경험을 적어주세요.", height=120)
+            disable_start = not bool(manual_tech_stack and manual_tech_stack.strip())
+        else:
+            st.markdown("**📄 이력서 새로 업로드 <span style='color:#e53e3e;font-size:13px;'>(필수)</span>**", unsafe_allow_html=True)
+            uploaded_resume = st.file_uploader("PDF/TXT 이력서를 올려주세요", type=["pdf", "txt"], label_visibility="collapsed")
+            disable_start = not bool(uploaded_resume)
+
+    st.markdown("<br>", unsafe_allow_html=True)
     col_start, col_back = st.columns([3, 1])
     with col_start:
         if st.button(
-            "면접 시작하기 🚀",
+            "면접 시작하기",
             type="primary",
             use_container_width=True,
-            disabled=not bool(uploaded_resume),
+            disabled=disable_start,
         ):
-            resume_text = extract_resume_text(uploaded_resume) if uploaded_resume else None
+            # 1. 텍스트 세팅 및 사용 여부 판단
+            final_resume_text = None
+            is_resume_used = False
+            
+            if has_saved_resume:
+                final_resume_text = st.session_state.get("resume_text")
+                is_resume_used = True
+            elif uploaded_resume:
+                final_resume_text = extract_resume_text(uploaded_resume)
+                is_resume_used = True
+            elif manual_tech_stack:
+                final_resume_text = manual_tech_stack
+                is_resume_used = False # 텍스트 입력은 이력서로 취급 안함
+
+            # 2. DB 세션 생성
             try:
                 db_session_id = create_session(
-                    user_id=st.session_state["user_id"], # 🔥 진짜 숫자 ID가 DB로 넘어갑니다!
+                    user_id=st.session_state["user_id"],
                     job_role=job_role,
                     difficulty=difficulty,
                     persona=persona_style,
-                    resume_used=bool(resume_text),
+                    resume_used=is_resume_used,
                 )
             except Exception as e:
                 st.error(f"세션 생성 오류: {e}")
                 db_session_id = None
 
-            if resume_text and db_session_id:
+            # 3. RAG 벡터 DB에 저장 (이력서 모드일 때만 수행)
+            if final_resume_text and db_session_id and is_resume_used:
                 with st.spinner("이력서 저장 중..."):
-                    store_resume(resume_text, user_id=str(db_session_id))
+                    store_resume(final_resume_text, user_id=str(db_session_id))
 
+            # 4. 질문 생성 로직 (첫 질문 자기소개 고정)
             try:
-                common_qs = get_common_questions(limit=1)
-                if resume_text:
-                    from db.database import get_questions_by_resume_keywords
-
-                    keywords = extract_keywords_from_resume(resume_text)
+                fixed_first_q = "간단하게 자기소개를 부탁드립니다."
+                
+                if final_resume_text:
+                    if is_resume_used:
+                        keywords = extract_keywords_from_resume(final_resume_text)
+                    else:
+                        keywords = extract_keywords_from_text_input(final_resume_text)
+                        
                     tech_qs = get_questions_by_resume_keywords(
                         job_role, difficulty, keywords, limit=q_count - 1
                     )
                 else:
                     tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
-                db_questions = [q["question"] for q in common_qs] + [
-                    q["question"] for q in tech_qs
-                ]
-                if not db_questions:
+                
+                db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
+                
+                if len(db_questions) == 1:
                     raise ValueError("질문 없음")
+                    
             except Exception:
                 db_questions = ["간단하게 자기소개를 부탁드립니다."] + [
                     f"{job_role} 관련 핵심 기술을 설명해주세요." for _ in range(q_count - 1)
                 ]
 
+            # 5. 첫 인사말 및 세션 업데이트
             first_q = db_questions[0]
             greeting = (
                 f"안녕하세요! 오늘 {job_role} 면접을 진행할 면접관입니다. "
                 f"총 {q_count}개의 질문을 드리겠습니다.\n\n첫 번째 질문입니다.\n**{first_q}**"
             )
+            
             st.session_state.update(
                 {
                     "interview_mode": "voice" if "음성" in mode else "text",
@@ -453,7 +527,7 @@ if not st.session_state.chatbot_started:
                     "difficulty": difficulty,
                     "q_count": q_count,
                     "persona_style": persona_style,
-                    "resume_text": resume_text,
+                    "resume_text": final_resume_text,
                     "db_session_id": db_session_id,
                     "db_questions": db_questions,
                     "current_q_idx": 0,
@@ -463,7 +537,6 @@ if not st.session_state.chatbot_started:
                 }
             )
             st.rerun()
-
     with col_back:
         if st.button("홈", use_container_width=True):
             st.switch_page("app.py")

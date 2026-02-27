@@ -29,8 +29,7 @@ st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 # 1. 헤더 그리기
 inject_custom_header()
 
-# 🚨 2. 만능 문지기 출동! (알아서 쿠키 복구하고, 비로그인 유저는 튕겨냄)
-user_id = require_login()
+
 
 try:
     init_db()
@@ -123,6 +122,9 @@ st.markdown("<div class='hero-title'>내 <span>면접 기록</span></div>", unsa
 st.markdown("<div class='hero-subtitle'>지금까지 진행한 모의 면접 결과를 확인하세요.</div>", unsafe_allow_html=True)
 
 st.markdown("---")
+
+# 🚨 2. 만능 문지기 출동! (알아서 쿠키 복구하고, 비로그인 유저는 튕겨냄)
+user_id = require_login()
 
 # ─── 세션 목록 조회 ───────────────────────────────────────────
 try:

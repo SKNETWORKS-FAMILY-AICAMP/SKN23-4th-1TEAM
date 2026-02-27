@@ -14,6 +14,7 @@ Modification History:
 """
 
 import os
+
 import json
 import re
 from openai import OpenAI
@@ -30,9 +31,10 @@ PERSONA_MAP = {
 SYSTEM_PROMPT_EVAL = """
 너는 실무 중심의 기술 면접관이자 채점기다. 말투는 간결하고 단정하며, 객관적으로 평가한다.
 
-[🚨 데이터 기반 제약 및 할루시네이션 방지 특별 원칙 🚨]
+[데이터 기반 제약 및 할루시네이션 방지 특별 원칙]
 - 반드시 CONTEXT(예: RAG 결과)와 QUESTION_LIST에 포함된 정보만 근거로 사용한다.
 - CONTEXT/QUESTION_LIST에 없는 사실, 정의, 모범답안을 절대 임의로 지어내지 않는다. (외부 사전 지식 개입 금지)
+- 주어진 CONTEXT(이력서/사용자 텍스트)가 해당 개발 직무와 무관한 개인적 일상, 장난식 내용이거나 실무 기술과 연관성이 없다면, 그 내용은 철저히 무시하고 오직 일반적인 {job_role} 기준의 정석적인 기술 면접 질문만 생성한다.
 - 근거가 부족하면 반드시 "근거 부족"이라고 명시하고, evidence는 []로 둔다.
 - 사용자의 답변이 본인의 모르는 것을 인정하는 것이 아닌, 질문과 전혀 다른 주제의 엉뚱한 답변일 경우 엄격하게 감점을 부여한다.
 
@@ -141,7 +143,7 @@ def evaluate_and_respond(
     user_prompt = build_eval_user_prompt(question_row_dict, answer, rag_context_dict)
     
     if next_main_question:
-        user_prompt += f"\n\n[NEXT_MAIN_QUESTION]\n{next_main_question}\n(위 질문을 자연스러운 한국어 면접 말투로 번역하여 next_question_translated 필드에 넣을 것)"
+        user_prompt += f"\n\n[NEXT_MAIN_QUESTION]\n{next_main_question}\n\n[🚨 번역 절대 원칙 🚨]\n위 [NEXT_MAIN_QUESTION]이 영문일 경우, 반드시 실제 한국인 면접관이 말하듯 아주 자연스러운 '한국어 존댓말(구어체)'로 완벽하게 번역해서 next_question_translated 필드에 넣어라. 절대 영어를 그대로 출력하지 마라."
 
     # 5. LLM 호출 (JSON 강제)
     try:
@@ -170,8 +172,8 @@ def evaluate_and_respond(
         
         if follow_up_needed and follow_up_question:
             # 꼬리질문 태그 강제 부착
-            if "💡 추가 질문:" not in follow_up_question:
-                reply_text += f"💡 추가 질문: {follow_up_question}"
+            if "추가 질문:" not in follow_up_question:
+                reply_text += f"✦ 추가 질문을 드리겠습니다. {follow_up_question}"
             else:
                 reply_text += follow_up_question
         else:
@@ -189,13 +191,13 @@ def evaluate_and_respond(
         }
 
     except Exception as e:
+
         return {
-            "score": 5.0,
+            "score": 0.0,
             "feedback": "평가 중 오류가 발생했습니다.",
-            "reply_text": f"네, 알겠습니다. 다음 질문 드릴게요.\n**{next_main_question}** [NEXT_MAIN]" if next_main_question else "[INTERVIEW_END]",
+            "reply_text": f"네, 알겠습니다. 다음 질문 드리겠습니다..\n**{next_main_question}** [NEXT_MAIN]" if next_main_question else "[INTERVIEW_END]",
             "is_followup": False
         }
-
 
 # ─── 레거시 호환성 유지용 (혹시 모를 에러 방지) ──────────────────────────
 def score_answer(question: str, answer: str, job_role: str) -> tuple[float, str]:
@@ -229,7 +231,35 @@ def extract_keywords_from_resume(resume_text: str) -> list[str]:
         return []
 
 
-# ─── 종합 리포트 생성 ─────────────────────────────────────────
+# ─── 직접 입력한 기술 스택 전용 키워드 추출 ──────────────────────
+def extract_keywords_from_text_input(text: str) -> list[str]:
+    """사용자가 직접 입력한 짧은 텍스트에서 핵심 기술 키워드를 추출합니다."""
+    if not text:
+        return []
+    
+    prompt = f"""
+    다음은 사용자가 모의 면접을 위해 직접 입력한 '보유 기술 스택 및 경험' 텍스트입니다.
+    
+    "{text}"
+    
+    이 내용에서 가장 핵심이 되는 기술 키워드(언어, 프레임워크, 도구, 직무 경험 등)를 최대 3개만 추출해서 쉼표(,)로 구분해 반환하세요.
+    (예시: Spring Boot, JPA, AWS)
+    """
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+        )
+        raw = response.choices[0].message.content.strip()
+        keywords = [k.strip() for k in raw.split(",") if k.strip()]
+        return keywords[:3]
+    except Exception as e:
+        print(f"[extract_keywords_from_text_input] 에러: {e}")
+        return []
+
+
+# ─── 종합 리포트 생성 (내 기록에 저장됨.) ─────────────────────────────────────────
 def generate_evaluation(messages: list, job_role: str, difficulty: str, resume_text: str | None = None) -> str:
     conversation_log = "\n".join([f"[{'면접관' if m['role'] == 'assistant' else '지원자'}] {m['content']}" for m in messages])
     resume_section = f"\n지원자 이력서:\n{resume_text[:800]}\n" if resume_text else ""
@@ -238,25 +268,25 @@ def generate_evaluation(messages: list, job_role: str, difficulty: str, resume_t
 난이도: {difficulty} {resume_section}
 
 [형식]
-## 📊 종합 점수
+## 종합 점수
 **XX / 100점** — (총평)
 
-## 🏆 BEST 답변
+## BEST 답변
 > 인용
 **이유**: 설명
 
-## ✅ 강점
+## 강점
 1. **(키워드)**: 설명
 
-## 🔧 개선 제안
+## 개선 제안
 | 질문 | 요약 | 모범 방향 |
 |---|---|---|
 
-## 🔑 키워드 체크리스트
+## 키워드 체크리스트
 | 키워드 | 여부 | 비고 |
 |---|---|---|
 
-## 📚 추천 학습
+## 추천 학습
 - **주제**: 이유
 
 [면접 대화]
@@ -394,7 +424,7 @@ def get_translated_news_summary(raw_news_data: str) -> str:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini", # 또는 사용하시는 모델명 (예: gpt-4o-mini)
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "user", "content": prompt}
             ],

@@ -30,7 +30,7 @@ if backend_dir not in sys.path:
 
 # 서비스 모듈 임포트
 try:
-    from backend.services.tavily_service import get_web_context
+    from backend.services.tavily_service import get_web_context_first, get_web_context_second   
 except ImportError as e:
     st.error(f"서비스를 불러오는 중 에러가 발생했습니다: {e}")
 
@@ -43,21 +43,28 @@ except Exception:
 
 
 # interview.py & resume.py 에 쓰임.
+# utils/function.py
+
+import time
+import streamlit as st
+import extra_streamlit_components as stx
+from utils.api_utils import api_verify_token
+
 def require_login():
     """
     로그인 상태를 완벽하게 검증하고, 
-    새로고침으로 세션이 날아갔다면 쿠키를 통해 자동 복구까지 해주는 만능 문지기입니다.
+    새로고침으로 세션이 날아갔다면 쿠키를 통해 자동 복구해주는 문지기입니다.
     """
-    # 1. 이미 주머니(세션)에 출입증(user_id)과 내 정보(user)가 있다면? 하이패스 통과! 🏎️
+    # 1. 주머니(세션)에 출입증이 이미 있다면 바로 하이패스 통과! 🏎️
     if "user_id" in st.session_state and isinstance(st.session_state["user_id"], int) and "user" in st.session_state:
         return st.session_state["user_id"]
 
-    # 2. 세션이 비어있다면 (새로고침 됨), 브라우저에 남은 쿠키를 뒤져봅니다.
+    # 2. 세션이 비어있다면 (새로고침 됨), 쿠키 매니저 소환!
     cookie_manager = stx.CookieManager(key="global_auth_cookie")
     token = cookie_manager.get("access_token")
 
     if token:
-        # 백엔드에 "이 쿠키(토큰) 유효한가요?" 물어보기
+        # 쿠키에서 토큰을 찾았으니 백엔드에 정상 유저인지 묻기
         is_valid, result = api_verify_token(token)
         if is_valid:
             # 🔥 잃어버린 기억(세션) 완벽 복구!
@@ -71,7 +78,7 @@ def require_login():
             }
             st.session_state.token = token
             
-            # 복구 완료했으니 출입증(id) 반환
+            # 복구 성공! 통과시켜 줍니다.
             return st.session_state["user_id"]
         else:
             st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
@@ -79,17 +86,22 @@ def require_login():
             st.switch_page("pages/login.py")
             st.stop()
     else:
-        # Streamlit CookieManager 특성상 처음 렌더링 시 값을 못 읽을 수 있으므로 1회 재시도
-        if not st.session_state.get("_cookie_retry_global"):
-            st.session_state["_cookie_retry_global"] = True
-            time.sleep(0.4)
-            st.rerun()
+        # 🚨 [해결된 부분] 쿠키 매니저가 아직 쿠키를 못 가져온 상태일 수 있습니다!
+        # 바로 쫓아내지 말고 브라우저가 쿠키를 가져올 수 있도록 잠깐 코드를 멈추고 기다려줍니다.
+        if "cookie_waiting" not in st.session_state:
+            st.session_state["cookie_waiting"] = True
+            st.spinner("사용자 정보를 불러오는 중입니다...")
+            # st.stop()을 해야 파이썬이 멈추고 쿠키 매니저가 비로소 일을 시작합니다. (작업 후 자동 재실행됨)
+            st.stop() 
         else:
+            # 한 번 기다려줬는데도(재실행됐는데도) 토큰이 없다면 진짜 로그인을 안 한 것입니다.
+            del st.session_state["cookie_waiting"] # 상태 초기화
             st.warning("⚠️ 로그인이 필요한 서비스입니다.")
-            time.sleep(1)
+            time.sleep(1.5)
             st.switch_page("pages/login.py")
             st.stop()
 
+# ================================================================================
 
 # 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
 def get_image_base64(image_path):
@@ -207,7 +219,7 @@ def inject_custom_header():
     """
     st.markdown(header_html, unsafe_allow_html=True)
 
-
+# ================================================================================
 
 
 # home.py (tab1)
@@ -394,7 +406,7 @@ def render_realtime_ai_news():
     
     try:
         with st.spinner("실시간 AI 트렌드를 분석중 ..."):
-            raw_news = get_web_context(query)
+            raw_news = get_web_context_second(query)
             
             # 2. 강력하게 제어된 프롬프트로 LLM에게 10개 번역/요약을 요청
             raw_news = get_translated_news_summary(raw_news)

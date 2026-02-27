@@ -11,6 +11,8 @@ from typing import Optional
 import chromadb
 from chromadb.utils import embedding_functions
 
+
+
 # ─── ChromaDB 클라이언트 초기화 ───────────────────────────────
 _CHROMA_PATH = os.getenv("CHROMA_PATH", "./backend/chroma_db")
 _COLLECTION_NAME = "resumes"
@@ -32,6 +34,22 @@ def _get_collection():
         metadata={"hnsw:space": "cosine"},
     )
 
+
+import os  # OS 모듈 임포트
+
+def assert_ascii(name: str, v: str | None):  # ASCII 검증 함수 정의
+    if not v:  # 값이 없으면
+        print(f"{name}: <empty>")  # 빈 값 출력
+        return  # 함수 종료
+    try:  # 예외 처리 블록 시작
+        v.encode("ascii")  # ASCII 인코딩 시도
+        print(f"{name}: OK")  # 인코딩 성공 메시지 출력
+    except UnicodeEncodeError:  # 인코딩 실패 시
+        print(f"{name}: NOT ASCII -> {name}={v!r}")  # 실패 메시지 출력
+
+assert_ascii("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))  # OPENAI_API_KEY 환경변수 검사
+assert_ascii("OPENAI_ORG", os.getenv("OPENAI_ORG"))  # OPENAI_ORG 환경변수 검사
+assert_ascii("OPENAI_PROJECT", os.getenv("OPENAI_PROJECT"))  # OPENAI_PROJECT 환경변수 검사
 
 # ─── 텍스트 청킹 ──────────────────────────────────────────────
 def _chunk_text(text: str, chunk_size: int = 400, overlap: int = 80) -> list[str]:
@@ -158,6 +176,8 @@ def clear_resume_for_session(session_id: str) -> None:
     try:
         collection = _get_collection()
         existing = collection.get(where={"user_id": session_id})
+        # if existing and existing["ids"]:
+        #     collection.delete(ids=existing["ids"])
     except Exception as e:
         pass
 

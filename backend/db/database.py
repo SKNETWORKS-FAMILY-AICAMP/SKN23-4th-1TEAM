@@ -69,6 +69,17 @@ CREATE TABLE IF NOT EXISTS question_pool (
     FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_resumes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL, 
+    title VARCHAR(255) NOT NULL,
+    job_role VARCHAR(100),
+    resume_text MEDIUMTEXT,
+    analysis_result JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_resumes FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS interview_sessions (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     user_id      INT, 
@@ -80,7 +91,10 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
     started_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ended_at     TIMESTAMP NULL,
     resume_used  TINYINT(1) DEFAULT 0,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    resume_id    INT NULL,
+    manual_tech_stack TEXT NULL,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_resume FOREIGN KEY (resume_id) REFERENCES user_resumes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS interview_details (
@@ -96,17 +110,6 @@ CREATE TABLE IF NOT EXISTS interview_details (
     sentiment_score FLOAT DEFAULT NULL, 
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS user_resumes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL, 
-    title VARCHAR(255) NOT NULL,
-    job_role VARCHAR(100),
-    resume_text MEDIUMTEXT,
-    analysis_result JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user_resumes FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS guestbook_memos (
@@ -156,14 +159,15 @@ def init_db():
 
 # ─── 세션 CRUD ────────────────────────────────────
 def create_session(user_id: int, job_role: str, difficulty: str = "미들",
-                   persona: str = "깐깐한 기술팀장", resume_used: bool = False) -> int:
+                   persona: str = "깐깐한 기술팀장", resume_used: bool = False,
+                   resume_id: int | None = None, manual_tech_stack: str | None = None) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """INSERT INTO interview_sessions
-                   (user_id, job_role, difficulty, persona, resume_used)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (user_id, job_role, difficulty, persona, int(resume_used)),
+                   (user_id, job_role, difficulty, persona, resume_used, resume_id, manual_tech_stack)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (user_id, job_role, difficulty, persona, int(resume_used), resume_id, manual_tech_stack),
             )
             return conn.insert_id()
 
