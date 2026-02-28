@@ -32,6 +32,12 @@ if "cookie_manager" not in st.session_state:
     st.session_state.cookie_manager = stx.CookieManager()
 
 cookie_manager = st.session_state.cookie_manager
+refresh_token_cookie = cookie_manager.get("refresh_token")
+csrf_token_cookie = cookie_manager.get("csrf_token")
+if refresh_token_cookie:
+    st.session_state.refresh_token = refresh_token_cookie
+if csrf_token_cookie:
+    st.session_state.csrf_token = csrf_token_cookie
 
 
 # 자동 로그인 로직
@@ -42,6 +48,12 @@ if access_token:
     ok, result = api_verify_token(access_token)
     
     if ok:
+        if st.session_state.get("token"):
+            cookie_manager.set("access_token", st.session_state.token, key="refresh_token_cookie")
+        if st.session_state.get("refresh_token"):
+            cookie_manager.set("refresh_token", st.session_state.refresh_token, key="refresh_refresh_cookie")
+        if st.session_state.get("csrf_token"):
+            cookie_manager.set("csrf_token", st.session_state.csrf_token, key="refresh_csrf_cookie")
         st.session_state["user_id"] = result.get("id")
         st.session_state.user = {
             "name": result.get("name") or "사용자",
@@ -55,6 +67,8 @@ if access_token:
         st.stop()
     else:
         cookie_manager.delete("access_token")
+        cookie_manager.delete("refresh_token")
+        cookie_manager.delete("csrf_token")
 
 
 # 관리자 및 점검 모드 로직
@@ -142,9 +156,13 @@ def dormant_recovery_modal(email, password):
 
                     if is_login_success:
                         st.session_state.new_token = login_result.get("access_token")
+                        st.session_state.refresh_token = login_result.get("refresh_token")
+                        st.session_state.csrf_token = login_result.get("csrf_token")
                         
                         # 쿠키에 토큰 영구 저장
                         cookie_manager.set("access_token", login_result.get("access_token"), key="set_token_dormant")
+                        cookie_manager.set("refresh_token", login_result.get("refresh_token"), key="set_refresh_dormant")
+                        cookie_manager.set("csrf_token", login_result.get("csrf_token"), key="set_csrf_dormant")
                         
                         st.session_state["user_id"] = login_result.get("id")  # 추가함 ^^
 
@@ -273,9 +291,13 @@ if not st.session_state.get("show_admin_choice"):
 
                 if is_success:
                     st.session_state.new_token = result.get("access_token")
+                    st.session_state.refresh_token = result.get("refresh_token")
+                    st.session_state.csrf_token = result.get("csrf_token")
                     
                     # 로그인 성공 시 브라우저 쿠키에 토큰을 구움
                     cookie_manager.set("access_token", result.get("access_token"), key="set_token_normal")
+                    cookie_manager.set("refresh_token", result.get("refresh_token"), key="set_refresh_normal")
+                    cookie_manager.set("csrf_token", result.get("csrf_token"), key="set_csrf_normal")
                     
                     st.session_state["user_id"] = result.get("id")  # 추가함 ^^
 

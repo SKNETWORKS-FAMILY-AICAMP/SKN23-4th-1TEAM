@@ -20,7 +20,7 @@ class Settings(BaseModel):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-super-long-random")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_MINUTES: int = 10
+    ACCESS_TOKEN_MINUTES: int = 30
     REFRESH_TOKEN_DAYS: int = 14
     REFRESH_COOKIE_NAME: str = "refresh_token"
     CSRF_COOKIE_NAME: str = "csrf_token"

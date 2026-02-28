@@ -11,7 +11,7 @@ Modification History:
 """
 import streamlit as st
 import time
-from utils.api_utils import api_update_profile_image, _handle_request
+from utils.api_utils import api_update_profile_image, api_withdraw
 from utils.function import inject_custom_header, require_login
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
@@ -152,7 +152,7 @@ def withdraw_dialog(email):
     with col2:
         if st.button("예", type="primary", use_container_width=True):
             with st.spinner("탈퇴 처리 중..."):
-                _handle_request("POST", "/auth/withdraw", json={"email": email})
+                api_withdraw(email)
                 time.sleep(1.5)
                 st.session_state.clear() 
                 st.switch_page("app.py")

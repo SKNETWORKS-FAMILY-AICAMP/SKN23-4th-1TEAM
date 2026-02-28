@@ -17,6 +17,42 @@ import streamlit as st
 from datetime import datetime
 from utils.config import API_BASE_URL
 
+
+def _store_auth_tokens(payload):
+    if not isinstance(payload, dict):
+        return
+    if payload.get("access_token"):
+        st.session_state.token = payload["access_token"]
+    if payload.get("refresh_token"):
+        st.session_state.refresh_token = payload["refresh_token"]
+    if payload.get("csrf_token"):
+        st.session_state.csrf_token = payload["csrf_token"]
+
+
+def _try_refresh_tokens():
+    refresh_token = st.session_state.get("refresh_token")
+    if not refresh_token:
+        return False
+
+    csrf_token = st.session_state.get("csrf_token")
+    headers = {"X-CSRF-Token": csrf_token} if csrf_token else {}
+    url = f"{API_BASE_URL.rstrip('/')}/auth/refresh"
+
+    try:
+        response = requests.post(
+            url,
+            json={"refresh_token": refresh_token, "csrf_token": csrf_token},
+            headers=headers,
+            timeout=30,
+        )
+        if response.status_code != 200:
+            return False
+        payload = response.json()
+        _store_auth_tokens(payload)
+        return True
+    except Exception:
+        return False
+
 def _handle_request(method, endpoint, **kwargs):
     """
     API 요청 중복 코드를 줄여주는 내부 헬퍼 함수
@@ -26,13 +62,17 @@ def _handle_request(method, endpoint, **kwargs):
     url = f"{base_url}/{target_endpoint}"
     
     # 세션에 토큰이 있다면 자동으로 Authorization 헤더에 추가 (로그인 인증 호환)
-    if "token" in st.session_state and st.session_state.token:
+    if (
+        "token" in st.session_state
+        and st.session_state.token
+        and "Authorization" not in kwargs.get("headers", {})
+    ):
         headers = kwargs.get("headers", {})
         headers["Authorization"] = f"Bearer {st.session_state.token}"
         kwargs["headers"] = headers
         
     try:
-        # 🔥 timeout 기본값 30초
+        # timeout 기본값 30초
         timeout = kwargs.pop('timeout', 30)
         response = requests.request(method, url, timeout=timeout, **kwargs)
 
@@ -44,9 +84,29 @@ def _handle_request(method, endpoint, **kwargs):
                 return {}
 
         if response.status_code == 200:
-            return True, _safe_json()
+            body = _safe_json()
+            _store_auth_tokens(body)
+            return True, body
 
         # 💡 에러 메시지 추출 (빈 바디여도 안전)
+        if (
+            response.status_code == 401
+            and endpoint not in {"/auth/login", "/auth/refresh"}
+            and _try_refresh_tokens()
+        ):
+            retry_kwargs = dict(kwargs)
+            retry_headers = dict(retry_kwargs.get("headers", {}))
+            retry_headers["Authorization"] = f"Bearer {st.session_state.token}"
+            retry_kwargs["headers"] = retry_headers
+            retry_response = requests.request(method, url, timeout=timeout, **retry_kwargs)
+            try:
+                retry_body = retry_response.json()
+            except Exception:
+                retry_body = {}
+            if retry_response.status_code == 200:
+                _store_auth_tokens(retry_body)
+                return True, retry_body
+
         body = _safe_json()
         error_detail = body.get("detail") if isinstance(body, dict) else None
         if not error_detail:
@@ -69,6 +129,12 @@ def api_login(email, password):
     """
     return _handle_request("POST", "/auth/login", json={"email": email, "password": password})
 
+
+def api_refresh():
+    if _try_refresh_tokens():
+        return True, {"access_token": st.session_state.get("token")}
+    return False, "토큰 갱신에 실패했습니다."
+
 def api_verify_token(token):
     if token == "admin_token":
         return True, {"name": "admin", "role": "admin"}
@@ -84,14 +150,90 @@ def api_check_email(email):
 def api_send_signup_email(email, auth_code):
     return _handle_request("POST", "/auth/send-signup-email", json={"email": email, "auth_code": auth_code})
 
-def api_signup(email, password):
-    return _handle_request("POST", "/auth/signup", json={"email": email, "password": password})
+def api_signup(email, password, name=None):
+    payload = {"email": email, "password": password}
+    if name:
+        payload["name"] = name
+    return _handle_request("POST", "/auth/signup", json=payload)
 
 def api_send_reset_email(email, auth_code):
     return _handle_request("POST", "/auth/send-reset-email", json={"email": email, "auth_code": auth_code})
 
 def api_reset_password(email, new_password):
     return _handle_request("POST", "/auth/reset-password", json={"email": email, "new_password": new_password})
+
+
+def api_withdraw(email):
+    return _handle_request("POST", "/auth/withdraw", json={"email": email})
+
+
+def api_list_resumes(user_id):
+    return _handle_request("GET", "/resumes", params={"user_id": user_id})
+
+
+def api_create_resume(user_id, title, job_role, resume_text):
+    return _handle_request(
+        "POST",
+        "/resumes",
+        json={
+            "user_id": user_id,
+            "title": title,
+            "job_role": job_role,
+            "resume_text": resume_text,
+        },
+        timeout=120,
+    )
+
+
+def api_delete_resume(resume_id):
+    return _handle_request("DELETE", f"/resumes/{resume_id}")
+
+
+def api_get_interview_sessions(user_id):
+    return _handle_request("GET", "/infer/sessions", params={"user_id": user_id})
+
+
+def api_get_interview_session_details(session_id):
+    return _handle_request("GET", f"/infer/sessions/{session_id}")
+
+
+def api_get_question_pool(job_role, difficulty, limit):
+    return _handle_request(
+        "GET",
+        "/infer/questions",
+        params={"job_role": job_role, "difficulty": difficulty, "limit": limit},
+    )
+
+
+def api_get_memos(limit=30):
+    return _handle_request("GET", "/home/memos", params={"limit": limit})
+
+
+def api_create_memo(author, content, color, border, text_color):
+    return _handle_request(
+        "POST",
+        "/home/memos",
+        json={
+            "author": author,
+            "content": content,
+            "color": color,
+            "border": border,
+            "text_color": text_color,
+        },
+    )
+
+
+def api_get_home_news(query):
+    return _handle_request("POST", "/home/news", json={"query": query}, timeout=120)
+
+
+def api_get_home_guide(message, use_web_search=False):
+    return _handle_request(
+        "POST",
+        "/home/guide",
+        json={"message": message, "use_web_search": use_web_search},
+        timeout=120,
+    )
 
 
 # ==========================================
@@ -139,6 +281,10 @@ def api_save_interview_result(session_id, messages, settings):
     return _handle_request("POST", "/infer/save", json=payload)
 
 
+def api_end_interview(session_id):
+    return _handle_request("POST", "/infer/end", json={"session_id": session_id})
+
+
 def api_stt_whisper(audio_file):
     """
     사용자의 음성 파일을 백엔드로 전달하여 텍스트(STT)로 변환합니다.
@@ -176,19 +322,38 @@ def api_tts_service(text):
 
 
 
+def api_stt_bytes(audio_bytes, filename="voice_turn.wav"):
+    class _AudioPayload:
+        def __init__(self, content, name):
+            self._content = content
+            self.name = name
+
+        def getvalue(self):
+            return self._content
+
+    return api_stt_whisper(_AudioPayload(audio_bytes, filename))
+
+
 def api_unlock_dormant(email):
     """휴면 계정 상태를 정상(active)으로 되돌리는 API 호출"""
     return _handle_request("POST", "/auth/unlock", json={"email": email})
 
 
+def api_admin_fetch(query_type="users"):
+    return _handle_request("GET", "/admin/query", params={"query_type": query_type})
+
+
+def api_admin_run_sql(sql, args=None):
+    return _handle_request("POST", "/admin/sql", json={"sql": sql, "args": args})
+
+
 # ==========================================
-# 📷 프로필 이미지 업로드 통신 함수 (김지우 추가)
+# 프로필 이미지 업로드 통신 함수 (김지우 추가)
 # ==========================================
 def api_update_profile_image(uploaded_file):
     """마이페이지에서 업로드한 프로필 사진을 백엔드 DB로 전송합니다."""
     
-    BASE_URL = "http://127.0.0.1:8000/api" 
-    url = f"{BASE_URL}/auth/profile-image"
+    url = f"{API_BASE_URL.rstrip('/')}/auth/profile-image"
     
     # 1. 내 주머니(세션)에서 로그인 토큰 꺼내기
     token = st.session_state.get("token")
@@ -201,7 +366,7 @@ def api_update_profile_image(uploaded_file):
     # 3. 사진 파일을 FastAPI가 좋아하는 모양(Multipart)으로 예쁘게 포장하기
     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
     
-    # 4. 백엔드로 슝 날리기 🚀
+    # 4. 백엔드로 날리기
     try:
         response = requests.post(url, headers=headers, files=files, timeout=30)
         

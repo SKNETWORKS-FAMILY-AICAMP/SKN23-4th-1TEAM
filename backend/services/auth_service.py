@@ -37,11 +37,11 @@ APP_PASSWORD = os.getenv("APP_PASSWORD")
 # ==========================================
 # 1. 회원가입 및 로그인 (기존 코드 유지)
 # ==========================================
-def signup(db: Session, email: str, password: str) -> None:
+def signup(db: Session, email: str, password: str, name: str | None = None) -> None:
     exists = db.query(User).filter(User.email == email).first()
     if exists:
         raise ValueError("invalid credentials")
-    user = User(email=email, password=hash_password(password))
+    user = User(email=email, name=name, password=hash_password(password))
     db.add(user)
     db.commit()
 

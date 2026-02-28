@@ -14,7 +14,8 @@ Modification History:
 
 import streamlit as st
 import time
-from utils.function import render_memo_board, render_realtime_ai_news, inject_custom_header
+from utils.function import inject_custom_header
+from utils.home_api_render import render_memo_board, render_realtime_ai_news
 
 # ─── 경로 설정 ─────────────────────────────────────────────────────────
 import sys, os
@@ -37,15 +38,26 @@ st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 # ─── 서드파티 ──────────────────────────────────────────────────────────
 import extra_streamlit_components as stx
 from streamlit_option_menu import option_menu
-from utils.api_utils import api_verify_token
+from utils.api_utils import api_get_home_guide, api_verify_token
 import yaml
 
 from api.jobs import search_jobs, get_latest_resume
 from services.jobs_service import build_job_cards_data
 from components.job_cards import render_job_cards
 
-from backend.services.tavily_service import get_web_context_first, get_web_context_second
-from backend.services.llm_service import get_translated_news_summary, get_home_guide_response_stream
+
+def get_web_context_first(query):
+    return "__USE_WEB_SEARCH__"
+
+
+def get_home_guide_response_stream(user_message, web_context):
+    use_web_search = web_context == "__USE_WEB_SEARCH__"
+    success, result = api_get_home_guide(user_message, use_web_search=use_web_search)
+    if success:
+        yield result.get("content", "")
+    else:
+        yield str(result)
+
 
 
 st.markdown(
@@ -140,16 +152,23 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
 div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] button {
     width: 100% !important;
     height: 100% !important;
+    min-width: 70px !important;
+    min-height: 70px !important;
     border-radius: 50px !important;
     background: linear-gradient(135deg, #bb38d0, #872a96) !important;
     border: none !important;
     box-shadow: 0 8px 25px rgba(187, 56, 208, 0.4) !important;
-    color: transparent !important; 
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    text-indent: -9999px !important;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    overflow: hidden !important;
+    position: relative !important;
 }
 
 div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] button:hover {
@@ -162,6 +181,14 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
     font-size: 32px !important;
     color: white !important;
     position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    text-indent: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
 }
 </style>
 """,
@@ -172,11 +199,29 @@ inject_custom_header() # 상단 메뉴바 함수
 
 
 # 쿠키 매니저 및 인증
-cookie_manager = stx.CookieManager(key="home_cookie_manager")
+cookie_manager = None
+access_token_cookie = st.session_state.get("token")
+refresh_token_cookie = st.session_state.get("refresh_token")
+csrf_token_cookie = st.session_state.get("csrf_token")
+def sync_cookie_if_needed(name, value, current_value, key_name):
+    if cookie_manager is None:
+        return
+    if not value:
+        return
+    if current_value == value:
+        return
+    cookie_manager.set(name, value, secure=False, same_site="lax", key=key_name)
+
+
+sync_cookie_if_needed("access_token", st.session_state.get("token"), access_token_cookie, "home_set_access_boot")
+sync_cookie_if_needed("refresh_token", st.session_state.get("refresh_token"), refresh_token_cookie, "home_set_refresh_boot")
+sync_cookie_if_needed("csrf_token", st.session_state.get("csrf_token"), csrf_token_cookie, "home_set_csrf_boot")
 
 def get_cookie_token_with_retry(
     retries: int = 5, delay: float = 0.1
 ) -> str | None:
+    if cookie_manager is None:
+        return st.session_state.get("token")
     for _ in range(retries):
         try:
             token = cookie_manager.get("access_token")
@@ -192,7 +237,9 @@ def get_cookie_token_with_retry(
 
 if "new_token" in st.session_state:
     token = st.session_state.new_token
-    cookie_manager.set("access_token", token, secure=False, same_site="lax")
+    sync_cookie_if_needed("access_token", token, access_token_cookie, "home_set_access_new")
+    sync_cookie_if_needed("refresh_token", st.session_state.get("refresh_token"), refresh_token_cookie, "home_set_refresh_new")
+    sync_cookie_if_needed("csrf_token", st.session_state.get("csrf_token"), csrf_token_cookie, "home_set_csrf_new")
     del st.session_state["new_token"]
 else:
     token = get_cookie_token_with_retry()
@@ -200,10 +247,13 @@ else:
 def force_logout(msg: str):
     st.markdown(f'<div class="alert-warn">{msg}</div>', unsafe_allow_html=True)
     st.session_state.clear()
-    try:
-        cookie_manager.delete("access_token")
-    except Exception:
-        pass
+    if cookie_manager:
+        try:
+            cookie_manager.delete("access_token")
+            cookie_manager.delete("refresh_token")
+            cookie_manager.delete("csrf_token")
+        except Exception:
+            pass
     time.sleep(2)
     st.switch_page("app.py")
 
@@ -216,6 +266,9 @@ elif token:
     is_valid, result = api_verify_token(token)
     print('유저정보', result)
     if is_valid:
+        sync_cookie_if_needed("access_token", st.session_state.get("token"), access_token_cookie, "home_set_access_verify")
+        sync_cookie_if_needed("refresh_token", st.session_state.get("refresh_token"), refresh_token_cookie, "home_set_refresh_verify")
+        sync_cookie_if_needed("csrf_token", st.session_state.get("csrf_token"), csrf_token_cookie, "home_set_csrf_verify")
         st.session_state.user = {
             "id": result.get("id"),
             "name": result.get("name"),
@@ -239,6 +292,21 @@ user_tier = user_info.get("tier", "normal")
 user_profile_image_url = user_info.get("profile_image_url")
 
 # 상단 네비게이션 바
+st.markdown(
+    """
+    <style>
+    div[data-testid="stElementContainer"]:has(#hide-home-top-nav) + div[data-testid="stElementContainer"] {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    </style>
+    <div id="hide-home-top-nav"></div>
+    """,
+    unsafe_allow_html=True,
+)
 selected = option_menu(
     menu_title=None,
     options=["홈", "AI 면접", "내 기록", "마이페이지"],
@@ -883,7 +951,6 @@ def chatbot_modal():
         st.session_state.guide_chat.append({"role": "assistant", "content": full_reply})
 
 
-@st.fragment
 def render_fab_button():
     st.markdown('<div id="fab-marker"></div>', unsafe_allow_html=True)
     if st.button("chatbot_trigger_btn", key="fab_btn"):

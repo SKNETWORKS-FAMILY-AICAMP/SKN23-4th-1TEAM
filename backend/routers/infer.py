@@ -128,8 +128,9 @@ def ask_next_question(req: Request, body: dict, db: Session = Depends(get_db)):
     # 4. 💾 일반 DB(MySQL)에 문항별 상세 내역 저장 (소요 시간 및 실제 질문 텍스트 포함)
     new_detail = base.InterviewDetail(
         session_id=session_id,
-        question_text=current_question, 
-        answer_text=user_answer,
+        question=current_question,
+        answer=user_answer,
+        turn_index=0,
         response_time=int(response_time),
         score=score,
         sentiment_score=confidence,
@@ -186,6 +187,50 @@ def end_interview(body: dict, db: Session = Depends(get_db)):
         "message": "면접이 종료되었습니다.",
         "final_score": round(results.avg_score, 2),
         "avg_confidence": round(results.avg_sentiment, 2)
+    }
+
+
+@router.get("/sessions")
+def read_sessions(user_id: int):
+    from backend.db.database import get_sessions_by_user
+
+    return {"items": get_sessions_by_user(user_id)}
+
+
+@router.get("/sessions/{session_id}")
+def read_session_details(session_id: int):
+    from backend.db.database import get_details_by_session
+
+    return {"items": get_details_by_session(session_id)}
+
+
+@router.get("/questions")
+def read_question_pool(
+    job_role: str,
+    difficulty: str,
+    limit: int = 5,
+    db: Session = Depends(get_db),
+):
+    rows = (
+        db.query(base.QuestionPool)
+        .join(base.JobCategory)
+        .filter(
+            base.JobCategory.target_role == job_role,
+            base.QuestionPool.difficulty == difficulty,
+        )
+        .order_by(func.rand())
+        .limit(limit)
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": row.id,
+                "question": row.content,
+                "difficulty": row.difficulty,
+            }
+            for row in rows
+        ]
     }
 
 

@@ -1,4 +1,4 @@
-"""
+﻿"""
 File: pages/mypage.py
 Description: 면접 기록 조회 페이지
              - 세션 목록 (최신순)
@@ -20,7 +20,7 @@ if backend_dir not in sys.path:
 
 import streamlit as st
 from dotenv import load_dotenv
-from db.database import init_db, get_sessions_by_user, get_details_by_session
+from utils.api_utils import api_get_interview_sessions, api_get_interview_session_details
 from utils.function import inject_custom_header, require_login
 
 load_dotenv()
@@ -28,15 +28,6 @@ st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
 # 1. 헤더 그리기
 inject_custom_header()
-
-
-
-try:
-    init_db()
-except Exception:
-    pass
-
-
 # ============================================================
 # 💅 CSS 스타일링
 # ============================================================
@@ -124,13 +115,15 @@ st.markdown("<div class='hero-subtitle'>지금까지 진행한 모의 면접 결
 
 st.markdown("---")
 
-# 🚨 2. 만능 문지기 출동! (알아서 쿠키 복구하고, 비로그인 유저는 튕겨냄)
+# 2. 만능 문지기 출동! (알아서 쿠키 복구하고, 비로그인 유저는 튕겨냄)
 user_id = require_login()
 
 # ─── 세션 목록 조회 ───────────────────────────────────────────
 try:
-    # 🔥 방금 문지기한테 받은 진짜 user_id (정수) 로 DB를 조회합니다!
-    sessions = get_sessions_by_user(user_id)
+    ok, result = api_get_interview_sessions(user_id)
+    if not ok:
+        raise RuntimeError(result)
+    sessions = result.get("items", [])
 except Exception as e:
     st.error(f"DB 연결 오류: {e}")
     st.stop()
@@ -158,7 +151,12 @@ for s in sessions:
     else:
         score_html = '<span class="score-badge no-score">채점 중</span>'
     resume_tag = "이력서 사용" if s["resume_used"] else ""
-    ended = s["ended_at"].strftime("%Y.%m.%d %H:%M") if s["ended_at"] else "진행 중"
+    ended_raw = s["ended_at"]
+    ended = (
+        ended_raw[:16].replace("-", ".").replace("T", " ")
+        if isinstance(ended_raw, str)
+        else (ended_raw.strftime("%Y.%m.%d %H:%M") if ended_raw else "진행 중")
+    )
 
     st.markdown(f"""
     <div class="session-card">
@@ -187,7 +185,10 @@ if st.session_state.selected_session_id:
     st.markdown(f"### 세션 #{sid} 상세 기록")
 
     try:
-        details = get_details_by_session(sid)
+        ok, result = api_get_interview_session_details(sid)
+        if not ok:
+            raise RuntimeError(result)
+        details = result.get("items", [])
     except Exception as e:
         st.error(f"상세 데이터 로드 실패: {e}")
         st.stop()

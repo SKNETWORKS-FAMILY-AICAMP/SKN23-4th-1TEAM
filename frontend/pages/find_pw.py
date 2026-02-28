@@ -1,4 +1,4 @@
-"""
+﻿"""
 File: find_pw.py
 Author: 김다빈, 김지우
 Created: 2026-02-20
@@ -16,108 +16,22 @@ import streamlit as st
 import re
 import random
 import time
-import os
-import smtplib
-import pymysql
-import bcrypt
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from dotenv import load_dotenv
+from utils.api_utils import api_check_email, api_send_reset_email, api_reset_password
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# frontend/.env 명시적 로드
-_ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-load_dotenv(_ENV_PATH, override=True)
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-APP_PASSWORD = os.getenv("APP_PASSWORD")
-
-DB_HOST     = os.getenv("DB_HOST", "localhost")
-DB_PORT     = int(os.getenv("DB_PORT", 3306))
-DB_USER     = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_NAME     = os.getenv("DB_NAME", "ai_interview")
-
-
-def get_db_connection():
-    try:
-        return pymysql.connect(
-            host=DB_HOST, port=DB_PORT, user=DB_USER,
-            password=DB_PASSWORD, db=DB_NAME,
-            charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
-        )
-    except Exception as e:
-        st.error(f"데이터베이스 연결 실패: {e}")
-        return None
-
 
 def check_user_exists(email):
-    conn = get_db_connection()
-    if not conn:
-        return False
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
-            return cursor.fetchone() is not None
-    finally:
-        conn.close()
+    success, result = api_check_email(email)
+    return success and result
 
 
 def update_password_in_db(email, new_raw_password):
-    conn = get_db_connection()
-    if not conn:
-        return False, "DB 서버 연결에 실패했습니다."
-    try:
-        with conn.cursor() as cursor:
-            hashed_pw = bcrypt.hashpw(new_raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cursor.execute("UPDATE users SET password = %s WHERE email = %s", (hashed_pw, email))
-            conn.commit()
-            return True, "성공"
-    except Exception as e:
-        return False, f"비밀번호 업데이트 중 오류 발생: {e}"
-    finally:
-        conn.close()
+    return api_reset_password(email, new_raw_password)
 
 
 def send_auth_email(receiver_email, auth_code):
-    if not SENDER_EMAIL or not APP_PASSWORD:
-        return False, "서버 설정 오류: .env 파일에서 이메일 정보를 불러오지 못했습니다."
-
-    subject = "[AIWORK] 이메일 인증 번호 안내"
-    body = f"""
-    <html>
-    <body style="font-family: 'Malgun Gothic', sans-serif; line-height: 1.8; color: #333; max-width: 520px; margin: 0 auto; padding: 24px;">
-        <p>안녕하세요. <b>AIWORK</b>입니다.</p>
-        <p><b>인증 번호를 입력하고 비밀번호를 재설정하세요.</b></p>
-        <p>서비스 이용을 위한 코드는 다음과 같습니다.</p>
-        <div style="background-color:#f8f9fa; border:1px solid #e9ecef; border-radius:8px; padding:24px; text-align:center; margin:24px 0;">
-            <p style="margin:0; font-size:13px; color:#666;">인증 번호</p>
-            <h1 style="color:#bb38d0; letter-spacing:10px; margin:8px 0; font-size:36px;">{auth_code}</h1>
-        </div>
-        <p style="font-size:14px; color:#555;">요청하신 페이지에 위 코드를 입력하여 인증을 완료해 주세요.</p>
-        <p style="font-size:13px; color:#888;">보안을 위해 회원님의 AIWORK 이용을 위해 남들과 코드를 공유하지 마세요.<br>본인이 요청하지 않은 경우 이 메일을 무시하셔도 됩니다.</p>
-        <p style="font-size:13px; color:#888; font-weight:bold;">AIWORK 드림</p>
-    </body>
-    </html>
-    """
-
-    msg = MIMEMultipart()
-    msg['From']    = SENDER_EMAIL
-    msg['To']      = receiver_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'html'))
-
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(SENDER_EMAIL, APP_PASSWORD)
-        server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
-        server.quit()
-        return True, "성공"
-    except smtplib.SMTPAuthenticationError:
-        return False, "구글 로그인 실패: 앱 비밀번호가 틀렸거나 2단계 인증이 설정되지 않았습니다."
-    except Exception as e:
-        return False, f"알 수 없는 에러 발생: {str(e)}"
+    return api_send_reset_email(receiver_email, auth_code)
 
 
 # CSS (sign_up.py와 동일한 풀 스타일)
