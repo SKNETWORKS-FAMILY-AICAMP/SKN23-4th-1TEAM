@@ -18,6 +18,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(current_dir))
 backend_dir = os.path.join(root_dir, "backend")
 import sys
+
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 if backend_dir not in sys.path:
@@ -32,7 +33,7 @@ from utils.api_utils import (
 )
 from utils.webcam_box import webcam_box
 from utils.config import API_BASE_URL
-from utils.function import require_login, inject_custom_header  
+from utils.function import require_login, inject_custom_header
 
 from services.llm_service import generate_evaluation
 from services.rag_service import store_resume
@@ -87,11 +88,7 @@ st.markdown(
     }
     .header-end-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(187, 56, 208, 0.4); }
 
-    /* 프리미엄 채팅 박스 겉 영역 */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: #ffffff !important; border: 1px solid #f1f3f5 !important; border-radius: 24px !important;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04) !important; padding: 24px !important; transition: transform 0.2s ease;
-    }
+    /* (프리미엄 겉 영역 스타일은 모드별로 HTML에서 직접 적용됨) */
 
     @keyframes msg-pop { 
         from { opacity: 0; transform: translateY(10px); } 
@@ -204,68 +201,107 @@ def extract_resume_text(uploaded_file) -> str:
     file_bytes = uploaded_file.getvalue()
     try:
         import fitz
-        return "".join(page.get_text() for page in fitz.open(stream=file_bytes, filetype="pdf")).strip()
+
+        return "".join(
+            page.get_text() for page in fitz.open(stream=file_bytes, filetype="pdf")
+        ).strip()
     except Exception:
-        try: return file_bytes.decode("utf-8", errors="ignore")
-        except Exception: return ""
+        try:
+            return file_bytes.decode("utf-8", errors="ignore")
+        except Exception:
+            return ""
+
 
 # 🍎 [NEW] 애플 감성 렌더링 (지우님이 주신 HTML 구조 완벽 적용)
-def render_message(role: str, content: str, is_followup: bool = False, score: float | None = None) -> None:
+def render_message(
+    role: str, content: str, is_followup: bool = False, score: float | None = None
+) -> None:
     if role == "user":
-        score_badge = f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>' if score is not None else ""
+        score_badge = (
+            f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>'
+            if score is not None
+            else ""
+        )
         st.markdown(
             f'<div style="display:flex; justify-content:flex-end; margin-bottom:16px; flex-direction:column; align-items:flex-end;">'
             f'<div class="user-bubble">{content}</div>'
-            f'{score_badge}'
-            f'</div>',
+            f"{score_badge}"
+            f"</div>",
             unsafe_allow_html=True,
         )
     else:
-        followup_badge = '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>' if is_followup else ""
+        followup_badge = (
+            '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>'
+            if is_followup
+            else ""
+        )
         st.markdown(
             f'<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:16px;">'
             f'<div style="font-size: 32px; line-height: 1;">👾</div>'
-            f'<div>'
+            f"<div>"
             f'<div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 면접관 {followup_badge}</div>'
             f'<div class="ai-bubble">{content}</div>'
-            f'</div></div>',
+            f"</div></div>",
             unsafe_allow_html=True,
         )
 
+
 def generate_tts(text: str) -> bytes | None:
     api_key = os.getenv("OPENAI_API_KEY", "")
-    if not api_key: return None
+    if not api_key:
+        return None
     try:
         client = OpenAI(api_key=api_key)
-        tts_response = client.audio.speech.create(model="tts-1", voice="echo", input=text)
+        tts_response = client.audio.speech.create(
+            model="tts-1", voice="echo", input=text
+        )
         return tts_response.content
-    except Exception: return None
+    except Exception:
+        return None
+
 
 def create_session(user_id, job_role, difficulty, persona, resume_used):
     success, result = api_start_interview(job_role)
-    if not success: raise RuntimeError(result)
+    if not success:
+        raise RuntimeError(result)
     return result.get("session_id")
+
 
 def end_session(session_id, total_score):
     success, result = api_end_interview(session_id)
-    if not success: raise RuntimeError(result)
+    if not success:
+        raise RuntimeError(result)
     return result
+
 
 def get_questions_by_role(job_role, difficulty, limit=3):
     success, result = api_get_question_pool(job_role, difficulty, limit)
-    if not success: return []
+    if not success:
+        return []
     return result.get("items", [])
+
 
 def get_questions_by_resume_keywords(job_role, difficulty, keywords, limit=3):
     return get_questions_by_role(job_role, difficulty, limit)
 
-def extract_keywords_from_resume(text): return []
-def extract_keywords_from_text_input(text): return []
-def clear_resume_for_session(session_key): return None
+
+def extract_keywords_from_resume(text):
+    return []
+
+
+def extract_keywords_from_text_input(text):
+    return []
+
+
+def clear_resume_for_session(session_key):
+    return None
+
 
 def process_answer(answer_text: str) -> None:
     prev_question = st.session_state.pending_question or "Interview question"
-    st.session_state.messages.append({"role": "user", "content": answer_text, "score": None})
+    st.session_state.messages.append(
+        {"role": "user", "content": answer_text, "score": None}
+    )
 
     success, result = api_get_next_question_v2(
         {
@@ -323,13 +359,14 @@ defaults = {
     "current_is_followup": False,
     "db_questions": [],
     "current_q_idx": 0,
-    "user_id": user_id,  
+    "user_id": user_id,
     "latest_audio_content": None,
     "last_voice_hash": None,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
 
 # ─── 6. 팝업(모달) 선언 ───
 @st.dialog("면접 결과 리포트")
@@ -342,7 +379,9 @@ def evaluation_modal():
     )
 
     if not st.session_state.get("resume_used", False):
-        st.warning("이력서를 연동하지 않은 자율 면접이므로, 직무/이력서 매칭률 점수 및 이력서 기반 포트폴리오 평가는 제공되지 않습니다.")
+        st.warning(
+            "이력서를 연동하지 않은 자율 면접이므로, 직무/이력서 매칭률 점수 및 이력서 기반 포트폴리오 평가는 제공되지 않습니다."
+        )
         eval_resume_text = None
     else:
         eval_resume_text = st.session_state.get("resume_text")
@@ -357,7 +396,7 @@ def evaluation_modal():
             )
 
     st.markdown(st.session_state.evaluation_result)
-    
+
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
@@ -369,9 +408,11 @@ def evaluation_modal():
         if st.button("내 기록 보러가기", use_container_width=True):
             st.switch_page("pages/mypage.py")
 
+
 @st.dialog("AI 모의면접 환경 설정", width="large")
 def interview_setup_modal():
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     div[data-testid="stDialog"] > div[role="dialog"] {
         background: linear-gradient(160deg, #f4e8f9 0%, #ffffff 40%, #fdf4ff 100%) !important;
@@ -413,24 +454,52 @@ def interview_setup_modal():
     button[kind="primary"]:disabled { background: #e5e7eb !important; color: #9ca3af !important; box-shadow: none !important; transform: none !important; }
     .stTextArea textarea { min-height: 120px !important; }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown('<div class="modal-subtitle-custom">지원자님의 역량을 최대한 발휘할 수 있도록 면접 환경을 설정해주세요.</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="modal-subtitle-custom">지원자님의 역량을 최대한 발휘할 수 있도록 면접 환경을 설정해주세요.</div>',
+        unsafe_allow_html=True,
+    )
 
     col_mode, col_persona = st.columns([1, 1.5])
     with col_mode:
-        st.markdown('<div class="premium-label">진행 방식</div>', unsafe_allow_html=True)
-        mode = st.radio("면접 방식", ["텍스트 면접", "음성 면접"], horizontal=True, label_visibility="collapsed")
+        st.markdown(
+            '<div class="premium-label">진행 방식</div>', unsafe_allow_html=True
+        )
+        mode = st.radio(
+            "면접 방식",
+            ["텍스트 면접", "음성 면접"],
+            horizontal=True,
+            label_visibility="collapsed",
+        )
     with col_persona:
-        st.markdown('<div class="premium-label">면접관 스타일</div>', unsafe_allow_html=True)
-        persona_style = st.radio("면접관 스타일", ["깐깐한 기술팀장", "부드러운 인사담당자", "스타트업 CTO"], horizontal=True, label_visibility="collapsed")
+        st.markdown(
+            '<div class="premium-label">면접관 스타일</div>', unsafe_allow_html=True
+        )
+        persona_style = st.radio(
+            "면접관 스타일",
+            ["깐깐한 기술팀장", "부드러운 인사담당자", "스타트업 CTO"],
+            horizontal=True,
+            label_visibility="collapsed",
+        )
 
-    st.markdown('<div class="premium-label">세부 면접 설정</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="premium-label">세부 면접 설정</div>', unsafe_allow_html=True
+    )
     col_role, col_diff, col_count = st.columns([2, 1, 1.5])
     with col_role:
         job_role = st.selectbox(
             "지원 직무",
-            ["Python 백엔드 개발자", "Java 백엔드 개발자", "AI/ML 엔지니어", "데이터 엔지니어", "프론트엔드 개발자", "풀스택 개발자"],
+            [
+                "Python 백엔드 개발자",
+                "Java 백엔드 개발자",
+                "AI/ML 엔지니어",
+                "데이터 엔지니어",
+                "프론트엔드 개발자",
+                "풀스택 개발자",
+            ],
         )
     with col_diff:
         difficulty = st.selectbox("난이도", ["상", "중", "하"], index=1)
@@ -439,39 +508,57 @@ def interview_setup_modal():
 
     has_saved_resume = bool(st.session_state.get("resume_id"))
     saved_resume_title = st.session_state.get("resume_title", "등록된 이력서")
-    
+
     manual_tech_stack = None
     uploaded_resume = None
     disable_start = False
 
-    st.markdown('<div class="premium-label">이력서 및 경험 연동</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="premium-label">이력서 및 경험 연동</div>', unsafe_allow_html=True
+    )
 
     if has_saved_resume:
-        st.success(f"저장된 '{saved_resume_title}' 문서를 기반으로 맞춤형 질문이 생성됩니다.")
+        st.success(
+            f"저장된 '{saved_resume_title}' 문서를 기반으로 맞춤형 질문이 생성됩니다."
+        )
         if st.button("기존 이력서 선택 해제하기", use_container_width=True):
             st.session_state.resume_id = None
             st.session_state.resume_text = None
             st.session_state.resume_title = None
             st.rerun()
     else:
-        input_method = st.radio("데이터 입력 방식", ["이력서 파일 첨부", "직접 입력"], horizontal=True, label_visibility="collapsed")
-        
+        input_method = st.radio(
+            "데이터 입력 방식",
+            ["이력서 파일 첨부", "직접 입력"],
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
         if input_method == "이력서 파일 첨부":
-            st.markdown("<span style='font-size:13px; color:#713f7a; font-weight:700;'>이력서 업로드 (PDF/TXT 포맷 권장)</span>", unsafe_allow_html=True)
-            uploaded_resume = st.file_uploader("파일을 이곳으로 드래그하거나 클릭하여 업로드하세요.", type=["pdf", "txt"], label_visibility="collapsed")
+            st.markdown(
+                "<span style='font-size:13px; color:#713f7a; font-weight:700;'>이력서 업로드 (PDF/TXT 포맷 권장)</span>",
+                unsafe_allow_html=True,
+            )
+            uploaded_resume = st.file_uploader(
+                "파일을 이곳으로 드래그하거나 클릭하여 업로드하세요.",
+                type=["pdf", "txt"],
+                label_visibility="collapsed",
+            )
             disable_start = not bool(uploaded_resume)
         else:
             manual_tech_stack = st.text_area(
-                "보유 기술 스택 및 핵심 프로젝트 경험", 
-                placeholder="어필하고 싶은 기술 스택이나 프로젝트 경험을 간략히 적어주세요. (예: Spring Boot와 JPA를 활용한 트래픽 최적화 경험)", 
-                height=120
+                "보유 기술 스택 및 핵심 프로젝트 경험",
+                placeholder="어필하고 싶은 기술 스택이나 프로젝트 경험을 간략히 적어주세요. (예: Spring Boot와 JPA를 활용한 트래픽 최적화 경험)",
+                height=120,
             )
             disable_start = not bool(manual_tech_stack and manual_tech_stack.strip())
 
-    if st.button("설정완료", type="primary", use_container_width=True, disabled=disable_start):
+    if st.button(
+        "설정완료", type="primary", use_container_width=True, disabled=disable_start
+    ):
         final_resume_text = None
         is_resume_used = False
-        
+
         if has_saved_resume:
             final_resume_text = st.session_state.get("resume_text")
             is_resume_used = True
@@ -480,10 +567,16 @@ def interview_setup_modal():
             is_resume_used = True
         elif manual_tech_stack:
             final_resume_text = manual_tech_stack
-            is_resume_used = False 
+            is_resume_used = False
 
         try:
-            db_session_id = create_session(user_id=user_id, job_role=job_role, difficulty=difficulty, persona=persona_style, resume_used=is_resume_used)
+            db_session_id = create_session(
+                user_id=user_id,
+                job_role=job_role,
+                difficulty=difficulty,
+                persona=persona_style,
+                resume_used=is_resume_used,
+            )
         except Exception as e:
             st.error(f"세션 생성 오류: {e}")
             db_session_id = None
@@ -499,40 +592,51 @@ def interview_setup_modal():
                     keywords = extract_keywords_from_resume(final_resume_text)
                 else:
                     keywords = extract_keywords_from_text_input(final_resume_text)
-                tech_qs = get_questions_by_resume_keywords(job_role, difficulty, keywords, limit=q_count - 1)
+                tech_qs = get_questions_by_resume_keywords(
+                    job_role, difficulty, keywords, limit=q_count - 1
+                )
             else:
                 tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
-            
+
             db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
-            if len(db_questions) == 1: raise ValueError("질문이 생성되지 않았습니다.")
+            if len(db_questions) == 1:
+                raise ValueError("질문이 생성되지 않았습니다.")
         except Exception:
-            db_questions = ["간단하게 자기소개를 부탁드립니다."] + [f"{job_role} 관련 핵심 기술을 설명해주세요." for _ in range(q_count - 1)]
+            db_questions = ["간단하게 자기소개를 부탁드립니다."] + [
+                f"{job_role} 관련 핵심 기술을 설명해주세요." for _ in range(q_count - 1)
+            ]
 
         first_q = db_questions[0]
         greeting = f"안녕하세요. 오늘 {job_role} 직무 면접을 진행할 면접관입니다. 총 {q_count}개의 질문을 드릴 예정입니다.\n\n첫 번째 질문입니다.\n**{first_q}**"
-        
-        st.session_state.update({
-            "interview_mode": "voice" if "음성" in mode else "text",
-            "chatbot_started": True,  
-            "job_role": job_role,
-            "difficulty": difficulty,
-            "q_count": q_count,
-            "persona_style": persona_style,
-            "resume_text": final_resume_text,
-            "db_session_id": db_session_id,
-            "db_questions": db_questions,
-            "current_q_idx": 0,
-            "messages": [{"role": "assistant", "content": greeting}],
-            "pending_question": first_q,
-            "resume_used": is_resume_used,
-        })
+
+        st.session_state.update(
+            {
+                "interview_mode": "voice" if "음성" in mode else "text",
+                "chatbot_started": True,
+                "job_role": job_role,
+                "difficulty": difficulty,
+                "q_count": q_count,
+                "persona_style": persona_style,
+                "resume_text": final_resume_text,
+                "db_session_id": db_session_id,
+                "db_questions": db_questions,
+                "current_q_idx": 0,
+                "messages": [{"role": "assistant", "content": greeting}],
+                "pending_question": first_q,
+                "resume_used": is_resume_used,
+            }
+        )
         st.rerun()
+
 
 # ─── 7. 메인 로직 ─────────────────────────
 
 if not st.session_state.chatbot_started:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align:center; color:#888;'>면접 환경을 설정 중입니다.<br>팝업창에서 옵션을 선택해 주세요.</h3>", unsafe_allow_html=True)
+    st.markdown(
+        "<h3 style='text-align:center; color:#888;'>면접 환경을 설정 중입니다.<br>팝업창에서 옵션을 선택해 주세요.</h3>",
+        unsafe_allow_html=True,
+    )
     interview_setup_modal()
     st.stop()
 
@@ -551,7 +655,7 @@ st.markdown(
     }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 if st.button("__hidden_end_btn__", key="hidden_end_trigger"):
     st.session_state.interview_ended = True
@@ -598,34 +702,117 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
 
-  if st.session_state.interview_mode == "text":
-      # 채팅 컨테이너
-      with st.container(height=480, border=True):
-          for message in st.session_state.messages:
-              render_message(
-                  message["role"],
-                  message["content"],
-                  is_followup="꼬리질문" in message.get("content", ""),
-                  score=message.get("score"),
-              )
+    if st.session_state.interview_mode == "text":
 
-  if st.session_state.latest_audio_content:
-      st.audio(st.session_state.latest_audio_content, format="audio/mp3", autoplay=True)
-      st.session_state.latest_audio_content = None
+        # 1. 완벽한 디자인 일치를 위해 HTML 컴포넌트로 전체 영역 렌더링
+        chat_html = """
+        <style>
+        * { font-family: 'Pretendard', -apple-system, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes msg-pop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .ai-bubble { 
+            background: #ffffff; border-radius: 6px 20px 20px 20px; border: 1px solid #fae8ff;
+            padding: 12px 22px; color: #111; font-size: 15px; line-height: 1.6; white-space: pre-wrap;
+            animation: msg-pop 0.3s ease-out both; display: inline-block; max-width: 500px;
+            box-shadow: 0 4px 20px rgba(187, 56, 208, 0.05);
+        }
+        .user-bubble { 
+            background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); border-radius: 20px 6px 20px 20px;
+            padding: 12px 20px; color: #ffffff; font-size: 15px; line-height: 1.6; white-space: pre-wrap;
+            animation: msg-pop 0.3s ease-out both; display: inline-block; max-width: 82%;
+            box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3); 
+        }
+        /* 스크롤바 디자인 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e8cceb; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d09cd6; }
+        </style>
+        <div style="background:linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%);border:2px solid #fae8ff;border-radius:24px;padding:24px;box-shadow:0 10px 40px rgba(187,56,208,0.05); margin-bottom: 4px; height: 100%; display: flex; flex-direction: column;">
+            <div style="font-size:14px;font-weight:800;color:#333;margin:0 0 12px 0;">텍스트 대화창</div>
+            <div id="chat-container" style="flex: 1; overflow-y:auto; overflow-x:hidden; background:#ffffff;border:1px solid #fae8ff;border-radius:16px;padding:20px;box-shadow:inset 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;">
+        """
 
-  if st.session_state.interview_mode == "text":
-      prompt = st.chat_input("메시지를 입력하세요")
-      if prompt:
-          with st.spinner("답변을 분석 중입니다..."):
-              process_answer(prompt)
-          st.rerun()
-  else:
-      api_key = os.getenv("OPENAI_API_KEY", "")
-      if not api_key:
-          st.error("OPENAI_API_KEY 환경변수가 필요합니다.")
-          st.stop()
-          
-      html = """
+        for message in st.session_state.messages:
+            role = message.get("role")
+            content = message.get("content", "")
+            score = message.get("score")
+
+            # content가 dict형태일 경우 처리 (혹시 모를 에러 방지)
+            content_str = (
+                content.get("content", "")
+                if isinstance(content, dict)
+                else str(content)
+            )
+            is_followup = "꼬리질문" in content_str
+
+            if role == "user":
+                score_badge = (
+                    f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>'
+                    if score is not None
+                    else ""
+                )
+                chat_html += f"""
+                <div style="display:flex; justify-content:flex-end; margin-bottom:16px; flex-direction:column; align-items:flex-end; width: 100%;">
+                  <div class="user-bubble">{content_str}</div>
+                  {score_badge}
+                </div>
+                """
+            else:
+                followup_badge = (
+                    '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>'
+                    if is_followup
+                    else ""
+                )
+                chat_html += f"""
+                <div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:16px; width: 100%;">
+                  <div style="font-size: 32px; line-height: 1; flex-shrink: 0;">👾</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px; display: flex; align-items: center;">AI 면접관 {followup_badge}</div>
+                    <div class="ai-bubble">{content_str}</div>
+                  </div>
+                </div>
+                """
+
+        chat_html += """
+            </div>
+            <script>
+                var chatDiv = document.getElementById("chat-container");
+                if (chatDiv) {
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
+                    // 새로운 메시지 도착 시 자연스럽게 스크롤
+                    setTimeout(() => { chatDiv.scrollTo({ top: chatDiv.scrollHeight, behavior: 'smooth' }); }, 100);
+                }
+            </script>
+        </div>
+        """
+
+        components.html(chat_html, height=520, scrolling=False)
+
+    if st.session_state.latest_audio_content:
+        st.audio(
+            st.session_state.latest_audio_content, format="audio/mp3", autoplay=True
+        )
+        st.session_state.latest_audio_content = None
+
+    if st.session_state.interview_mode == "text":
+        prompt = st.chat_input("메시지를 입력하세요")
+        if prompt:
+            with st.spinner("답변을 분석 중입니다..."):
+                process_answer(prompt)
+            st.rerun()
+    else:
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        if not api_key:
+            st.error("OPENAI_API_KEY 환경변수가 필요합니다.")
+            st.stop()
+
+        html = """
+  <style>
+  @keyframes msg-pop { 
+      from { opacity: 0; transform: translateY(10px); } 
+      to { opacity: 1; transform: translateY(0); } 
+  }
+  </style>
   <div style="background:linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%);border:2px solid #fae8ff;border-radius:24px;padding:24px;box-shadow:0 10px 40px rgba(187,56,208,0.05);">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
       <button id="btnConnect" style="padding:12px 18px;border-radius:12px;border:1px solid #e8cceb;background:#fff;cursor:pointer;font-weight:700;color:#555;">마이크 연결</button>
@@ -688,37 +875,87 @@ with col1:
     }
     function appendBubble(role, text) {
       const row = document.createElement("div");
-      row.style.margin = "12px 0";
-      row.style.display = "flex";
-      row.style.justifyContent = role === "user" ? "flex-end" : "flex-start";
-      const bubble = document.createElement("div");
-      bubble.style.maxWidth = "82%";
-      bubble.style.padding = "14px 20px";
-      bubble.style.borderRadius = role === "user" ? "20px 6px 20px 20px" : "6px 20px 20px 20px";
-      bubble.style.whiteSpace = "pre-wrap";
-      bubble.style.fontSize = "15px";
-      bubble.style.lineHeight = "1.6";
-      bubble.style.fontWeight = "500";
-      bubble.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+      row.style.margin = "12px 0 16px 0";
+      let bubbleContainer;
       
       if (role === "user") {
-        bubble.style.background = "#bb38d0";
-        bubble.style.color = "#fff";
+        row.style.display = "flex";
+        row.style.justifyContent = "flex-end";
+        row.style.flexDirection = "column";
+        row.style.alignItems = "flex-end";
+        
+        const bubble = document.createElement("div");
+        bubble.style.maxWidth = "82%";
+        bubble.style.padding = "12px 20px";
+        bubble.style.borderRadius = "20px 6px 20px 20px";
+        bubble.style.whiteSpace = "pre-wrap";
+        bubble.style.fontSize = "15px";
+        bubble.style.lineHeight = "1.6";
+        bubble.style.fontWeight = "500";
+        bubble.style.background = "linear-gradient(135deg, #bb38d0 0%, #872a96 100%)";
+        bubble.style.color = "#ffffff";
+        bubble.style.boxShadow = "0 8px 25px rgba(187, 56, 208, 0.3)";
+        bubble.style.animation = "msg-pop 0.3s ease-out both";
+        
+        const textEl = document.createElement("span");
+        textEl.textContent = text;
+        bubble.appendChild(textEl);
+        bubble._textEl = textEl;
+        row.appendChild(bubble);
+        bubbleContainer = bubble;
       } else {
-        bubble.style.background = "#e9e9eb";
-        bubble.style.border = "none";
-        bubble.style.color = "#000";
+        row.style.display = "flex";
+        row.style.alignItems = "flex-start";
+        row.style.gap = "10px";
+        row.style.justifyContent = "flex-start";
+        
+        const iconDiv = document.createElement("div");
+        iconDiv.style.fontSize = "32px";
+        iconDiv.style.lineHeight = "1";
+        iconDiv.textContent = "👾";
+        
+        const contentWrapper = document.createElement("div");
+        
+        const nameDiv = document.createElement("div");
+        nameDiv.style.fontSize = "12px";
+        nameDiv.style.fontWeight = "600";
+        nameDiv.style.color = "#bb38d0";
+        nameDiv.style.marginBottom = "4px";
+        nameDiv.style.marginLeft = "4px";
+        nameDiv.textContent = "AI 면접관";
+        
+        const bubble = document.createElement("div");
+        bubble.style.maxWidth = "500px";
+        bubble.style.padding = "12px 22px";
+        bubble.style.borderRadius = "6px 20px 20px 20px";
+        bubble.style.whiteSpace = "pre-wrap";
+        bubble.style.fontSize = "15px";
+        bubble.style.lineHeight = "1.6";
+        bubble.style.fontWeight = "500";
+        bubble.style.background = "#ffffff";
+        bubble.style.border = "1px solid #fae8ff";
+        bubble.style.color = "#111111";
+        bubble.style.boxShadow = "0 4px 20px rgba(187, 56, 208, 0.05)";
+        bubble.style.animation = "msg-pop 0.3s ease-out both";
+        
+        const textEl = document.createElement("span");
+        textEl.textContent = text;
+        bubble.appendChild(textEl);
+        bubble._textEl = textEl;
+        
+        contentWrapper.appendChild(nameDiv);
+        contentWrapper.appendChild(bubble);
+        
+        row.appendChild(iconDiv);
+        row.appendChild(contentWrapper);
+        bubbleContainer = bubble;
       }
-      const textEl = document.createElement("span");
-      textEl.textContent = text;
-      bubble.appendChild(textEl);
-      bubble._textEl = textEl;
-      row.appendChild(bubble);
+      
       chatEl.appendChild(row);
       chatEl.scrollTop = chatEl.scrollHeight;
       lines.push(`[${role === "user" ? "지원자" : "AI 면접관"}] ${text}`);
       setButtons();
-      return bubble;
+      return bubbleContainer;
     }
 
     function attachAudioControls(targetBubble, clip) {
@@ -1106,24 +1343,77 @@ with col1:
   })();
   </script>
   """
-      html = (
-          html.replace("__API_KEY__", json.dumps(api_key))
-          .replace("__MODEL__", json.dumps(os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")))
-          .replace("__BACKEND_BASE__", json.dumps(API_BASE_URL.rstrip("/")))
-          .replace("__QUESTIONS__", json.dumps(st.session_state.get("db_questions", []), ensure_ascii=False))
-          .replace("__JOB_ROLE__", json.dumps(st.session_state.get("job_role", "Python 백엔드 개발자"), ensure_ascii=False))
-          .replace("__DIFFICULTY__", json.dumps(st.session_state.get("difficulty", "미들"), ensure_ascii=False))
-          .replace("__PERSONA__", json.dumps(st.session_state.get("persona_style", "깐깐한 기술팀장"), ensure_ascii=False))
-          .replace("__USER_ID__", json.dumps(str(st.session_state.get("user_id", "guest")), ensure_ascii=False))
-          .replace("__RESUME_TEXT__", json.dumps(st.session_state.get("resume_text", "") or "", ensure_ascii=False))
-          .replace("__FIRST_ASSISTANT__", json.dumps((st.session_state.get("messages") or [{}])[0].get("content", ""), ensure_ascii=False))
-          .replace("__CURRENT_Q__", json.dumps(st.session_state.get("pending_question", "면접 질문"), ensure_ascii=False))
-          .replace("__Q_IDX__", json.dumps(int(st.session_state.get("current_q_idx", 0))))
-          .replace("__FOLLOWUP_COUNT__", json.dumps(int(st.session_state.get("current_followup_count", 0))))
-      )
-      components.html(html, height=580, scrolling=False)
-      st.markdown("<br>", unsafe_allow_html=True)
+        html = (
+            html.replace("__API_KEY__", json.dumps(api_key))
+            .replace(
+                "__MODEL__",
+                json.dumps(
+                    os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")
+                ),
+            )
+            .replace("__BACKEND_BASE__", json.dumps(API_BASE_URL.rstrip("/")))
+            .replace(
+                "__QUESTIONS__",
+                json.dumps(
+                    st.session_state.get("db_questions", []), ensure_ascii=False
+                ),
+            )
+            .replace(
+                "__JOB_ROLE__",
+                json.dumps(
+                    st.session_state.get("job_role", "Python 백엔드 개발자"),
+                    ensure_ascii=False,
+                ),
+            )
+            .replace(
+                "__DIFFICULTY__",
+                json.dumps(
+                    st.session_state.get("difficulty", "미들"), ensure_ascii=False
+                ),
+            )
+            .replace(
+                "__PERSONA__",
+                json.dumps(
+                    st.session_state.get("persona_style", "깐깐한 기술팀장"),
+                    ensure_ascii=False,
+                ),
+            )
+            .replace(
+                "__USER_ID__",
+                json.dumps(
+                    str(st.session_state.get("user_id", "guest")), ensure_ascii=False
+                ),
+            )
+            .replace(
+                "__RESUME_TEXT__",
+                json.dumps(
+                    st.session_state.get("resume_text", "") or "", ensure_ascii=False
+                ),
+            )
+            .replace(
+                "__FIRST_ASSISTANT__",
+                json.dumps(
+                    (st.session_state.get("messages") or [{}])[0].get("content", ""),
+                    ensure_ascii=False,
+                ),
+            )
+            .replace(
+                "__CURRENT_Q__",
+                json.dumps(
+                    st.session_state.get("pending_question", "면접 질문"),
+                    ensure_ascii=False,
+                ),
+            )
+            .replace(
+                "__Q_IDX__", json.dumps(int(st.session_state.get("current_q_idx", 0)))
+            )
+            .replace(
+                "__FOLLOWUP_COUNT__",
+                json.dumps(int(st.session_state.get("current_followup_count", 0))),
+            )
+        )
+        components.html(html, height=680, scrolling=False)
+        st.markdown("<br>", unsafe_allow_html=True)
 
-
-  with col2:
-      webcam_box(height=520)
+    with col2:
+        webcam_box(height=520)
