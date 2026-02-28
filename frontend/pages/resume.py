@@ -1,4 +1,4 @@
-"""
+﻿"""
 File: pages/resume.py
 Description: 내 이력서 보관함 및 AI 분석 대시보드
 """
@@ -16,23 +16,14 @@ backend_dir = os.path.join(root_dir, "backend")
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
-from services.llm_service import analyze_resume_comprehensive
-from db.database import init_db, save_user_resume, get_user_resumes, delete_user_resume
+from utils.api_utils import api_create_resume, api_list_resumes, api_delete_resume
 from utils.function import inject_custom_header, require_login 
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 inject_custom_header()
 
-# 🔥 문지기 정상 작동 복구 (하드코딩 user_id = 2 삭제)
-# user_id = require_login()
-user_id = 2
-
-
-# DB 초기화 시도
-try:
-    init_db()
-except:
-    pass
+# 🔥 문지기 정상 작동 복구
+user_id = require_login()
 
 
 # ============================================================
@@ -150,19 +141,16 @@ def setup_modal():
                     time.sleep(2)
                     st.rerun()
 
-                # AI 분석 
-                analysis_result = analyze_resume_comprehensive(
-                    resume_text, selected_role
-                )
-                
-                # DB 저장
-                resume_id = save_user_resume(
+                ok, result = api_create_resume(
                     user_id=user_id,
                     title=uploaded_file.name,
                     job_role=selected_role,
                     resume_text=resume_text,
-                    analysis_result=analysis_result,
                 )
+                if not ok:
+                    st.error(result)
+                    time.sleep(2)
+                    st.rerun()
                 
                 # 🔥 눈 깜짝할 새 사라지는 toast 대신 확실한 성공 알림 및 대기 시간 부여
                 st.success("🎉 분석 완료! 이력서가 보관함에 안전하게 저장되었습니다.")
@@ -183,8 +171,12 @@ if st.session_state.selected_resume is None:
         unsafe_allow_html=True,
     )
 
-    # DB에서 내 이력서 목록 가져오기
-    saved_resumes = get_user_resumes(user_id)
+    # API에서 내 이력서 목록 가져오기
+    ok, result = api_list_resumes(user_id)
+    if not ok:
+        st.error(result)
+        st.stop()
+    saved_resumes = result.get("items", [])
 
     # Grid 레이아웃 (3열)
     cols = st.columns(3, gap="medium")
@@ -202,7 +194,12 @@ if st.session_state.selected_resume is None:
     for i, r in enumerate(saved_resumes):
         col_idx = (i + 1) % 3
         with cols[col_idx]:
-            date_str = r["created_at"].strftime("%Y.%m.%d")
+            created_at = r["created_at"]
+            date_str = (
+                created_at[:10].replace("-", ".")
+                if isinstance(created_at, str)
+                else created_at.strftime("%Y.%m.%d")
+            )
             match_rate = (
                 r["analysis_result"].get("match_rate", 0) if r["analysis_result"] else 0
             )
@@ -228,7 +225,7 @@ if st.session_state.selected_resume is None:
                     st.rerun()
             with c2:
                 if st.button("🗑️", key=f"del_{r['id']}"):
-                    delete_user_resume(r["id"])
+                    api_delete_resume(r["id"])
                     st.rerun()
 
 # ─── 상태 2: 이력서 상세 대시보드 뷰 ───

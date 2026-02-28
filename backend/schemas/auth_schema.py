@@ -18,6 +18,7 @@ from typing import Optional
 
 class SignupRequest(BaseModel):
     email: str = Field(min_length=3, max_length=255)  
+    name: str | None = Field(default=None, min_length=1, max_length=100)
     password: str = Field(min_length=8, max_length=128)  
 
 class LoginRequest(BaseModel):
@@ -32,7 +33,9 @@ class TokenResponse(BaseModel):
     role: str | None = None     
     profile_image_url: str | None = None
     email: str | None = None    
-    tier: str | None = None     
+    tier: str | None = None
+    refresh_token: str | None = None
+    csrf_token: str | None = None
 
 class MeResponse(BaseModel):
     id: int  
@@ -47,3 +50,8 @@ class ResetEmailRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: str
     new_password: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str | None = None
+    csrf_token: str | None = None

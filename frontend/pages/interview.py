@@ -4,16 +4,20 @@ Description: AI 면접 페이지 (텍스트 + Python 음성 모드)
 """
 
 import base64
-import hashlib
 import io
 import json
 import os
-import sys
 
 import streamlit as st
 import streamlit.components.v1 as components
-from dotenv import load_dotenv
 from openai import OpenAI
+from utils.api_utils import (
+    api_end_interview,
+    api_get_next_question_v2,
+    api_get_question_pool,
+    api_start_interview,
+    api_stt_bytes,
+)
 from utils.webcam_box import webcam_box
 from utils.config import API_BASE_URL
 from utils.function import require_login, inject_custom_header  # 👈 문지기 함수 임포트!
@@ -22,28 +26,10 @@ from utils.function import require_login, inject_custom_header  # 👈 문지기
 # 경로 설정
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(current_dir))
-backend_dir = os.path.join(root_dir, "backend")
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
-if root_dir not in sys.path:
-    sys.path.append(root_dir)
-
-load_dotenv()
-
-from db.database import (
-    create_session,
-    end_session,
-    get_common_questions,
-    get_questions_by_role,
-    init_db,
-    save_detail,
-)
 from services.llm_service import (
-    evaluate_and_respond,
-    extract_keywords_from_resume,
     generate_evaluation,
 )
-from services.rag_service import clear_resume_for_session, store_resume
+from services.rag_service import store_resume
 
 
 # ─── 페이지 기본 설정 및 로그인 검증 ─────────────────────────
@@ -164,10 +150,8 @@ def transcribe_audio(audio_bytes: bytes) -> str:
             pass
 
     try:
-        from backend.services.local_inference import local_stt
-
-        text = local_stt(audio_bytes, language="ko")
-        if text and text.strip():
+        text = api_stt_bytes(audio_bytes)
+        if isinstance(text, str) and text and not text.startswith("STT ?ㅻ쪟:") and not text.startswith("?쒕쾭"):
             return text.strip()
     except Exception:
         pass
@@ -186,28 +170,50 @@ def generate_tts(text: str) -> bytes | None:
         return None
 
 
-def save_turn_to_db(
-    session_id: int | None,
-    turn_index: int,
-    question: str,
-    answer: str,
-    is_followup: bool,
-    score: float,
-    feedback: str,
-) -> int:
-    if not session_id:
-        return turn_index
-    save_detail(session_id, turn_index, question, answer, is_followup, score, feedback)
-    return turn_index + 1
+def init_db() -> None:
+    return None
+
+
+def create_session(user_id, job_role, difficulty, persona, resume_used):
+    success, result = api_start_interview(job_role)
+    if not success:
+        raise RuntimeError(result)
+    return result.get("session_id")
+
+
+def end_session(session_id, total_score):
+    success, result = api_end_interview(session_id)
+    if not success:
+        raise RuntimeError(result)
+    return result
+
+
+def get_questions_by_role(job_role, difficulty, limit=3):
+    success, result = api_get_question_pool(job_role, difficulty, limit)
+    if not success:
+        return []
+    return result.get("items", [])
+
+
+def get_questions_by_resume_keywords(job_role, difficulty, keywords, limit=3):
+    return get_questions_by_role(job_role, difficulty, limit)
+
+
+def extract_keywords_from_resume(text):
+    return []
+
+
+def extract_keywords_from_text_input(text):
+    return []
+
+
+def clear_resume_for_session(session_key):
+    return None
 
 
 def process_answer(answer_text: str) -> None:
     prev_question = st.session_state.pending_question or "면접 질문"
     st.session_state.messages.append({"role": "user", "content": answer_text, "score": None})
-
-    db_qs = st.session_state.get("db_questions", [])
-    idx = st.session_state.get("current_q_idx", 0)
-    next_q = db_qs[idx + 1] if idx + 1 < len(db_qs) else None
 
     eval_res = evaluate_and_respond(
         question=prev_question,
@@ -264,6 +270,49 @@ try:
     init_db()
 except Exception as e:
     st.warning(f"DB 초기화 실패: {e}")
+
+def process_answer(answer_text: str) -> None:
+    prev_question = st.session_state.pending_question or "Interview question"
+    st.session_state.messages.append({"role": "user", "content": answer_text, "score": None})
+
+    success, result = api_get_next_question_v2(
+        {
+            "answer": answer_text,
+            "session_id": st.session_state.db_session_id,
+            "job_role": st.session_state.job_role,
+            "difficulty": st.session_state.difficulty,
+            "response_time": 0,
+            "current_question": prev_question,
+        }
+    )
+    if not success:
+        st.session_state.messages.pop()
+        st.error(result)
+        return
+
+    score = float(result.get("score", 5.0))
+    ai_reply = result.get("answer", "")
+
+    st.session_state.db_scores.append(score)
+    st.session_state.messages[-1]["score"] = score
+    st.session_state.turn_index += 1
+    st.session_state.current_followup_count = 0
+
+    if "[INTERVIEW_END]" in ai_reply:
+        st.session_state.interview_ended = True
+        ai_reply = ai_reply.replace("[INTERVIEW_END]", "").strip()
+    if "[NEXT_MAIN]" in ai_reply:
+        st.session_state.current_q_idx += 1
+        ai_reply = ai_reply.replace("[NEXT_MAIN]", "").strip()
+
+    st.session_state.current_is_followup = False
+    st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+    st.session_state.pending_question = ai_reply
+
+    tts = generate_tts(ai_reply)
+    if tts:
+        st.session_state.latest_audio_content = tts
+
 
 st.markdown(
     """

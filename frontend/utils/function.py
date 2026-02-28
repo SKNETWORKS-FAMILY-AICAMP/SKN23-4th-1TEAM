@@ -1,76 +1,50 @@
 """
-File: function.py
-Author: 김지우
-Created: 2026-02-26
-Description: 기능 함수 모듈
-
-Modification History:
-- 2026-02-26 (김지우): 초기 틀 생성
+Shared frontend utility helpers.
 """
-import streamlit as st
-import random
-import time 
-import sys
-import os
+
 import base64
-import extra_streamlit_components as stx
-from utils.api_utils import api_verify_token
-from datetime import datetime
-
-
-# 프로젝트 루트 경로 및 backend 경로 추가
-current_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_dir = os.path.dirname(current_dir)
-project_root = os.path.dirname(frontend_dir)
-backend_dir = os.path.join(project_root, "backend")
-
-if project_root not in sys.path:
-    sys.path.append(project_root)
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
-
-# 서비스 모듈 임포트
-try:
-    from backend.services.tavily_service import get_web_context_first, get_web_context_second   
-except ImportError as e:
-    st.error(f"서비스를 불러오는 중 에러가 발생했습니다: {e}")
-
-# Gemini/OpenAI 설정 (직접 번역용)
-from openai import OpenAI
-try:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-except Exception:
-    pass
-
-
-# interview.py & resume.py 에 쓰임.
-# utils/function.py
-
+import os
 import time
+
 import streamlit as st
-import extra_streamlit_components as stx
+
 from utils.api_utils import api_verify_token
+
 
 def require_login():
-    """
-    로그인 상태를 완벽하게 검증하고, 
-    새로고침으로 세션이 날아갔다면 쿠키를 통해 자동 복구해주는 문지기입니다.
-    """
-    # 1. 주머니(세션)에 출입증이 이미 있다면 바로 하이패스 통과! 🏎️
-    if "user_id" in st.session_state and isinstance(st.session_state["user_id"], int) and "user" in st.session_state:
+    """Validate the current login state and recover from cookie when possible."""
+    import extra_streamlit_components as stx
+
+    if (
+        "user_id" in st.session_state
+        and isinstance(st.session_state["user_id"], int)
+        and "user" in st.session_state
+    ):
         return st.session_state["user_id"]
 
-    # 2. 세션이 비어있다면 (새로고침 됨), 쿠키 매니저 소환!
     cookie_manager = stx.CookieManager(key="global_auth_cookie")
     token = cookie_manager.get("access_token")
+    refresh_token = cookie_manager.get("refresh_token")
+    csrf_token = cookie_manager.get("csrf_token")
+
+    if refresh_token:
+        st.session_state.refresh_token = refresh_token
+    if csrf_token:
+        st.session_state.csrf_token = csrf_token
+
+    if st.session_state.get("token"):
+        cookie_manager.set("access_token", st.session_state.token)
+    if st.session_state.get("refresh_token"):
+        cookie_manager.set("refresh_token", st.session_state.refresh_token)
+    if st.session_state.get("csrf_token"):
+        cookie_manager.set("csrf_token", st.session_state.csrf_token)
 
     if token:
-        # 쿠키에서 토큰을 찾았으니 백엔드에 정상 유저인지 묻기
         is_valid, result = api_verify_token(token)
         if is_valid:
-            # 🔥 잃어버린 기억(세션) 완벽 복구!
             st.session_state["user_id"] = result.get("id")
             st.session_state.user = {
+                "id": result.get("id"),
                 "name": result.get("name"),
                 "role": result.get("role", "user"),
                 "profile_image_url": result.get("profile_image_url"),
@@ -78,71 +52,48 @@ def require_login():
                 "tier": result.get("tier", "normal"),
             }
             st.session_state.token = token
-            
-            # 복구 성공! 통과시켜 줍니다.
             return st.session_state["user_id"]
-        else:
-            st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
-            time.sleep(1)
-            st.switch_page("pages/login.py")
-            st.stop()
-    else:
-        # 🚨 [해결된 부분] 쿠키 매니저가 아직 쿠키를 못 가져온 상태일 수 있습니다!
-        # 바로 쫓아내지 말고 브라우저가 쿠키를 가져올 수 있도록 잠깐 코드를 멈추고 기다려줍니다.
-        if "cookie_waiting" not in st.session_state:
-            st.session_state["cookie_waiting"] = True
-            st.spinner("사용자 정보를 불러오는 중입니다...")
-            # st.stop()을 해야 파이썬이 멈추고 쿠키 매니저가 비로소 일을 시작합니다. (작업 후 자동 재실행됨)
-            st.stop() 
-        else:
-            # 한 번 기다려줬는데도(재실행됐는데도) 토큰이 없다면 진짜 로그인을 안 한 것입니다.
-            del st.session_state["cookie_waiting"] # 상태 초기화
-            st.warning("⚠️ 로그인이 필요한 서비스입니다.")
-            time.sleep(1.5)
-            st.switch_page("pages/login.py")
-            st.stop()
 
-# ================================================================================
+        st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
+        time.sleep(1)
+        st.switch_page("pages/login.py")
+        st.stop()
 
-import streamlit as st
-import base64
-import os
+    if "cookie_waiting" not in st.session_state:
+        st.session_state["cookie_waiting"] = True
+        st.spinner("사용자 정보를 불러오는 중입니다...")
+        st.stop()
 
-# 로컬 이미지를 읽어서 Base64 문자열로 변환하는 함수
+    del st.session_state["cookie_waiting"]
+    st.warning("로그인이 필요한 서비스입니다.")
+    time.sleep(1.5)
+    st.switch_page("pages/login.py")
+    st.stop()
+
+
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode("utf-8")
 
+
 def inject_custom_header():
-    # 🔥 1. 현재 로그인한 사용자의 정보를 Streamlit 세션에서 가져옵니다.
-    # (로그인이 안 되어 있거나 정보가 없으면 기본값으로 '사용자'를 출력합니다.)
     user_info = st.session_state.get("user", {})
-    user_name = user_info.get("name") 
-    
-    
+    user_name = user_info.get("name", "사용자")
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     frontend_root = os.path.dirname(current_dir)
     image_path = os.path.join(frontend_root, "assets", "AIWORK.jpg")
-    
-    # Base64 문자열 생성
-    try:
-        img_base64 = get_image_base64(image_path)
-        # JPEG 이미지일 경우 data:image/jpeg;base64, 를 붙여줍니다.
-        img_src = f"data:image/jpeg;base64,{img_base64}"
-    except FileNotFoundError:
-        # 헤더 렌더링을 막지 않기 위해 에러 메시지는 숨기거나 로그로만 남기는 것이 좋습니다.
-        # st.error(f"이미지 경로를 찾을 수 없습니다: {image_path}") 
-        img_src = "" # 에러 시 빈 문자열 처리
 
-    # 파이썬 f-string을 사용하기 위해 기존 HTML 문자열을 f""" """ 로 감쌉니다.
+    try:
+        img_src = f"data:image/jpeg;base64,{get_image_base64(image_path)}"
+    except FileNotFoundError:
+        img_src = ""
+
     header_html = f"""
     <style>
-    /* 상단 여백 조절 */
     .block-container {{
-        padding-top: 100px !important; 
+        padding-top: 100px !important;
     }}
-    
-    /* 헤더 전체 컨테이너 */
     .custom-header {{
         position: fixed;
         top: 0;
@@ -158,20 +109,16 @@ def inject_custom_header():
         z-index: 999999;
         font-family: 'Pretendard', sans-serif;
     }}
-
-    /* 왼쪽 로고 영역 */
     .header-logo {{
         display: flex;
         align-items: center;
         text-decoration: none;
     }}
     .header-logo img {{
-        height: 28px; 
+        height: 28px;
         width: auto;
         object-fit: contain;
     }}
-
-    /* 가운데 메뉴 영역 */
     .header-menu {{
         display: flex;
         gap: 40px;
@@ -187,17 +134,15 @@ def inject_custom_header():
         transition: color 0.2s;
     }}
     .header-menu a:hover {{
-        color: #bb38d0; 
+        color: #bb38d0;
     }}
-
-    /* 오른쪽 유틸리티 영역 */
     .header-utils {{
         display: flex;
         align-items: center;
     }}
     .icon-group {{
         display: flex;
-        font-size: 15px; /* 글씨 크기를 메뉴바에 맞게 살짝 조절 */
+        font-size: 15px;
         font-weight: 600;
     }}
     .icon-group a {{
@@ -219,238 +164,26 @@ def inject_custom_header():
         <div class="header-menu">
             <a href="/interview" target="_self">AI면접</a>
             <a href="/resume" target="_self">이력서</a>
-            <a href="/mypage" target="_self">내 기록</a>
+            <a href="/mypage" target="_self">내기록</a>
             <a href="/my_info" target="_self">마이페이지</a>
         </div>
         <div class="header-utils">
             <div class="icon-group">
-                <a href="/my_info" target="_self" title="마이페이지">👤 {user_name} 님, 반갑습니다</a>
+                <a href="/my_info" target="_self" title="마이페이지">👤 {user_name}님 반갑습니다.</a>
             </div>
         </div>
     </div>
     """
     st.markdown(header_html, unsafe_allow_html=True)
-# ================================================================================
 
 
-# home.py (tab1)
 def render_memo_board(current_user_name="익명"):
-    """
-    모두의 메모장 (방명록) UI를 렌더링하는 함수입니다.
-    """
-    import random
-    import sys
-    import os
-    import streamlit as st
+    from utils.home_api_render import render_memo_board as _render_memo_board
 
-    # DB 경로 임포트 (파일 위치에 따라 조정)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(os.path.dirname(current_dir))
-    if project_root not in sys.path:
-        sys.path.append(project_root)
-
-    try:
-        from backend.db.database import save_memo, get_all_memos
-    except Exception as e:
-        st.error(f"DB 임포트 에러: {e}")
-        return
-
-    # --- 1. DB에서 실시간으로 메모 불러오기 ---
-    try:
-        memos = get_all_memos(limit=30) # 최신 30개만!
-    except Exception as e:
-        st.warning(f"메모를 불러오는 중 오류 발생: {e}")
-        memos = []
-
-    # DB가 완전히 비어있을 때 보여줄 웰컴 메시지
-    if not memos:
-        default_memos = [
-            {"author": "시스템", "content": "🎉 AIWORK에 오신 것을 환영합니다! 자유롭게 발자취를 남겨주세요.", "color": "#FDF4FF", "border": "#FAE8FF", "text_color": "#BB38D0"},
-            {"author": "김다빈", "content": "다들 프로젝트 준비 화이팅입니다!! 💻", "color": "#FFF9C4", "border": "#FFF59D", "text_color": "#5D4037"},
-            {"author": "사자개🦁", "content": "크르르르르릉클르컹커커컹ㅋ컬ㅋ", "color": "#E1F5FE", "border": "#B3E5FC", "text_color": "#01579B"},
-        ]
-        
-        for m in default_memos:
-            try:
-                save_memo(
-                    author=m["author"],
-                    content=m["content"],
-                    color=m["color"],
-                    border=m["border"],
-                    text_color=m["text_color"]
-                )
-            except Exception as e:
-                st.error(f"초기 메모 DB 저장 실패: {e}")
-                
-        # DB에 저장이 끝났으니 새로 들어간 데이터를 포함해서 다시 불러옵니다!
-        try:
-            memos = get_all_memos(limit=30)
-        except Exception:
-            memos = default_memos
-            
-    # --- 2. 메모 입력 폼 ---
-    with st.container(border=True):
-        st.markdown("<p style='font-size:16px; font-weight:700; color:#111; margin-bottom:10px;'>댓글</p>", unsafe_allow_html=True)
-        
-        with st.form("memo_form", clear_on_submit=True):
-            c1, c2 = st.columns([8, 2])
-            with c1:
-                new_memo_text = st.text_input("메모 내용", placeholder="자유롭게 응원의 메시지나 팁을 남겨보세요!", label_visibility="collapsed")
-            with c2:
-                submit_btn = st.form_submit_button("보내기", use_container_width=True)
-                
-            if submit_btn and new_memo_text.strip():
-                # 랜덤 포스트잇 색상 지정
-                colors = [
-                    {"color": "#FFF9C4", "border": "#FFF59D", "text_color": "#5D4037"},
-                    {"color": "#E8F5E9", "border": "#C8E6C9", "text_color": "#1B5E20"},
-                    {"color": "#FCE4EC", "border": "#F8BBD0", "text_color": "#880E4F"},
-                    {"color": "#E3F2FD", "border": "#BBDEFB", "text_color": "#0D47A1"}
-                ]
-                picked_color = random.choice(colors)
-                
-                try:
-                    save_memo(
-                        author=current_user_name,
-                        content=new_memo_text,
-                        color=picked_color["color"],
-                        border=picked_color["border"],
-                        text_color=picked_color["text_color"]
-                    )
-                except Exception as e:
-                    st.error(f"메모 저장 실패: {e}")
-                
-                st.rerun() # 저장 후 즉시 화면 새로고침하여 반영
-
-    # --- 3. 메모장 게시판 렌더링 (HTML/CSS) ---
-    memo_html = """
-    <style>
-    .scrollable-memo-container {
-        max-height: 450px; overflow-y: auto; padding-right: 12px; margin-top: 10px;
-    }
-    .scrollable-memo-container::-webkit-scrollbar { width: 8px; }
-    .scrollable-memo-container::-webkit-scrollbar-track { background: transparent; }
-    .scrollable-memo-container::-webkit-scrollbar-thumb { background-color: #e2e8f0; border-radius: 10px; }
-    .scrollable-memo-container::-webkit-scrollbar-thumb:hover { background-color: #cbd5e1; }
-    .memo-board { display: flex; flex-wrap: wrap; gap: 16px; padding-bottom: 20px; }
-    .memo-card {
-        flex: 1 1 calc(33.333% - 16px); min-width: 220px; padding: 16px;
-        border-radius: 2px 16px 16px 16px; box-shadow: 2px 4px 12px rgba(0,0,0,0.05);
-        position: relative; transition: transform 0.2s;
-    }
-    .memo-card:hover { transform: translateY(-4px) rotate(-1deg); box-shadow: 4px 8px 16px rgba(0,0,0,0.08); }
-    .memo-author {
-        font-size: 12px; font-weight: 700; margin-bottom: 8px;
-        border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 4px;
-        display: flex; justify-content: space-between;
-    }
-    .memo-content { font-size: 14px; line-height: 1.5; font-weight: 500; word-break: keep-all; }
-    </style>
-    
-    <div class="scrollable-memo-container">
-        <div class="memo-board">
-    """
-
-    for memo in memos:
-        # DB에서 가져온 최신 순 데이터로 카드 렌더링
-        memo_html += f"""
-            <div class="memo-card" style="background-color: {memo['color']}; border: 1px solid {memo['border']}; color: {memo['text_color']};">
-                <div class="memo-author">
-                    <span>👤 {memo['author']}</span>
-                </div>
-                <div class="memo-content">{memo['content']}</div>
-            </div>
-        """
-
-    memo_html += """
-        </div>
-    </div>
-    """
-    st.html(memo_html)
-    st.write("")
+    return _render_memo_board(current_user_name)
 
 
-# ================== (Tavily) 뉴스 데이터 가져오는거 실험중 =====================
-def get_translated_news_summary(raw_news_data: str) -> str:
-    """Tavily 검색 결과(주로 영문)를 한국어로 번역하고 요약하여 뉴스 대시보드 형태로 반환합니다."""
-    prompt = f"""
-당신은 IT 전문 뉴스 에디터입니다. 
-아래 제공된 [검색 결과]를 바탕으로, 한국의 개발자들이 읽기 좋게 '최신 AI 및 백엔드 트렌드 10가지'를 작성해주세요.
-
-[지침]:
-1. 반드시 한국어로 작성할 것.
-2. 검색 결과를 바탕으로 반드시 딱 10개의 핵심 뉴스를 추출할 것.
-3. 각 뉴스는 2~3문장으로 핵심만 요약해서 퀄리티 있게 적어줄 것.
-4. 기술적인 용어는 적절히 설명하거나 한국어 통용어로 번역할 것.
-5. 절대로 마크다운 기호(**, # 등)나 번호 표기(1., 2.)를 쓰지 마세요. 
-6. 오직 각 뉴스 항목들을 `---` 이라는 세 개의 하이픈으로만 구분해서 출력하세요.
-
-예시 포맷:
-내용 요약 문장 첫번째 블록입니다.
----
-내용 요약 문장 두번째 블록입니다.
----
-
-[검색 결과]:
-{raw_news_data}
-"""
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4.1-mini", # 또는 사용하시는 모델명 (예: gpt-4o-mini)
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.6
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"LLM 번역 에러: {e}")
-        return ""
-
-@st.cache_data(ttl=3600, show_spinner=False)
 def render_realtime_ai_news():
-    """Tavily를 활용해 최신 AI 소식을 카드로 렌더링 (한글 + 스크롤 지원)"""
+    from utils.home_api_render import render_realtime_ai_news as _render_realtime_ai_news
 
-    current_ym = datetime.now().strftime("%Y년 %m월")
-    query = f"{current_ym} 기준 최신 AI 및 백엔드 기술 트렌드 10가지"
-    
-    try:
-        with st.spinner("실시간 AI 트렌드를 분석중 ..."):
-            raw_news = get_web_context_second(query)
-            
-            # 2. 강력하게 제어된 프롬프트로 LLM에게 10개 번역/요약을 요청
-            raw_news = get_translated_news_summary(raw_news)
-            
-        if raw_news:
-            # ──────────────────────────────────────────────────────
-            # 💡 [핵심 수정] 오늘 날짜를 "YYYY년 M월 D일" 포맷으로 자동 생성!
-            today_str = datetime.now().strftime("%Y년 %m월 %d일")
-            st.markdown(f"**{today_str} 실시간 브리핑**")
-            # ──────────────────────────────────────────────────────
-            
-            # 텍스트를 LLM이 만들기로 약속한 '---' 구분자로 정확히 자릅니다.
-            news_items = [item.strip() for item in raw_news.split('---') if len(item.strip()) > 5]
-            
-            # 💡 높이가 450px로 고정된 스크롤 컨테이너 생성!
-            with st.container(height=400, border=True):
-                
-                # 최대 10개까지만 가져와서 반복문으로 그리기
-                for i, news in enumerate(news_items[:10]): 
-                    st.markdown(
-                        f"""
-                        <div style="display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; margin-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="background: #fdf4ff; color: #bb38d0; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">NEWS {i+1}</span>
-                            </div>
-                            <p style="font-size: 14px; font-weight: 600; color: #111; margin: 4px 0; line-height: 1.5;">
-                                {news}
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True
-                    )
-        else:
-            st.info("현재 새로운 소식이 없습니다. 잠시 후 다시 확인해주세요.")
-            
-    except Exception as e:
-        st.error(f"뉴스 연결 실패: {e}")
+    return _render_realtime_ai_news()

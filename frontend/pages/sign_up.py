@@ -1,4 +1,4 @@
-"""
+﻿"""
 File: sign_up.py
 Author: 김다빈, 김지우
 Created: 2026-02-20
@@ -17,129 +17,25 @@ import streamlit as st
 import re
 import random
 import time
-import os
-import smtplib
-import pymysql
-import bcrypt
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from dotenv import load_dotenv
+from utils.api_utils import api_check_email, api_send_signup_email, api_signup
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# .env 파일에서 환경 변수 불러오기 (frontend/.env 명시적 로드)
-_ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-load_dotenv(_ENV_PATH, override=True)
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-APP_PASSWORD = os.getenv("APP_PASSWORD")
-
-# --- 데이터베이스 환경 변수 로드 ---
-DB_HOST     = os.getenv("DB_HOST", "localhost")
-DB_PORT     = int(os.getenv("DB_PORT", 3306))
-DB_USER     = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_NAME     = os.getenv("DB_NAME", "ai_interview")
-
-
-# --- 데이터베이스 연결 함수 ---
-def get_db_connection():
-    try:
-        conn = pymysql.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            db=DB_NAME,
-            charset='utf8mb4',
-            cursorclass=pymysql.cursors.DictCursor
-        )
-        return True, conn
-    except Exception as e:
-        # DB 연결 에러 메시지 반환
-        return False, f"데이터베이스 연결 실패: {e}"
-
 # --- 이메일 중복 확인 (DB 조회) ---
 def check_email_exists(email):
-    success, result = get_db_connection()
+    success, result = api_check_email(email)
     if not success:
-        return "error", result # 에러 발생 시
-    
-    conn = result
-    try:
-        with conn.cursor() as cursor:
-            sql = "SELECT id FROM users WHERE email = %s"
-            cursor.execute(sql, (email,))
-            is_exists = cursor.fetchone() is not None
-            return "success", is_exists
-    finally:
-        conn.close()
+        return "error", result
+    return "success", result
 
 # 회원 가입(DB 저장)
 def register_user_to_db(email, name, raw_password):
-    success, result = get_db_connection()
-    if not success:
-        return False, "DB 서버 연결에 실패했습니다."
-    
-    conn = result
-    try:
-        with conn.cursor() as cursor:
-            hashed_pw = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            sql = "INSERT INTO users (email, name, password) VALUES (%s, %s, %s)"
-            cursor.execute(sql, (email, name, hashed_pw))
-            conn.commit()
-            return True, "성공"
-    except pymysql.err.IntegrityError:
-        return False, "이미 가입된 이메일입니다."
-    except Exception as e:
-        return False, f"저장 중 오류 발생: {e}"
-    finally:
-        conn.close()
+    return api_signup(email, raw_password, name=name)
 
 
 # 이메일 발송
 def send_auth_email(receiver_email, auth_code):
-    if not SENDER_EMAIL or not APP_PASSWORD:
-        return False, "서버 설정 오류: .env 파일에서 이메일 정보를 불러오지 못했습니다."
-
-    subject = "[AIWORK] 회원가입 인증 번호 안내"
-    body = f"""
-    <html>
-    <body style="font-family: 'Malgun Gothic', sans-serif; line-height: 1.8; color: #333; max-width: 520px; margin: 0 auto; padding: 24px;">
-        <p>신규 가입자님! 안녕하세요, <b>AIWORK</b>입니다.</p>
-        <p>서비스 이용을 위한 회원가입 인증 번호는 다음과 같습니다.</p>
-
-        <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;
-                    padding: 24px; text-align: center; margin: 24px 0;">
-            <p style="margin:0; font-size:13px; color:#666;">인증 번호</p>
-            <h1 style="color:#bb38d0; letter-spacing:10px; margin:8px 0; font-size:36px;">{auth_code}</h1>
-        </div>
-
-        <p style="font-size:14px; color:#555;">
-            요청하신 페이지에 위 번호를 입력하여 회원가입을 완료해 주세요.
-        </p>
-        <p style="font-size:13px; color:#888;">
-            본인이 요청하지 않은 경우 이 메일을 무시하셔도 됩니다.
-        </p>
-        <p style="font-size:13px; color:#888; font-weight:bold;">AIWORK 드림</p>
-    </body>
-    </html>
-    """
-
-    msg = MIMEMultipart()
-    msg['From'] = SENDER_EMAIL
-    msg['To'] = receiver_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'html'))
-
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(SENDER_EMAIL, APP_PASSWORD)
-        server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
-        server.quit()
-        return True, "성공"
-    except Exception as e:
-        return False, f"이메일 발송 실패: {str(e)}"
+    return api_send_signup_email(receiver_email, auth_code)
 
 
 # 세션 상태 초기화

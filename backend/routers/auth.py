@@ -1,4 +1,4 @@
-"""
+﻿"""
 File: auth.py
 Author: 양창일, 김지우
 Created: 2026-02-15
@@ -21,7 +21,7 @@ import shutil  # 파일 저장을 위해 추가
 import uuid    # 랜덤 파일명 생성을 위해 추가
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header, UploadFile, File # UploadFile, File 추가
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ from pydantic import BaseModel
 from backend.db.session import get_db
 from backend.schemas.auth_schema import (
     SignupRequest, LoginRequest, TokenResponse, MeResponse,
-    ResetEmailRequest, ResetPasswordRequest
+    ResetEmailRequest, ResetPasswordRequest, RefreshRequest
 )
 from backend.services import auth_service
 from backend.core.config import settings
@@ -67,15 +67,18 @@ def set_auth_cookies(res: Response, refresh_token: str, csrf_token: str) -> None
         path="/api/auth",
     )
 
+
 def clear_auth_cookies(res: Response) -> None:
     res.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/auth", domain=settings.COOKIE_DOMAIN)
     res.delete_cookie(settings.CSRF_COOKIE_NAME, path="/api/auth", domain=settings.COOKIE_DOMAIN)
+
 
 def require_csrf(req: Request) -> None:
     cookie = req.cookies.get(settings.CSRF_COOKIE_NAME)
     header = req.headers.get("X-CSRF-Token")
     if (not cookie) or (not header) or (cookie != header):
         raise HTTPException(status_code=403, detail="CSRF 에러: 올바르지 않은 접근입니다.")
+
 
 def get_current_user(req: Request, db: Session) -> User:
     auth = req.headers.get("Authorization", "")
@@ -89,19 +92,38 @@ def get_current_user(req: Request, db: Session) -> User:
 
 
 # ==========================================
-# 🛑 기본 계정 API: 회원가입, 로그인, 로그아웃
+# 기본 계정 API: 회원가입, 로그인, 로그아웃
 # ==========================================
 @router.post("/signup")
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
     try:
-        auth_service.signup(db, req.email, req.password)
+        auth_service.signup(db, req.email, req.password, req.name)
         return {"ok": True}
     except ValueError:
         raise HTTPException(status_code=400, detail="유효하지 않은 요청입니다.")
 
+
+@router.get("/check-email")
+def check_email(email: str, db: Session = Depends(get_db)):
+    return {"exists": auth_service.check_user_exists(db, email)}
+
+
+@router.post("/send-signup-email")
+def api_send_signup_email(req: ResetEmailRequest, db: Session = Depends(get_db)):
+    if auth_service.check_user_exists(db, req.email):
+        raise HTTPException(status_code=400, detail="이미 가입된 이메일입니다.")
+
+    is_sent, error_msg = auth_service.send_auth_email(req.email, req.auth_code)
+
+    if not is_sent:
+        raise HTTPException(status_code=500, detail=error_msg)
+
+    return {"message": "인증번호 발송 성공"}
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(req: LoginRequest, request: Request, res: Response, db: Session = Depends(get_db)):
-    ip = request.client.host  
+    ip = request.client.host
 
     # 🔒 차단 확인
     try:
@@ -119,13 +141,13 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
 
     # 2. 유저 정보 조회
     user_obj = db.query(User).filter(User.id == int(user_id)).first()
-    
+
     # 🔥 3. [추가된 로직] 비밀번호는 맞았지만, 계정 상태(status)가 휴면/탈퇴인지 검사!
     if user_obj:
         user_status = getattr(user_obj, "status", "active")
         if user_status == "withdrawn":
             raise HTTPException(status_code=403, detail="탈퇴 처리된 계정입니다.")
-        elif user_status == "dormant":
+        if user_status == "dormant":
             raise HTTPException(status_code=403, detail="장기 미접속으로 휴면 전환된 계정입니다.")
 
     # 4. 상태가 정상(active)인 경우에만 쿠키 세팅 및 로그인 성공 처리
@@ -142,13 +164,16 @@ def login(req: LoginRequest, request: Request, res: Response, db: Session = Depe
     return {
         "access_token": access,
         "token_type": "bearer",
-        "id" : user_id,
+        "id": user_id,
         "name": user_name,
         "role": user_role,
         "profile_image_url": user_profile_image_url,
-        "email": user_email, # 👈 프론트엔드로 전달!
-        "tier": user_tier,   # 👈 프론트엔드로 전달!
+        "email": user_email,
+        "tier": user_tier,
+        "refresh_token": refresh,
+        "csrf_token": csrf,
     }
+
 
 @router.post("/logout")
 def logout(req: Request, res: Response, db: Session = Depends(get_db)):
@@ -159,12 +184,20 @@ def logout(req: Request, res: Response, db: Session = Depends(get_db)):
     clear_auth_cookies(res)
     return {"ok": True}
 
+
 @router.post("/refresh", response_model=TokenResponse)
-def refresh(req: Request, res: Response, db: Session = Depends(get_db)):
-    require_csrf(req)
-    refresh_token = req.cookies.get(settings.REFRESH_COOKIE_NAME)
+def refresh(
+    req: Request,
+    res: Response,
+    payload: RefreshRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    refresh_token = (payload.refresh_token if payload else None) or req.cookies.get(settings.REFRESH_COOKIE_NAME)
     if not refresh_token:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
+
+    if not (payload and payload.refresh_token):
+        require_csrf(req)
 
     try:
         new_access, new_refresh = auth_service.rotate_refresh(db, refresh_token)
@@ -173,7 +206,20 @@ def refresh(req: Request, res: Response, db: Session = Depends(get_db)):
 
     csrf = new_csrf_token()
     set_auth_cookies(res, refresh_token=new_refresh, csrf_token=csrf)
-    return {"access_token": new_access, "token_type": "bearer"}
+    user = auth_service.get_user_from_access(db, new_access)
+    return {
+        "access_token": new_access,
+        "token_type": "bearer",
+        "id": user.id,
+        "name": user.name or user.email.split("@")[0],
+        "role": getattr(user, "role", "user"),
+        "profile_image_url": getattr(user, "profile_image_url", None),
+        "email": user.email,
+        "tier": getattr(user, "tier", "normal"),
+        "refresh_token": new_refresh,
+        "csrf_token": csrf,
+    }
+
 
 @router.get("/me", response_model=MeResponse)
 def me(req: Request, db: Session = Depends(get_db)):
@@ -182,9 +228,8 @@ def me(req: Request, db: Session = Depends(get_db)):
 
 
 # ==========================================
-# 🛑 프론트엔드용 API: 토큰 검증, 비밀번호 찾기
+# 프론트엔드용 API: 토큰 검증, 비밀번호 찾기
 # ==========================================
-
 @router.get("/verify")
 def verify_token(authorization: str = Header(None), db: Session = Depends(get_db)):
     """프론트엔드(home.py)가 화면 이동 시 토큰의 만료 여부를 묻는 API"""
@@ -214,7 +259,10 @@ def verify_token(authorization: str = Header(None), db: Session = Depends(get_db
         }
 
     except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="30분 동안 활동이 없어 자동 로그아웃 되었습니다.")
+        raise HTTPException(
+            status_code=401,
+            detail=f"{settings.ACCESS_TOKEN_MINUTES}분 동안 활동이 없어 자동 로그아웃 되었습니다.",
+        )
     except JWTError:
         raise HTTPException(status_code=401, detail="유효하지 않은 인증 정보입니다.")
 
@@ -224,12 +272,12 @@ def api_send_reset_email(req: ResetEmailRequest, db: Session = Depends(get_db)):
     """이메일 발송 API"""
     if not auth_service.check_user_exists(db, req.email):
         raise HTTPException(status_code=404, detail="가입되지 않은 이메일입니다. 아이디를 다시 확인해주세요.")
-    
+
     is_sent, error_msg = auth_service.send_auth_email(req.email, req.auth_code)
-    
+
     if not is_sent:
         raise HTTPException(status_code=500, detail=error_msg)
-        
+
     return {"message": "인증번호 발송 성공"}
 
 
@@ -237,52 +285,55 @@ def api_send_reset_email(req: ResetEmailRequest, db: Session = Depends(get_db)):
 def api_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
     """비밀번호 재설정 API"""
     success, error_msg = auth_service.update_password(db, req.email, req.new_password)
-    
+
     if not success:
         raise HTTPException(status_code=500, detail=error_msg)
-        
+
     return {"message": "비밀번호가 성공적으로 변경되었습니다."}
 
 
 class UnlockRequest(BaseModel):
     email: str
 
+
 @router.post("/unlock")
 def unlock_dormant(req: UnlockRequest, db: Session = Depends(get_db)):
     """휴면 계정을 다시 활성화(active) 시키는 API"""
     user = db.query(User).filter(User.email == req.email).first()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
-    
+
     if getattr(user, "status", "active") != "dormant":
         raise HTTPException(status_code=400, detail="휴면 상태인 계정이 아닙니다.")
-    
+
     # 상태를 다시 활성화로 변경!
     user.status = "active"
     db.commit()
-    
+
     return {"detail": "휴면 해제 완료"}
+
 
 class WithdrawRequest(BaseModel):
     email: str
+
 
 @router.post("/withdraw")
 def api_withdraw(req: WithdrawRequest, db: Session = Depends(get_db)):
     """회원 탈퇴 API"""
     user = db.query(User).filter(User.email == req.email).first()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
-    
+
     user.status = "withdrawn"
     db.commit()
-    
+
     return {"detail": "회원 탈퇴가 완료되었습니다."}
 
 
 # ==========================================
-# 📷 프로필 사진 업로드 API (김지우 추가)
+# 프로필 사진 업로드 API (김지우 추가)
 # ==========================================
 @router.post("/profile-image")
 def upload_profile_image(
@@ -310,11 +361,11 @@ def upload_profile_image(
 
     # 5. DB 업데이트 및 프론트로 경로 반환
     image_url = f"http://127.0.0.1:8000/static/profiles/{new_filename}"
-    
-    # 🔥 확실하게 멱살 잡고 DB에 밀어넣는 코드
-    user.profile_image_url = image_url
-    db.add(user)     
-    db.commit()       
-    db.refresh(user)  
 
-    return {"profile_image_url": user.profile_image_url} # user 객체에서 직접 꺼내서 반환
+    # DB에 밀어넣는 코드
+    user.profile_image_url = image_url
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {"profile_image_url": user.profile_image_url}
