@@ -17,7 +17,7 @@ import streamlit as st
 import time
 import sys, os
 
-# ─── 경로 설정 ─────────────────────────────────────────────────────────
+# 경로 설정
 current_dir = os.path.dirname(os.path.abspath(__file__))  # 위치: frontend/pages
 frontend_dir = os.path.dirname(current_dir)  # 위치: frontend
 root_dir = os.path.dirname(frontend_dir)  # 위치: SKN23-3rd-1TEAM (최상위)
@@ -29,8 +29,8 @@ if root_dir not in sys.path:
 if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
-# ─── 서드파티 및 모듈 ──────────────────────────────────────────────────────────
-from utils.function import inject_custom_header, require_login
+# 서드파티 및 모듈
+from utils.function import inject_custom_header, require_login, render_memo_board
 from utils.home_api_render import render_memo_board, render_realtime_ai_news
 from streamlit_option_menu import option_menu
 from utils.api_utils import api_get_home_guide
@@ -40,13 +40,10 @@ from components.job_cards import render_job_cards
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
-# 🔥 1. 문지기 먼저 호출! (과거의 복잡한 60줄짜리 인증 로직을 단 1줄로 압축)
 user_id = require_login()
-
-# 🔥 2. 인증 완료 후 내 이름이 담긴 헤더 그리기
 inject_custom_header()
 
-# 유저 정보 바인딩 (require_login이 알아서 st.session_state.user를 예쁘게 채워줍니다)
+# 유저 정보 바인딩
 user_info = st.session_state.user or {}
 user_name = user_info.get("name", "사용자")
 user_role = user_info.get("role", "user")
@@ -66,7 +63,7 @@ def get_home_guide_response_stream(user_message, web_context):
     else:
         yield str(result)
 
-# ─── CSS 스타일링 ──────────────────────────────────────────────────
+# CSS 
 st.markdown(
     """
 <style>
@@ -77,9 +74,8 @@ p, span, div, a { color: #000; }
 .stApp { background-color: #f5f5f5 !important; background-image: none !important; }
 .block-container { max-width: 1050px !important; padding-top: 4rem !important; padding-bottom: 5rem !important; }
 
-/* 화면 전체를 감싸는 메인 컨테이너의 여백을 강제로 줄임 */
 .block-container {
-    padding-top: 1rem !important;    
+    padding-top: 100px !important;   
     padding-bottom: 1rem !important; 
     padding-left: 0.5rem !important;   
     padding-right: 0.5rem !important;  
@@ -90,7 +86,6 @@ p, span, div, a { color: #000; }
 [data-testid="stHeader"], #MainMenu, footer, header { visibility:hidden; background:transparent; }
 .block-container { padding-top: 2rem !important; max-width: 1200px !important; }
 
-/* ✨ Streamlit 기본 컨테이너(상자)를 토스 스타일 카드 UI로 덮어쓰기 */
 [data-testid="stVerticalBlockBorderWrapper"] {
     border: none !important;
     border-radius: 16px !important;
@@ -104,7 +99,6 @@ p, span, div, a { color: #000; }
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* 그라데이션 프라이머리 버튼 (면접 시작 버튼 등) */
 button[kind="primary"] {
     background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important;
     border: none !important; color: white !important; font-weight: 700 !important;
@@ -112,18 +106,15 @@ button[kind="primary"] {
 }
 button[kind="primary"]:hover { filter: brightness(1.1); transform: scale(0.99); }
 
-/* 알림창 디자인 */
 .alert-warn    { background:#fff4f4; color:#e74c3c; border-left:4px solid #e74c3c; padding:16px; border-radius:8px; font-size:14px; font-weight:600; margin-bottom:20px; box-shadow: 0 2px 10px rgba(231,76,60,0.1); }
 .alert-ok      { background:#fdf4ff; color:#bb38d0; border-left:4px solid #bb38d0; padding:16px; border-radius:8px; font-size:14px; font-weight:700; margin-bottom:20px; box-shadow: 0 2px 10px rgba(187,56,208,0.1); }
 .alert-info    { background:#f0f7ff; color:#2980b9; border-left:4px solid #3498db; padding:14px 18px; border-radius:6px; font-size:14px; font-weight:500; margin-bottom:16px; }
 
-/* 탭(Tabs) 디자인 고급화 */
 [data-testid="stTabs"] button { font-family: 'Pretendard', sans-serif !important; font-size: 16px !important; font-weight: 600 !important; color: #666 !important; }
 [data-testid="stTabs"] button[aria-selected="true"] { color: #bb38d0 !important; border-bottom-color: #bb38d0 !important; }
 div[data-baseweb="tab-highlight"] { background-color: #bb38d0 !important; }
 [data-testid="stImage"] img { border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 
-/* 🚨 [핵심 버그 수정] 화면 전체 증발 버그를 고친 완벽한 유령 버튼 CSS */
 div[data-testid="stElementContainer"]:has(#logout-marker),
 div[data-testid="stElementContainer"]:has(#logout-marker) + div[data-testid="stElementContainer"] {
     position: absolute !important; width: 0px !important; height: 0px !important;
@@ -131,7 +122,6 @@ div[data-testid="stElementContainer"]:has(#logout-marker) + div[data-testid="stE
     margin: 0 !important; padding: 0 !important;
 }
 
-/* ✨ 플로팅 챗봇 버튼 고정 CSS */
 div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] {
     position: fixed !important; bottom: 40px !important; right: 40px !important; z-index: 99999 !important;
     width: 70px !important; height: 70px !important;
@@ -155,39 +145,7 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
     unsafe_allow_html=True,
 )
 
-# 상단 네비게이션 바
-st.markdown(
-    """
-    <style>
-    div[data-testid="stElementContainer"]:has(#hide-home-top-nav) + div[data-testid="stElementContainer"] {
-        display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important;
-    }
-    </style>
-    <div id="hide-home-top-nav"></div>
-    """,
-    unsafe_allow_html=True,
-)
-selected = option_menu(
-    menu_title=None,
-    options=["홈", "AI 면접", "내 기록", "마이페이지"],
-    icons=["house", "robot", "clipboard-data", "person"],
-    menu_icon="cast",
-    default_index=0,
-    orientation="horizontal",
-    styles={
-        "container": { "padding": "0!important", "background-color": "#ffffff", "border-radius": "16px", "box-shadow": "0 2px 10px rgba(0,0,0,0.02)", "margin-bottom": "20px" },
-        "icon": {"color": "#bb38d0", "font-size": "20px"},
-        "nav-link": { "font-family": "Pretendard", "font-size": "15px", "font-weight": "600", "text-align": "center", "margin": "0px", "--hover-color": "#f8f9fa" },
-        "nav-link-selected": {"background-color": "#bb38d0", "font-weight": "700"},
-    },
-)
 
-# [네비게이션 라우팅 로직]
-if selected == "마이페이지":
-    st.switch_page("pages/my_info.py")
-
-
-# ─── 네이버 스타일 커스텀 프로필 카드 렌더링 함수 ──────────────────────────────
 def render_profile_card(user_name, user_email, user_tier, user_profile_image_url=None):
     avatar_url = user_profile_image_url or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_name}"
     tier_badge_class = "profile-badge-plus" if user_tier.lower() == "plus" else "profile-badge-normal"
@@ -246,70 +204,268 @@ def render_profile_card(user_name, user_email, user_tier, user_profile_image_url
     </div>
     """, unsafe_allow_html=True)
 
+st.markdown("""
+<style>
+.block-container {{
+    padding-top: 100px !important;
+}}
+</style>
+""", unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 홈 탭 메인 렌더링
-# 🔥 [방어 코드 추가] selected가 잠시 None일 때도 에러 없이 그리도록 수정
-if selected == "홈" or selected is None:
-    left_col, _, right_col = st.columns([6.5, 0.2, 3.3])
 
-    # 오른쪽 패널 (프로필 및 액션 카드)
-    with right_col:
-        render_profile_card(user_name, user_email, user_tier, user_profile_image_url)
+import base64
+try:
+    with open("assets/search.png", "rb") as image_file: # a.png 경로가 다르면 수정해주세요 (예: assets/a.png)
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    search_icon_base64 = f"data:image/png;base64,{encoded_string}"
+except FileNotFoundError:
+    search_icon_base64 = "" # 이미지 없을 경우 대비
 
-        # 👻 유령 로그아웃 버튼 (수정 완료!)
-        st.markdown('<div id="logout-marker"></div>', unsafe_allow_html=True)
-        if st.button("__logout__", key="logout-trigger-btn"):
-            import extra_streamlit_components as stx
-            cookie_manager = stx.CookieManager(key="global_auth_cookie")
-            try:
-                cookie_manager.delete("access_token")
-                cookie_manager.delete("refresh_token")
-                cookie_manager.delete("csrf_token")
-            except Exception:
-                pass
-            st.session_state.clear()
-            time.sleep(0.3)
-            st.switch_page("app.py")
+st.markdown(f"""
+<style>
+.search-wrapper {{
+    position: relative; width: 100%; margin: 10px auto 30px; z-index: 9999;
+}}
+.search-box {{
+    display: flex; align-items: center; width: 100%; height: 56px;
+    border: 2.5px solid #bb38d0; border-radius: 28px; padding: 0 20px 0 24px;
+    background: #fff; box-shadow: 0 4px 15px rgba(187, 56, 208, 0.08);
+    position: relative; z-index: 101; transition: all 0.2s ease;
+}}
+.search-wrapper:focus-within .search-box {{
+    border-bottom-left-radius: 0px; border-bottom-right-radius: 0px;
+    border-bottom-color: #f8f9fa; box-shadow: none;
+}}
+.search-logo {{ font-size: 22px; font-weight: 900; color: #bb38d0; margin-right: 12px; letter-spacing: -0.5px; }}
+.search-select {{ border: none; outline: none; background: transparent; font-size: 14px; font-weight: 700; color: #bb38d0; cursor: pointer; margin-right: 10px; padding-right: 5px; border-right: 2px solid #fae8ff; }}
+.search-input {{ flex: 1; border: none; outline: none; font-size: 16px; font-weight: 500; color: #111; background: transparent; padding-top: 2px; padding-left: 10px; }}
+.search-input::placeholder {{ color: #adb5bd; }}
+.search-btn {{ background: transparent; border: none; font-size: 22px; cursor: pointer; color: #bb38d0; padding: 0; margin-left: 10px; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }}
+.search-btn:hover {{ transform: scale(1.15); }}
+.search-btn img {{ width: 22px; height: 22px; object-fit: contain; }}
+.search-dropdown {{
+    position: absolute; top: 54px; left: 0; width: 100%; 
+    background: #fff; border: 2.5px solid #bb38d0; border-top: none;
+    border-radius: 0 0 24px 24px; box-shadow: 0 15px 30px rgba(187, 56, 208, 0.15);
+    padding: 10px 0 16px 0; z-index: 100;
+    opacity: 0; visibility: hidden; transform: translateY(-10px);
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}}
+.search-wrapper:focus-within .search-dropdown {{ opacity: 1; visibility: visible; transform: translateY(0); }}
+.dropdown-header {{ font-size: 12px; font-weight: 700; color: #888; padding: 10px 24px 8px; border-bottom: 1px solid #f1f3f5; margin-bottom: 8px; }}
+.dropdown-item {{ display: flex; align-items: center; padding: 10px 24px; text-decoration: none !important; color: #111; font-size: 15px; font-weight: 500; transition: background 0.1s; cursor: pointer; }}
+.dropdown-item:hover {{ background: #fdf4ff; color: #bb38d0; }}
+.dropdown-icon {{ display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #f8f9fa; margin-right: 12px; font-size: 12px; color: #adb5bd; }}
+.dropdown-item:hover .dropdown-icon {{ background: #fae8ff; color: #bb38d0; }}
+.dropdown-url {{ margin-left: auto; font-size: 12px; color: #adb5bd; font-weight: 400; }}
+</style>
+<div class="search-wrapper">
+    <div class="search-box">
+        <div class="search-logo">AI</div>
+        <select id="search-engine" class="search-select">
+            <option value="saramin">사람인 공고</option>
+            <option value="jobkorea">잡코리아 공고</option>
+            <option value="worknet">워크넷 공고</option>
+        </select>
+        <input type="text" id="job-keyword" class="search-input" 
+               placeholder="무엇이든 검색해보세요! (예: 면접 꿀팁)" 
+               autocomplete="off">        
+        <button class="search-btn" id="search-action-btn">
+            <img src="{search_icon_base64}" alt="검색">
+        </button>
+    </div>
+    <div class="search-dropdown">
+        <div class="dropdown-header">빠른 포털 이동</div>
+        <a href="https://www.saramin.co.kr" target="_blank" class="dropdown-item">
+            <div class="dropdown-icon">🕒</div>사람인 (Saramin) 홈
+            <span class="dropdown-url">saramin.co.kr ↗</span>
+        </a>
+        <a href="https://www.jobkorea.co.kr" target="_blank" class="dropdown-item">
+            <div class="dropdown-icon">🕒</div>잡코리아 (JobKorea) 홈
+            <span class="dropdown-url">jobkorea.co.kr ↗</span>
+        </a>
+        <a href="https://www.work.go.kr" target="_blank" class="dropdown-item">
+            <div class="dropdown-icon">🕒</div>고용노동부 워크넷 홈
+            <span class="dropdown-url">work.go.kr ↗</span>
+        </a>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-        # 메인 액션 버튼 (AI 면접 시작)
-        action_ph = st.empty()
-        if st.button("AI 모의 면접 시작", type="primary", use_container_width=True):
-            action_ph.markdown('<div class="alert-ok">면접 대기실로 이동합니다!</div>', unsafe_allow_html=True)
-            time.sleep(1)
-            st.switch_page("pages/interview.py")
+# [핵심] 뇌(Javascript) 이식하기 (보이지 않는 iframe을 통해 이벤트를 강제로 묶어줍니다)
+import streamlit.components.v1 as components
+components.html("""
+<script>
+// Streamlit이 화면을 다 그릴 때까지 기다렸다가 이벤트를 주입합니다.
+function attachSearchEvents() {
+    const doc = window.parent.document;
+    const inputEl = doc.getElementById('job-keyword');
+    const btnEl = doc.getElementById('search-action-btn');
+    const engineEl = doc.getElementById('search-engine');
 
-        st.write("")
+    // 아직 화면이 안 그려졌다면 0.1초 뒤에 다시 시도
+    if (!inputEl || !btnEl || !engineEl) {
+        setTimeout(attachSearchEvents, 100);
+        return;
+    }
 
-        # Github 주소
-        with st.container(border=True):
-            st.markdown(
-                """
-                <a href="https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN23-3rd-1TEAM.git" target="_blank" style="text-decoration: none; display: block;">
-                    <p style='font-size:14px; font-weight:700; color:#111; margin-bottom:5px;'>🔗 Github Repository</p>
-                    <p style='font-size:13px; color:#888; margin:0;'>SKN23-3rd-1TEAM 프로젝트 주소</p>
-                </a>
-                <div style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; letter-spacing: -0.5px; margin-bottom: 10px;">
-                    SKN23-3rd-1TEAM
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    // 실제 검색을 수행하는 함수
+    function executeSearch() {
+        const kw = inputEl.value.trim();
+        const engine = engineEl.value;
+        
+        if (kw !== '') {
+            let url = '';
+            if (engine === 'google') url = 'https://www.google.com/search?q=' + encodeURIComponent(kw);
+            else if (engine === 'saramin') url = 'https://www.saramin.co.kr/zf_user/search?searchword=' + encodeURIComponent(kw);
+            else if (engine === 'jobkorea') url = 'https://www.jobkorea.co.kr/Search/?stext=' + encodeURIComponent(kw);
+            else if (engine === 'worknet') url = 'https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do?keyword=' + encodeURIComponent(kw);
+            
+            // 무조건 새 탭으로 열기
+            window.parent.open(url, '_blank');
+        } else {
+            inputEl.focus();
+        }
+    }
 
-    # 왼쪽 패널 (배너 및 정보 탭)
-    with left_col:
+    // 버튼 클릭 이벤트 연결
+    btnEl.onclick = function(e) {
+        e.preventDefault();
+        executeSearch();
+    };
+
+    // 엔터키 입력 이벤트 연결 (Streamlit 새로고침 방어 포함)
+    inputEl.onkeydown = function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();       // 기본 엔터 동작(폼 제출 등) 차단
+            e.stopPropagation();    // Streamlit이 엔터키를 가로채지 못하게 방어!
+            executeSearch();
+        }
+    };
+}
+
+// 스크립트 실행
+attachSearchEvents();
+</script>
+""", height=0, width=0) # 화면에 보이지 않도록 사이즈 0으로 설정
+
+left_col, _, right_col = st.columns([6.5, 0.2, 3.3])
+
+# 오른쪽 패널
+with right_col:
+    render_profile_card(user_name, user_email, user_tier, user_profile_image_url)
+
+    # 로그아웃 버튼
+    st.markdown('<div id="logout-marker"></div>', unsafe_allow_html=True)
+    if st.button("__logout__", key="logout-trigger-btn"):
+        import extra_streamlit_components as stx
+        cookie_manager = stx.CookieManager(key="global_auth_cookie")
         try:
-            import base64
-            def get_b64(path):
-                with open(path, "rb") as f:
-                    return base64.b64encode(f.read()).decode()
-            ad_image_path = os.path.join(frontend_dir, "assets", "AD.png")
-            img1 = f"data:image/png;base64,{get_b64(ad_image_path)}"
-            img2 = img1
-        except:
-            img1 = img2 = ""
+            cookie_manager.delete("access_token")
+            cookie_manager.delete("refresh_token")
+            cookie_manager.delete("csrf_token")
+        except Exception:
+            pass
+        st.session_state.clear()
+        time.sleep(0.3)
+        st.switch_page("app.py")
 
-        slider_html = f"""
+    # 메인 액션 버튼 (AI 면접 시작)
+    action_ph = st.empty()
+    if st.button("AI 모의 면접 시작", type="primary", use_container_width=True):
+        action_ph.markdown('<div class="alert-ok">면접 대기실로 이동합니다!</div>', unsafe_allow_html=True)
+        time.sleep(1)
+        st.switch_page("pages/interview.py")
+
+    st.write("")
+
+    # Github 주소
+    with st.container(border=True):
+        st.markdown(
+            """
+            <a href="https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN23-3rd-1TEAM.git" target="_blank" style="text-decoration: none; display: block;">
+                <p style='font-size:14px; font-weight:700; color:#111; margin-bottom:5px;'>🔗 Github Repository</p>
+                <p style='font-size:13px; color:#888; margin:0;'>SKN23-3rd-1TEAM 프로젝트 주소</p>
+            </a>
+            <div style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; letter-spacing: -0.5px; margin-bottom: 10px;">
+                SKN23-3rd-1TEAM
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    try:
+        import base64
+        def get_b64(path):
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        ad_image_path = os.path.join(frontend_dir, "assets", "saja.png")
+        ad_img_b64 = f"data:image/png;base64,{get_b64(ad_image_path)}"
+    except:
+         ad_img_b64 = ""
+
+    # --- 3. 단일 이미지 배너 HTML & CSS 주입 ---
+    single_ad_banner_html = f"""
+    <style>
+        /* a 태그의 기본 밑줄을 없애고 블록 요소로 만듭니다 */
+        .banner-link {{
+            display: inline-block;
+            text-decoration: none;
+            width: 380px; /* 기존에 설정하신 너비 */
+        }}
+        
+        .banner-container {{
+            position: relative; 
+            width: 100%; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            margin-bottom: 24px; 
+            box-shadow: 0 10px 40px rgba(187, 56, 208, 0.08);
+            border: 2px solid #fae8ff; 
+            
+            /* 높이 355px 고정 */
+            height: 355px; 
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }}
+        
+        .banner-container:hover {{
+            transform: translateY(-4px);
+            box-shadow: 0 15px 45px rgba(187, 56, 208, 0.15);
+        }}
+        
+        .banner-img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            display: block;
+        }}
+    </style>
+
+    <a href="https://discord.com/oauth2/authorize?client_id=1465155158022426675&permissions=4279296&integration_type=0&scope=bot" target="_blank" class="banner-link">
+        <div class="banner-container">
+            <img src="{ad_img_b64}" class="banner-img" alt="사자개 광고">
+        </div>
+    </a>
+    """
+
+    # 화면 렌더링
+    st.markdown(single_ad_banner_html, unsafe_allow_html=True)
+
+# 왼쪽 패널 (배너 및 정보 탭)
+with left_col:
+    try:
+        import base64
+        def get_b64(path):
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        ad_image_path = os.path.join(frontend_dir, "assets", "AD.png")
+        img1 = f"data:image/png;base64,{get_b64(ad_image_path)}"
+        img2 = img1
+    except:
+        img1 = img2 = ""
+
+    slider_html = f"""
 <div id="custom-slider-block">
 <style>
 .slider-container {{ position: relative; width: 100%; border-radius: 16px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
@@ -336,17 +492,17 @@ let currentIdx = 0;
 const track = document.getElementById('slide-track');
 const count = document.getElementById('p-count');
 function moveSlide(dir) {{
-  currentIdx = (currentIdx + dir + 2) % 2;
-  track.style.transform = `translateX(-${{currentIdx * 50}}%)`;
-  count.innerText = `${{currentIdx + 1}} / 2`;
+currentIdx = (currentIdx + dir + 2) % 2;
+track.style.transform = `translateX(-${{currentIdx * 50}}%)`;
+count.innerText = `${{currentIdx + 1}} / 2`;
 }}
 setInterval(() => moveSlide(1), 5000);
 </script>
 </div>
 """
-        st.markdown(slider_html, unsafe_allow_html=True)
+    st.markdown(slider_html, unsafe_allow_html=True)
 
-        st.markdown("""
+    st.markdown("""
 <style>
 div[data-testid="stTabs"] { margin-top: 24px !important; background-color: #fcfcfc !important; border: none !important; border-radius: 16px !important; padding: 16px 20px 24px 20px !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important; }
 div[data-testid="stTabs"] > div[data-baseweb="tab-list"] { border-bottom: 2px solid #e1e4e8 !important; gap: 24px !important; padding: 0 4px !important; background: transparent !important; }
@@ -358,51 +514,50 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
 </style>
 """, unsafe_allow_html=True)
 
-        tab1, tab2, tab3 = st.tabs(["추천 공고", "백엔드 트렌드", "게시판"])
+    tab1, tab2, tab3 = st.tabs(["추천 공고", "백엔드 트렌드", "게시판"])
 
-        # 채용공고 탭
-        with tab1:
-            st.markdown("<br>", unsafe_allow_html=True)
-            payload = {"startPage": 1, "display": 20}
-            if not user_id:
-                st.info("정보를 불러오는 중...")
-            else:
-                try:
-                    parsed = {}
-                    resume_cache = f"resume_latest:{user_id}"
-                    if resume_cache not in st.session_state:
-                        st.session_state[resume_cache] = get_latest_resume(user_id=user_id)
-                    resume = st.session_state.get(resume_cache)
+    # 채용공고 탭
+    with tab1:
+        st.markdown("<br>", unsafe_allow_html=True)
+        payload = {"startPage": 1, "display": 20}
+        if not user_id:
+            st.info("정보를 불러오는 중...")
+        else:
+            try:
+                parsed = {}
+                resume_cache = f"resume_latest:{user_id}"
+                if resume_cache not in st.session_state:
+                    st.session_state[resume_cache] = get_latest_resume(user_id=user_id)
+                resume = st.session_state.get(resume_cache)
 
-                    if resume:
-                        job_role = resume.get("job_role")
-                        analysis_result = resume.get("analysis_result")
-                        if job_role and analysis_result:
-                            parsed = {"job_role": job_role, "keywords": analysis_result.get("keywords", "")}
+                if resume:
+                    job_role = resume.get("job_role")
+                    analysis_result = resume.get("analysis_result")
+                    if job_role and analysis_result:
+                        parsed = {"job_role": job_role, "keywords": analysis_result.get("keywords", "")}
 
-                    payload.update({k: v for k, v in parsed.items() if v is not None})
-                    data = search_jobs(payload)
-                    cards = build_job_cards_data(data)
-                    with st.container(height=450):
-                        render_job_cards(cards)
+                payload.update({k: v for k, v in parsed.items() if v is not None})
+                data = search_jobs(payload)
+                cards = build_job_cards_data(data)
+                with st.container(height=410):
+                    render_job_cards(cards)
 
-                except Exception as e:
-                    st.error(f"채용공고 조회 실패: {e}")
+            except Exception as e:
+                st.error(f"채용공고 조회 실패: {e}")
 
-        # 백엔드 트렌드 탭
-        with tab2:  
-            st.markdown("<br>", unsafe_allow_html=True)
-            render_realtime_ai_news()
-            st.markdown("<p style='font-size:11px; color:#aaa; text-align:right; margin-top:20px;'>Powered by Tavily Search Engine</p>", unsafe_allow_html=True)
+    # 백엔드 트렌드 탭
+    with tab2:  
+        st.markdown("<br>", unsafe_allow_html=True)
+        render_realtime_ai_news()
+        st.markdown("<p style='font-size:11px; color:#aaa; text-align:right; margin-top:20px;'>Powered by Tavily Search Engine</p>", unsafe_allow_html=True)
 
-        # 게시판 탭
-        with tab3:
-            st.markdown("<br>", unsafe_allow_html=True)
-            render_memo_board(user_name)
+    # 게시판 탭
+    with tab3:
+        st.markdown("<br>", unsafe_allow_html=True)
+        render_memo_board(user_name)
 
-# ------------------------------
-# 🤖 AI 커리어 어드바이저 모달 - 애플 스타일
-# ------------------------------
+
+# AI tavily chatbot 모달 
 def inject_chatbot_styles():
     st.markdown("""
     <style>

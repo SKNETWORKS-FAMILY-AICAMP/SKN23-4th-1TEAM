@@ -119,9 +119,7 @@ def _handle_request(method, endpoint, **kwargs):
     except Exception as e:
         return False, f"알 수 없는 오류 발생: {str(e)}"
 
-# ==========================================
 # 1. 인증 및 계정 관련 (Auth)
-# ==========================================
 def api_login(email, password):
     """
     백엔드에 로그인을 요청합니다.
@@ -236,9 +234,7 @@ def api_get_home_guide(message, use_web_search=False):
     )
 
 
-# ==========================================
 # 2. 면접 및 RAG 관련 (Inference)
-# ==========================================
 def api_ingest_resume(file):
     """이력서 PDF를 백엔드에 업로드하여 벡터 DB에 인덱싱
     ※ OpenAI 임베딩 처리 시간을 고려해 timeout=120s 적용
@@ -347,9 +343,7 @@ def api_admin_run_sql(sql, args=None):
     return _handle_request("POST", "/admin/sql", json={"sql": sql, "args": args})
 
 
-# ==========================================
-# 프로필 이미지 업로드 통신 함수 (김지우 추가)
-# ==========================================
+# 프로필 이미지 업로드 통신 함수
 def api_update_profile_image(uploaded_file):
     """마이페이지에서 업로드한 프로필 사진을 백엔드 DB로 전송합니다."""
     
