@@ -640,6 +640,56 @@ with content_col:
                             else:
                                 st.error(f"변경 실패: {res}")
 
+
+                    # 관리자 권한 관리
+                    st.markdown('<hr style="border:none;border-top:1px solid #f0f2f6;margin:16px 0;">', unsafe_allow_html=True)
+                    st.markdown('<p style="font-size:14px;font-weight:700;color:#374151;margin:0 0 12px 0;">관리자 권한 관리</p>', unsafe_allow_html=True)
+
+                    admins = [row for row in data if row.get("role") == "admin"]
+                    if admins:
+                        admin_names = ", ".join(
+                            row.get("name") or row.get("email") or f"id:{row['id']}" for row in admins
+                        )
+                        st.markdown(
+                            f'<p style="font-size:12px;color:#6b7280;margin:0 0 12px 0;">현재 관리자: <strong style="color:#3b82f6;">{admin_names}</strong></p>',
+                            unsafe_allow_html=True,
+                        )
+
+                    role_col1, role_col2 = st.columns([4, 2])
+                    with role_col1:
+                        user_options_role = [
+                            f"{row['id']}: {row.get('name') or row.get('email') or 'unknown'} [{row.get('role','user')}]"
+                            for row in data
+                        ]
+                        target_role_user = st.selectbox(
+                            "대상 사용자",
+                            user_options_role,
+                            key="role_select",
+                            label_visibility="collapsed",
+                        )
+                    with role_col2:
+                        rc1, rc2 = st.columns(2)
+                        with rc1:
+                            if st.button("관리자 부여", type="primary", use_container_width=True, key="grant_admin"):
+                                uid = int(target_role_user.split(":")[0])
+                                res = run_remote_sql(server_ip, "UPDATE users SET role = 'admin' WHERE id = %s", args=[uid])
+                                if "SUCCESS" in res:
+                                    st.success("관리자 권한이 부여됐습니다.")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error(f"실패: {res}")
+                        with rc2:
+                            if st.button("권한 해제", use_container_width=True, key="revoke_admin"):
+                                uid = int(target_role_user.split(":")[0])
+                                res = run_remote_sql(server_ip, "UPDATE users SET role = 'user' WHERE id = %s", args=[uid])
+                                if "SUCCESS" in res:
+                                    st.warning("관리자 권한이 해제됐습니다.")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error(f"실패: {res}")
+
             else:
                 st.warning(
                     "회원 데이터를 불러올 수 없습니다. 서버 상태를 확인해주세요."
