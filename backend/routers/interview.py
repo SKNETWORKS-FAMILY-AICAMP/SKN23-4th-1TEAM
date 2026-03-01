@@ -47,3 +47,50 @@ async def delete_interview_session(
             )
 
     return {"message": "삭제 완료", "session_id": session_id}
+
+@router.post("/details")
+async def save_interview_detail(
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    from backend.db.base import InterviewDetail
+    session_id = body.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+
+    new_detail = InterviewDetail(
+        session_id=session_id,
+        turn_index=body.get("turn_index", 0),
+        question=body.get("question", ""),
+        answer=body.get("answer", ""),
+        response_time=body.get("response_time", 0),
+        score=body.get("score", 0.0),
+        sentiment_score=body.get("sentiment_score", 0.0),
+        feedback=body.get("feedback", ""),
+        is_followup=body.get("is_followup", False)
+    )
+    db.add(new_detail)
+    db.commit()
+    return {"message": "상세 기록 저장 완료"}
+
+@router.put("/sessions/{session_id}")
+async def update_interview_session(
+    session_id: int,
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    from backend.db.base import InterviewSession
+    session_record = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session_record:
+        raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다.")
+
+    if "total_score" in body:
+        session_record.total_score = body["total_score"]
+    if "status" in body:
+        session_record.status = body["status"]
+        if body["status"] == "COMPLETED":
+            from sqlalchemy.sql import func
+            session_record.ended_at = func.now()
+    
+    db.commit()
+    return {"message": "세션 업데이트 완료"}

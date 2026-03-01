@@ -113,10 +113,20 @@ def start_interview(req: Request, body: dict, db: Session = Depends(get_db)):
         pass
 
     job_role = body.get("job_role", "개발자")
+    difficulty = body.get("difficulty", "미들")
+    persona = body.get("persona", "깐깐한 기술팀장")
+    resume_used = body.get("resume_used", False)
+    resume_id = body.get("resume_id", None)
+    manual_tech_stack = body.get("manual_tech_stack", None)
 
     new_session = base.InterviewSession(
         user_id=user_id,
         job_role=job_role,
+        difficulty=difficulty,
+        persona=persona,
+        resume_used=resume_used,
+        resume_id=resume_id,
+        manual_tech_stack=manual_tech_stack,
         status="START"
     )
     db.add(new_session)

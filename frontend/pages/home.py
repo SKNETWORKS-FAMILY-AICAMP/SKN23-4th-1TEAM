@@ -10,7 +10,7 @@ Modification History:
 - 2026-02-23 (양창일): user_profile_image_url 추가
 - 2026-02-23 (김지우): UI 적용 및 마이페이지(my_info) 라우팅 연결, 프로필 기능 추가
 - 2026-02-24 (유헌상): 채용공고 APi 호출 및 연결
-- 2026-02-28 (김지우): require_login 중앙화 및 유령 버튼 투명화 버그 픽스 🚀
+- 2026-02-28 (김지우): require_login 중앙화 및 유령 버튼 투명화 버그 픽스
 """
 
 import streamlit as st
@@ -18,12 +18,11 @@ import time
 import sys, os
 
 # 경로 설정
-current_dir = os.path.dirname(os.path.abspath(__file__))  # 위치: frontend/pages
-frontend_dir = os.path.dirname(current_dir)  # 위치: frontend
-root_dir = os.path.dirname(frontend_dir)  # 위치: SKN23-3rd-1TEAM (최상위)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+frontend_dir = os.path.dirname(current_dir)
+root_dir = os.path.dirname(frontend_dir)
 backend_dir = os.path.join(root_dir, "backend")
 
-# sys.path에 경로를 강제로 주입!
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 if backend_dir not in sys.path:
@@ -214,11 +213,11 @@ st.markdown("""
 
 import base64
 try:
-    with open("assets/search.png", "rb") as image_file: # a.png 경로가 다르면 수정해주세요 (예: assets/a.png)
+    with open("assets/search.png", "rb") as image_file: 
         encoded_string = base64.b64encode(image_file.read()).decode()
     search_icon_base64 = f"data:image/png;base64,{encoded_string}"
 except FileNotFoundError:
-    search_icon_base64 = "" # 이미지 없을 경우 대비
+    search_icon_base64 = "" 
 
 st.markdown(f"""
 <style>
@@ -260,14 +259,14 @@ st.markdown(f"""
 </style>
 <div class="search-wrapper">
     <div class="search-box">
-        <div class="search-logo">AI</div>
+        <div class="search-logo">A</div>
         <select id="search-engine" class="search-select">
             <option value="saramin">사람인 공고</option>
             <option value="jobkorea">잡코리아 공고</option>
             <option value="worknet">워크넷 공고</option>
         </select>
         <input type="text" id="job-keyword" class="search-input" 
-               placeholder="무엇이든 검색해보세요! (예: 면접 꿀팁)" 
+               placeholder="무엇이든 검색해보세요!" 
                autocomplete="off">        
         <button class="search-btn" id="search-action-btn">
             <img src="{search_icon_base64}" alt="검색">
@@ -291,22 +290,65 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+components.html("""
+<script>
+function attachSearchEvents() {
+    const doc = window.parent.document;
+    const inputEl = doc.getElementById('job-keyword');
+    const btnEl = doc.getElementById('search-action-btn');
+    const engineEl = doc.getElementById('search-engine');
+    if (!inputEl || !btnEl || !engineEl) {
+        setTimeout(attachSearchEvents, 100);
+        return;
+    }
+    function executeSearch() {
+        const kw = inputEl.value.trim();
+        const engine = engineEl.value;
+        if (kw !== '') {
+            let url = '';
+            if (engine === 'saramin') url = 'https://www.saramin.co.kr/zf_user/search?searchword=' + encodeURIComponent(kw);
+            else if (engine === 'jobkorea') url = 'https://www.jobkorea.co.kr/Search/?stext=' + encodeURIComponent(kw);
+            else if (engine === 'worknet') url = 'https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do?keyword=' + encodeURIComponent(kw); 
+            window.parent.open(url, '_blank');
+        } else {
+            inputEl.focus();
+        }
+    }
+    btnEl.onclick = function(e) {
+        e.preventDefault();
+        executeSearch();
+    };
+    inputEl.onkeydown = function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();       
+            e.stopPropagation();    
+            executeSearch();
+        }
+    };
+}
+attachSearchEvents();
+</script>
+""", height=0, width=0)
+
 left_col, _, right_col = st.columns([6.5, 0.2, 3.3])
 
 # 오른쪽 패널
 with right_col:
     render_profile_card(user_name, user_email, user_tier, user_profile_image_url)
 
-    # 메인 액션 버튼 (AI 면접 시작)
     action_ph = st.empty()
     if st.button("AI 모의 면접 시작", type="primary", use_container_width=True):
         action_ph.markdown('<div class="alert-ok">면접 대기실로 이동합니다!</div>', unsafe_allow_html=True)
         time.sleep(1)
         st.switch_page("pages/interview.py")
 
+    if user_role == "admin":
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        if st.button("⚙️ 관리자 대시보드", use_container_width=True):
+            st.switch_page("pages/admin.py")
+
     st.write("")
 
-    # Github 주소
     with st.container(border=True):
         st.markdown(
             """
@@ -331,10 +373,8 @@ with right_col:
     except:
          ad_img_b64 = ""
 
-    # --- 3. 단일 이미지 배너 HTML & CSS 주입 ---
     single_ad_banner_html = f"""
     <style>
-        /* a 태그의 기본 밑줄을 없애고 블록 요소로 만듭니다 */
         .banner-link {{
             display: inline-block;
             text-decoration: none;
@@ -382,7 +422,7 @@ with right_col:
 
 
 
-# 왼쪽 패널 (배너 및 정보 탭)
+# 왼쪽 패널
 with left_col:
     try:
         import base64
@@ -561,12 +601,10 @@ def chatbot_modal():
 
         st.session_state.guide_chat.append({"role": "assistant", "content": full_reply})
 
-# 🔥 3. 부분 렌더링 도입! (채팅할 때마다 전체 화면이 새로고침되는 것을 방지합니다)
 @st.fragment
 def render_fab_button():
     st.markdown('<div id="fab-marker"></div>', unsafe_allow_html=True)
     if st.button("chatbot_trigger_btn", key="fab_btn"):
         chatbot_modal()
 
-# 함수 실행
 render_fab_button()
