@@ -11,6 +11,7 @@ Modification History:
 - 2026-02-22 (양창일): username 혼동으로 email, name으로 정리
 - 2026-02-23 (김지우): 휴면(dormant)/탈퇴(withdrawn) 계정 로그인 차단 메시지 처리 대응 완비
 - 2026-02-23 (김지우): 휴면 계정 해제(Unlock) API 추가
+- 2026-03-01 (김지우): 면접 기록 삭제 API 수정 (토큰 획득 로직 강화)
 """
 import requests
 import streamlit as st
@@ -371,3 +372,66 @@ def api_update_profile_image(uploaded_file):
             return False, response.json().get("detail", "이미지 업로드에 실패했습니다.")
     except Exception as e:
         return False, f"서버 연결 오류: {str(e)}"
+
+
+def api_delete_interview_session(session_id: int) -> tuple[bool, str]:
+    """
+    면접 세션 삭제 API 호출
+    DELETE /interview/sessions/{session_id}
+    """
+    import streamlit as st
+    import requests
+    import os
+    
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+    
+    # 🎯 1. 세션 및 쿠키에서 안전하게 토큰 찾기 (이름 'token' 으로 수정)
+    access_token = st.session_state.get("token") # access_token -> token 으로 수정됨!
+    
+    # 세션에 없으면 최신 스트림릿 네이티브 기능으로 쿠키 확인
+    if not access_token and hasattr(st, "context") and hasattr(st.context, "cookies"):
+        access_token = st.context.cookies.get("token")
+        
+    # 그래도 없으면 extra_streamlit_components를 통해 쿠키 확인
+    if not access_token:
+        try:
+            import extra_streamlit_components as stx
+            cookie_manager = stx.CookieManager(key="global_auth_cookie")
+            access_token = cookie_manager.get("token")
+        except:
+            pass
+
+    # 🚨 끝까지 토큰을 못 찾으면 에러 반환
+    if not access_token:
+        return False, "로그인 인증이 만료되었거나 토큰을 찾을 수 없습니다."
+        
+    try:
+        # 🎯 2. 토큰을 싣고 백엔드로 삭제 요청 보내기
+        response = requests.delete(
+            f"{API_BASE_URL}/interview/sessions/{session_id}",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            },
+            timeout=10
+        )
+        
+        # 🔥 실제 서버 응답에 맞춰 정확하게 에러 분류
+        if response.status_code == 200:
+            return True, "삭제 완료"
+        
+        # 실패 시 에러 내용을 그대로 봅니다.
+        try:
+            error_data = response.json()
+            error_msg = error_data.get("detail", f"서버 오류: {response.text}")
+        except:
+            error_msg = f"서버와 통신 오류 (HTTP {response.status_code})"
+            
+        return False, error_msg
+            
+    except requests.exceptions.Timeout:
+        return False, "요청 시간이 초과되었습니다."
+    except requests.exceptions.ConnectionError:
+        return False, "백엔드 서버에 연결할 수 없습니다. (app.py 실행 확인)"
+    except Exception as e:
+        return False, f"오류 발생: {str(e)}"

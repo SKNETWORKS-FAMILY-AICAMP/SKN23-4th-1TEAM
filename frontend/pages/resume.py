@@ -21,14 +21,12 @@ from utils.function import inject_custom_header, require_login
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
-# 🔥 문지기 정상 작동 복구 (헤더 그리기 전 무조건 먼저 실행!)
 user_id = require_login()
 inject_custom_header()
 
 
-# ============================================================
-# 💅 CSS 스타일링
-# ============================================================
+
+# CSS 스타일링
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
@@ -92,7 +90,6 @@ hr { border-color: #e2e8f0 !important; margin: 2rem 0 !important; border-width: 
 
 # ─── 헬퍼 함수 ───
 def extract_resume_text(uploaded_file) -> str:
-    # 🚨 파일을 딱 한 번만 읽어서 변수에 고정 (두 번 읽어서 날아가는 현상 방지)
     file_bytes = uploaded_file.getvalue() # read() 대신 getvalue() 사용 권장
     try:
         import fitz
@@ -110,9 +107,8 @@ if "selected_resume" not in st.session_state:
     st.session_state.selected_resume = None
 
 
-# ============================================================
-# 팝업 모달: 새 이력서 등록 (로직 완벽 분리!)
-# ============================================================
+
+# 팝업 모달: 새 이력서 등록 
 @st.dialog("새 이력서 등록 및 AI 분석", width="large")
 def setup_modal():
     st.markdown("<p style='color:#64748b; font-size:15px; margin-bottom:20px;'>이력서를 업로드하면 AI가 분석하여 보관함에 영구 저장합니다.</p>", unsafe_allow_html=True)
@@ -122,7 +118,6 @@ def setup_modal():
         ["Python 백엔드 개발자", "Java 백엔드 개발자", "AI/ML 엔지니어", "데이터 엔지니어", "프론트엔드 개발자"]
     )
     
-    # 🔥 Form을 사용하여 업로드와 버튼 클릭이 한 세트로 묶이게 만듭니다.
     with st.form("resume_upload_form"):
         uploaded_file = st.file_uploader("PDF 이력서를 올려주세요", type=["pdf", "txt"])
         submit_btn = st.form_submit_button("분석하기", type="primary", use_container_width=True)
@@ -131,7 +126,7 @@ def setup_modal():
             if not uploaded_file:
                 st.warning("이력서 파일을 업로드해주세요!")
             else:
-                with st.spinner("AI가 이력서를 꼼꼼히 분석하고 있습니다... (약 10초~20초 소요)"):
+                with st.spinner("이력서 분석중입니다..."):
                     resume_text = extract_resume_text(uploaded_file)
                     
                     if not resume_text:
@@ -150,15 +145,12 @@ def setup_modal():
                         time.sleep(2)
                         st.rerun()
                     
-                    st.success("🎉 분석 완료! 이력서가 보관함에 안전하게 저장되었습니다.")
+                    st.success("분석 완료! 이력서가 보관함에 안전하게 저장되었습니다.")
                     time.sleep(1.5)  
                     st.rerun()  
 
 
-# ============================================================
 # 화면 UI 구현
-# ============================================================
-
 # ─── 상태 1: 이력서 보관함 (리스트 뷰) ───
 if st.session_state.selected_resume is None:
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -173,13 +165,12 @@ if st.session_state.selected_resume is None:
         st.stop()
     saved_resumes = result.get("items", [])
 
-    # 🔥 리스트 렌더링 방식 수정 (버튼 클릭 방해 요인 제거)
     cols = st.columns(3, gap="medium")
     
     # [1] 첫 번째 칸: "새 이력서 등록" 버튼 (모달 호출)
     with cols[0]:
         st.markdown("<div class='new-resume-card'>", unsafe_allow_html=True)
-        if st.button("➕\n\n새 이력서 등록", use_container_width=True, key="btn_new_resume"):
+        if st.button("＋이력서 추가", use_container_width=True, key="btn_new_resume"):
             setup_modal()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -206,18 +197,16 @@ if st.session_state.selected_resume is None:
             </div>
             """, unsafe_allow_html=True)
             
-            # 🚨 버튼은 HTML 밖(Streamlit 영역)으로 빼내어 클릭이 무조건 동작하도록 보장
             c1, c2 = st.columns([4, 1])
             with c1:
-                # 버튼을 약간 위로 끌어올려서 카드 안에 들어간 것처럼 눈속임 CSS 적용
                 st.markdown("<div style='margin-top:-60px;'>", unsafe_allow_html=True)
-                if st.button("AI 대시보드 열기", key=f"view_{r['id']}", use_container_width=True):
+                if st.button("대시보드", key=f"view_{r['id']}", use_container_width=True):
                     st.session_state.selected_resume = r
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
             with c2:
                 st.markdown("<div class='delete-btn-wrapper' style='margin-top:-60px;'>", unsafe_allow_html=True)
-                if st.button("🗑️", key=f"del_{r['id']}", help="이력서 삭제"):
+                if st.button("삭제", key=f"del_{r['id']}", help="이력서 삭제"):
                     api_delete_resume(r["id"])
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
@@ -234,7 +223,7 @@ else:
     # 상단 내비게이션 (뒤로 가기)
     col_back, col_title = st.columns([1, 6])
     with col_back:
-        if st.button("← 보관함으로", use_container_width=True):
+        if st.button("보관함으로", use_container_width=True):
             st.session_state.selected_resume = None
             st.rerun()
 
