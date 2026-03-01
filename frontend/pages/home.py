@@ -30,6 +30,7 @@ if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
 # 서드파티 및 모듈
+import streamlit.components.v1 as components
 from utils.function import inject_custom_header, require_login, render_memo_board
 from utils.home_api_render import render_memo_board, render_realtime_ai_news
 from streamlit_option_menu import option_menu
@@ -41,6 +42,10 @@ from components.job_cards import render_job_cards
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
 user_id = require_login()
+
+
+from urllib.parse import urlencode
+
 inject_custom_header()
 
 # 유저 정보 바인딩
@@ -163,7 +168,7 @@ def render_profile_card(user_name, user_email, user_tier, user_profile_image_url
     .profile-badge-plus {{ display: inline-flex; align-items: center; gap: 3px; background: linear-gradient(135deg, #bb38d0, #872a96); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 2px 8px rgba(187,56,208,0.3); }}
     .profile-badge-normal {{ display: inline-flex; align-items: center; background: #e9ecef; color: #6c757d; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }}
     .profile-email {{ font-size: 12px; color: #888; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-    .profile-logout-btn {{ flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; background: #fdf4ff; color: #bb38d0; border: 1px solid #fae8ff; border-radius: 12px; padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }}
+    .profile-logout-btn {{ flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; background: #fdf4ff; color: #bb38d0; border: 1px solid #fae8ff; border-radius: 12px; padding: 7px 13px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; cursor: pointer; text-decoration: none !important;  }}
     .profile-logout-btn:hover {{ background: #bb38d0; color: #fff; border-color: #bb38d0; box-shadow: 0 4px 12px rgba(187,56,208,0.3); transform: translateY(-1px); }}
     .profile-divider {{ height: 1px; background: #f1f3f5; margin: 12px 0 0 0; }}
     .profile-quick-menu {{ display: flex; align-items: stretch; margin: 0 -18px; }}
@@ -184,16 +189,7 @@ def render_profile_card(user_name, user_email, user_tier, user_profile_image_url
                 </div>
                 <div class="profile-email">{user_email}</div>
             </div>
-            <button class="profile-logout-btn" onclick="
-                (() => {{
-                    const allBtns = window.parent.document.querySelectorAll('button');
-                    for (const b of allBtns) {{
-                        if (b.textContent.trim().includes('__logout__')) {{
-                            b.click(); return;
-                        }}
-                    }}
-                }})();
-            ">로그아웃</button>
+            <a class="profile-logout-btn" href="/login?logout=true" target="_self">로그아웃</a>
         </div>
         <div class="profile-divider"></div>
         <div class="profile-quick-menu">
@@ -203,6 +199,9 @@ def render_profile_card(user_name, user_email, user_tier, user_profile_image_url
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+
 
 st.markdown("""
 <style>
@@ -292,83 +291,11 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# [핵심] 뇌(Javascript) 이식하기 (보이지 않는 iframe을 통해 이벤트를 강제로 묶어줍니다)
-import streamlit.components.v1 as components
-components.html("""
-<script>
-// Streamlit이 화면을 다 그릴 때까지 기다렸다가 이벤트를 주입합니다.
-function attachSearchEvents() {
-    const doc = window.parent.document;
-    const inputEl = doc.getElementById('job-keyword');
-    const btnEl = doc.getElementById('search-action-btn');
-    const engineEl = doc.getElementById('search-engine');
-
-    // 아직 화면이 안 그려졌다면 0.1초 뒤에 다시 시도
-    if (!inputEl || !btnEl || !engineEl) {
-        setTimeout(attachSearchEvents, 100);
-        return;
-    }
-
-    // 실제 검색을 수행하는 함수
-    function executeSearch() {
-        const kw = inputEl.value.trim();
-        const engine = engineEl.value;
-        
-        if (kw !== '') {
-            let url = '';
-            if (engine === 'google') url = 'https://www.google.com/search?q=' + encodeURIComponent(kw);
-            else if (engine === 'saramin') url = 'https://www.saramin.co.kr/zf_user/search?searchword=' + encodeURIComponent(kw);
-            else if (engine === 'jobkorea') url = 'https://www.jobkorea.co.kr/Search/?stext=' + encodeURIComponent(kw);
-            else if (engine === 'worknet') url = 'https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do?keyword=' + encodeURIComponent(kw);
-            
-            // 무조건 새 탭으로 열기
-            window.parent.open(url, '_blank');
-        } else {
-            inputEl.focus();
-        }
-    }
-
-    // 버튼 클릭 이벤트 연결
-    btnEl.onclick = function(e) {
-        e.preventDefault();
-        executeSearch();
-    };
-
-    // 엔터키 입력 이벤트 연결 (Streamlit 새로고침 방어 포함)
-    inputEl.onkeydown = function(e) {
-        if (e.key === 'Enter' || e.keyCode === 13) {
-            e.preventDefault();       // 기본 엔터 동작(폼 제출 등) 차단
-            e.stopPropagation();    // Streamlit이 엔터키를 가로채지 못하게 방어!
-            executeSearch();
-        }
-    };
-}
-
-// 스크립트 실행
-attachSearchEvents();
-</script>
-""", height=0, width=0) # 화면에 보이지 않도록 사이즈 0으로 설정
-
 left_col, _, right_col = st.columns([6.5, 0.2, 3.3])
 
 # 오른쪽 패널
 with right_col:
     render_profile_card(user_name, user_email, user_tier, user_profile_image_url)
-
-    # 로그아웃 버튼
-    st.markdown('<div id="logout-marker"></div>', unsafe_allow_html=True)
-    if st.button("__logout__", key="logout-trigger-btn"):
-        import extra_streamlit_components as stx
-        cookie_manager = stx.CookieManager(key="global_auth_cookie")
-        try:
-            cookie_manager.delete("access_token")
-            cookie_manager.delete("refresh_token")
-            cookie_manager.delete("csrf_token")
-        except Exception:
-            pass
-        st.session_state.clear()
-        time.sleep(0.3)
-        st.switch_page("app.py")
 
     # 메인 액션 버튼 (AI 면접 시작)
     action_ph = st.empty()
@@ -451,6 +378,9 @@ with right_col:
 
     # 화면 렌더링
     st.markdown(single_ad_banner_html, unsafe_allow_html=True)
+
+
+
 
 # 왼쪽 패널 (배너 및 정보 탭)
 with left_col:

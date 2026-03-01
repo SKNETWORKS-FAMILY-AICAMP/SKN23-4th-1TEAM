@@ -21,10 +21,26 @@ def require_login():
     로그인 상태를 완벽하게 검증하고, 
     새로고침으로 세션이 날아갔다면 쿠키를 통해 자동 복구해주는 완벽한 문지기입니다.
     """
+    cookie_manager = stx.CookieManager(key="global_auth_cookie")
+
+    # 1. 로그아웃 요청이 들어오면 제일 먼저 처리
+    if st.query_params.get("do_logout") == "1":
+        try:
+            cookie_manager.delete("access_token")
+            cookie_manager.delete("refresh_token")
+            cookie_manager.delete("csrf_token")
+        except Exception:
+            pass
+
+        st.session_state.clear()
+        st.query_params.clear()
+        st.switch_page("app.py")
+        st.stop()
+
+
     if "user" in st.session_state and st.session_state.user:
         return st.session_state.user.get("id", "guest")
 
-    cookie_manager = stx.CookieManager(key="global_auth_cookie")
     token = cookie_manager.get("access_token")
 
     if token:
@@ -161,7 +177,7 @@ def inject_custom_header():
                     👤 {user_name} 님 ▾
                 </div>
                 <div class="header-dropdown">
-                    <a href="/login" target="_self">로그아웃</a>
+                    <a href="/login?logout=true" target="_self">로그아웃</a>
                 </div>
             </div>
         </div>
