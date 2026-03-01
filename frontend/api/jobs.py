@@ -61,8 +61,7 @@ def get_latest_resume(user_id: str | None) -> dict:
     # user_id = 'demo_user'  # 나중에 수정할것
 
     BASE_URL = API_BASE_URL.rstrip("/")
-    if BASE_URL.endswith("/api"):
-        BASE_URL = BASE_URL[:-4]
+    
     RESUME_LATEST_URL = f"{BASE_URL}/resumes/latest"
 
     res = requests.get(RESUME_LATEST_URL, params={"user_id": user_id}, timeout=20)
