@@ -41,6 +41,20 @@ if csrf_token_cookie:
     st.session_state.csrf_token = csrf_token_cookie
 
 
+if st.query_params.get("logout") == "true":
+    try:
+        cookie_manager.delete("access_token")
+        cookie_manager.delete("refresh_token")
+        cookie_manager.delete("csrf_token")
+    except Exception:
+        pass
+
+    st.session_state.clear()
+    st.query_params.clear()
+    time.sleep(0.2)
+    st.rerun()
+
+
 # 자동 로그인 로직
 access_token = cookie_manager.get("access_token")
 
@@ -206,12 +220,7 @@ if social_token:
         st.session_state.user = None
         st.query_params.clear()
 
-if st.query_params.get("logout") == "true":
-    cookie_manager.delete("access_token")
-    st.session_state.clear()
-    st.query_params.clear()
-    time.sleep(0.1)
-    st.rerun()
+
 
 if "user" not in st.session_state:
     st.session_state.user = None
