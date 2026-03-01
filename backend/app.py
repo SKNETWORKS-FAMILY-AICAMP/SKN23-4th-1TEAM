@@ -7,7 +7,7 @@ from backend.db.base import Base
 from backend.db.schema_patch import patch_user_table_columns
 from backend.db.session import engine
 from backend.models import refresh_token, user
-from backend.routers import admin, auth, home, infer, social_auth, interview
+from backend.routers import admin, auth, home, infer, social_auth, interview, attitude
 
 
 app = FastAPI()
@@ -42,3 +42,4 @@ app.include_router(infer.router)
 app.include_router(jobs_api.router)
 app.include_router(resume_api.router, prefix="/api")
 app.include_router(interview.router)
+app.include_router(attitude.router)
