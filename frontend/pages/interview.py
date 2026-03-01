@@ -1,6 +1,6 @@
 """
 File: pages/interview.py
-Description: AI 면접 페이지 - 애플 iMessage 스타일 UI 적용
+Description: AI 면접 페이지 - 애플 iMessage 스타일 UI, 모드별 카메라 동적 할당 및 이력서 RAG 완벽 연동
 """
 
 import base64
@@ -8,6 +8,7 @@ import io
 import json
 import os
 import time
+import requests
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -26,7 +27,6 @@ if backend_dir not in sys.path:
 
 from utils.api_utils import (
     api_end_interview,
-    api_get_next_question_v2,
     api_get_question_pool,
     api_start_interview,
     api_stt_bytes,
@@ -35,20 +35,20 @@ from utils.webcam_box import webcam_box
 from utils.config import API_BASE_URL
 from utils.function import require_login, inject_custom_header
 
-from services.llm_service import generate_evaluation
+from services.llm_service import generate_evaluation, analyze_resume_comprehensive
 from services.rag_service import store_resume
 
 # 1. 페이지 기본 설정
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
-# 2. 문지기 출동 (로그인 검증 및 복구)
+# 2. 문지기 출동
 user_id = require_login()
 
 # 3. 커스텀 헤더 주입
 inject_custom_header()
 
 
-# ─── 4. 글로벌 CSS 스타일링 (애플 iMessage 감성 100% 이식) ───
+# ─── 4. 글로벌 CSS 스타일링 (애플 iMessage 감성) ───
 st.markdown(
     """
     <style>
@@ -88,44 +88,7 @@ st.markdown(
     }
     .header-end-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(187, 56, 208, 0.4); }
 
-    /* (프리미엄 겉 영역 스타일은 모드별로 HTML에서 직접 적용됨) */
-
-    @keyframes msg-pop { 
-        from { opacity: 0; transform: translateY(10px); } 
-        to { opacity: 1; transform: translateY(0); } 
-    }
-    
-    .ai-bubble { 
-        background: #ffffff; 
-        border-radius: 6px 20px 20px 20px;
-        border: 1px solid #fae8ff;
-        padding: 12px 22px; 
-        color: #111 !important; 
-        font-size: 15px; 
-        line-height: 1.6; 
-        white-space: pre-wrap; 
-        animation: msg-pop 0.3s ease-out both; 
-        display: inline-block; 
-        max-width: 500; 
-        box-shadow: 0 4px 20px rgba(187, 56, 208, 0.05);
-    }
-    
-    .user-bubble { 
-        background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); 
-        border-radius: 20px 6px 20px 20px;
-        padding: 12px 20px; 
-        color: #ffffff !important; 
-        font-size: 15px; 
-        line-height: 1.6; 
-        white-space: pre-wrap; 
-        animation: msg-pop 0.3s ease-out both; 
-        display: inline-block; 
-        max-width: 82%; 
-        box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3); 
-    }
-
-
-    /* 🎯 채팅 입력창 (보라색 테마 복구) */
+    /* 🎯 채팅 입력창 */
     div[data-testid="stChatInput"] { 
         border-radius: 24px !important; 
         border: 2px solid #fae8ff !important; 
@@ -150,13 +113,13 @@ st.markdown(
         color: #111111 !important; 
         font-size: 15px !important; 
         font-weight: 500 !important; 
-        caret-color: #bb38d0 !important; /* 커서 색상도 보라색으로! */
+        caret-color: #bb38d0 !important; 
     }
     div[data-testid="stChatInput"] textarea::placeholder { 
         color: #adb5bd !important; 
     }
     
-    /* 🎯 전송 버튼 (보라색 동그라미 적용 완료!) */
+    /* 🎯 전송 버튼 */
     button[data-testid="stChatInputSubmitButton"], 
     div[data-testid="stChatInputSubmitButton"] { 
         background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; 
@@ -201,7 +164,6 @@ def extract_resume_text(uploaded_file) -> str:
     file_bytes = uploaded_file.getvalue()
     try:
         import fitz
-
         return "".join(
             page.get_text() for page in fitz.open(stream=file_bytes, filetype="pdf")
         ).strip()
@@ -210,41 +172,6 @@ def extract_resume_text(uploaded_file) -> str:
             return file_bytes.decode("utf-8", errors="ignore")
         except Exception:
             return ""
-
-
-# 🍎 [NEW] 애플 감성 렌더링 (지우님이 주신 HTML 구조 완벽 적용)
-def render_message(
-    role: str, content: str, is_followup: bool = False, score: float | None = None
-) -> None:
-    if role == "user":
-        score_badge = (
-            f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>'
-            if score is not None
-            else ""
-        )
-        st.markdown(
-            f'<div style="display:flex; justify-content:flex-end; margin-bottom:16px; flex-direction:column; align-items:flex-end;">'
-            f'<div class="user-bubble">{content}</div>'
-            f"{score_badge}"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-    else:
-        followup_badge = (
-            '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>'
-            if is_followup
-            else ""
-        )
-        st.markdown(
-            f'<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:16px;">'
-            f'<div style="font-size: 32px; line-height: 1;">👾</div>'
-            f"<div>"
-            f'<div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 면접관 {followup_badge}</div>'
-            f'<div class="ai-bubble">{content}</div>'
-            f"</div></div>",
-            unsafe_allow_html=True,
-        )
-
 
 def generate_tts(text: str) -> bytes | None:
     api_key = os.getenv("OPENAI_API_KEY", "")
@@ -259,20 +186,11 @@ def generate_tts(text: str) -> bytes | None:
     except Exception:
         return None
 
-
 def create_session(user_id, job_role, difficulty, persona, resume_used):
     success, result = api_start_interview(job_role)
     if not success:
         raise RuntimeError(result)
     return result.get("session_id")
-
-
-def end_session(session_id, total_score):
-    success, result = api_end_interview(session_id)
-    if not success:
-        raise RuntimeError(result)
-    return result
-
 
 def get_questions_by_role(job_role, difficulty, limit=3):
     success, result = api_get_question_pool(job_role, difficulty, limit)
@@ -281,50 +199,87 @@ def get_questions_by_role(job_role, difficulty, limit=3):
     return result.get("items", [])
 
 
-def get_questions_by_resume_keywords(job_role, difficulty, keywords, limit=3):
-    return get_questions_by_role(job_role, difficulty, limit)
-
-
-def extract_keywords_from_resume(text):
-    return []
-
-
-def extract_keywords_from_text_input(text):
-    return []
-
-
-def clear_resume_for_session(session_key):
-    return None
-
-
-def process_answer(answer_text: str) -> None:
-    prev_question = st.session_state.pending_question or "Interview question"
+# 🚨🚨 [핵심 수정] 리턴 타입을 bool로 변경하여, 에러 시 화면 새로고침(rerun)을 막습니다! 🚨🚨
+def process_answer(answer_text: str) -> bool:
+    print(f"[DEBUG] process_answer triggered with: {answer_text}")
+    prev_question = st.session_state.pending_question or "면접 질문"
     st.session_state.messages.append(
         {"role": "user", "content": answer_text, "score": None}
     )
 
-    success, result = api_get_next_question_v2(
-        {
-            "answer": answer_text,
-            "session_id": st.session_state.db_session_id,
-            "job_role": st.session_state.job_role,
-            "difficulty": st.session_state.difficulty,
-            "response_time": 0,
-            "current_question": prev_question,
-        }
-    )
+    q_idx = st.session_state.get("current_q_idx", 0)
+    db_qs = st.session_state.get("db_questions", [])
+    next_q = db_qs[q_idx + 1] if q_idx + 1 < len(db_qs) else None
+
+    target_user_id = str(st.session_state.get("db_session_id", "guest"))
+
+    # 🎯 FIX 1: 백엔드 422 에러 방지를 위해 "attitude": None 파라미터 강제 추가!
+    payload = {
+        "question": prev_question,
+        "answer": answer_text,
+        "job_role": st.session_state.job_role,
+        "difficulty": st.session_state.difficulty,
+        "persona_style": st.session_state.get("persona_style", "깐깐한 기술팀장"),
+        "user_id": target_user_id,  
+        "resume_text": st.session_state.get("resume_text", ""),
+        "next_main_question": next_q,
+        "followup_count": st.session_state.get("current_followup_count", 0),
+        "attitude": None
+    }
+
+    try:
+        res = requests.post(f"{API_BASE_URL.rstrip('/')}/infer/evaluate-turn", json=payload, timeout=30)
+        
+        if res.status_code == 200:
+            result = res.json()
+            success = True
+        else:
+            success = False
+            result = f"서버 에러 ({res.status_code}): {res.text}"
+            
+    except Exception as e:
+        success = False
+        result = str(e)
+
+    # 🎯 FIX 2: 에러가 나면 메시지를 띄우고 "False"를 반환하여 rerun을 막습니다!
     if not success:
         st.session_state.messages.pop()
-        st.error(f"답변 처리 실패: {result}")
-        return
+        st.error(f"🚨 답변 처리 실패 (서버 로그를 확인하세요): {result}")
+        return False
 
     score = float(result.get("score", 5.0))
-    ai_reply = result.get("answer", "")
+    ai_reply = result.get("reply_text") or result.get("answer", "")
+    is_followup = result.get("is_followup", False)
+    feedback_text = result.get("feedback", "")
 
     st.session_state.db_scores.append(score)
     st.session_state.messages[-1]["score"] = score
     st.session_state.turn_index += 1
-    st.session_state.current_followup_count = 0
+
+    try:
+        access_token = st.session_state.get("access_token")
+        detail_payload = {
+            "session_id": st.session_state.db_session_id,
+            "turn_index": st.session_state.turn_index,
+            "question": prev_question,
+            "answer": answer_text,
+            "is_followup": is_followup,
+            "score": score,
+            "feedback": feedback_text
+        }
+        requests.post(
+            f"{API_BASE_URL.rstrip('/')}/interview/details",
+            json=detail_payload,
+            headers={"Authorization": f"Bearer {access_token}"} if access_token else {},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"상세 기록 DB 저장 실패: {e}")
+    
+    if is_followup:
+        st.session_state.current_followup_count += 1
+    else:
+        st.session_state.current_followup_count = 0
 
     if "[INTERVIEW_END]" in ai_reply:
         st.session_state.interview_ended = True
@@ -333,13 +288,15 @@ def process_answer(answer_text: str) -> None:
         st.session_state.current_q_idx += 1
         ai_reply = ai_reply.replace("[NEXT_MAIN]", "").strip()
 
-    st.session_state.current_is_followup = False
+    st.session_state.current_is_followup = is_followup
     st.session_state.messages.append({"role": "assistant", "content": ai_reply})
     st.session_state.pending_question = ai_reply
 
     tts = generate_tts(ai_reply)
     if tts:
         st.session_state.latest_audio_content = tts
+        
+    return True # 정상 완료 시 True 반환
 
 
 # ─── 5. 상태 초기화 ───
@@ -373,6 +330,20 @@ for k, v in defaults.items():
 def evaluation_modal():
     scores = st.session_state.db_scores
     total_score = round((sum(scores) / len(scores)) * 10, 1) if scores else 0.0
+
+    if not st.session_state.get("is_db_ended") and st.session_state.db_session_id:
+        try:
+            access_token = st.session_state.get("access_token")
+            requests.put(
+                f"{API_BASE_URL.rstrip('/')}/interview/sessions/{st.session_state.db_session_id}",
+                json={"total_score": total_score, "status": "COMPLETED"},
+                headers={"Authorization": f"Bearer {access_token}"} if access_token else {},
+                timeout=10
+            )
+        except Exception as e:
+            print(f"세션 종료 DB 업데이트 실패: {e}")
+        st.session_state.is_db_ended = True 
+
     st.markdown(
         f'<div class="score-circle"><span class="score-number">{total_score}</span><span class="score-label">/ 100</span></div>',
         unsafe_allow_html=True,
@@ -582,25 +553,34 @@ def interview_setup_modal():
             db_session_id = None
 
         if final_resume_text and db_session_id and is_resume_used:
-            with st.spinner("이력서를 분석하여 맞춤형 질문을 구성하고 있습니다..."):
-                store_resume(final_resume_text, user_id=str(db_session_id))
+            with st.spinner("이력서를 벡터 DB에 안전하게 저장 중입니다..."):
+                chunk_count = store_resume(final_resume_text, user_id=str(db_session_id))
+                time.sleep(0.5) 
+                
+            if chunk_count > 0:
+                st.toast(f"이력서가 {chunk_count}개의 청크로 분할되어 벡터 DB에 저장되었습니다!", icon="📄")
+                time.sleep(0.5) 
 
         try:
             fixed_first_q = "간단하게 자기소개를 부탁드립니다."
+            
             if final_resume_text:
-                if is_resume_used:
-                    keywords = extract_keywords_from_resume(final_resume_text)
-                else:
-                    keywords = extract_keywords_from_text_input(final_resume_text)
-                tech_qs = get_questions_by_resume_keywords(
-                    job_role, difficulty, keywords, limit=q_count - 1
-                )
+                with st.spinner("지원자님의 경험을 바탕으로 날카로운 실무 질문을 생성 중입니다..."):
+                    analysis_result = analyze_resume_comprehensive(final_resume_text, job_role)
+                    expected_qs = analysis_result.get("expected_questions", [])
+                    
+                    if expected_qs and len(expected_qs) > 0:
+                        db_questions = [fixed_first_q] + expected_qs[:q_count - 1]
+                    else:
+                        tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
+                        db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
             else:
                 tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
+                db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
 
-            db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
             if len(db_questions) == 1:
                 raise ValueError("질문이 생성되지 않았습니다.")
+                
         except Exception:
             db_questions = ["간단하게 자기소개를 부탁드립니다."] + [
                 f"{job_role} 관련 핵심 기술을 설명해주세요." for _ in range(q_count - 1)
@@ -644,7 +624,6 @@ if st.session_state.interview_ended:
     evaluation_modal()
     st.stop()
 
-# 🚨 [숨김 버튼] 투명 망토를 씌워서 절대 안보이게 처리!
 st.markdown(
     """
     <div id="end-interview-marker"></div>
@@ -661,8 +640,6 @@ if st.button("__hidden_end_btn__", key="hidden_end_trigger"):
     st.session_state.interview_ended = True
     st.rerun()
 
-
-# 면접 진행 화면 상단 헤더 & 우측 "면접 종료" 버튼
 st.markdown(
     f"""
     <div class="premium-chat-header">
@@ -686,121 +663,115 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-if st.session_state.interview_mode == "voice":
+# 🎯 텍스트 모드
+if st.session_state.interview_mode == "text":
+    st.markdown(
+        """
+        <div style="background:#ffffff; border-radius:16px; border:1px solid #fae8ff; padding:16px 20px; margin-bottom:16px; box-shadow:0 4px 15px rgba(187,56,208,0.05); font-size:14px; color:#444; line-height:1.6;">
+            <strong style="color:#bb38d0;">텍스트 면접 모드 가이드</strong><br>
+            하단의 입력창에 답변을 타이핑하여 제출해 주세요. 카메라는 사용되지 않으며, 채팅창을 넓게 사용합니다.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    chat_html = """
+    <style>
+    * { font-family: 'Pretendard', -apple-system, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+    @keyframes msg-pop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ai-bubble { 
+        background: #ffffff; border-radius: 6px 20px 20px 20px; border: 1px solid #fae8ff;
+        padding: 12px 22px; color: #111; font-size: 15px; line-height: 1.6; white-space: pre-wrap;
+        animation: msg-pop 0.3s ease-out both; display: inline-block; max-width: 700px;
+        box-shadow: 0 4px 20px rgba(187, 56, 208, 0.05);
+    }
+    .user-bubble { 
+        background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); border-radius: 20px 6px 20px 20px;
+        padding: 12px 20px; color: #ffffff; font-size: 15px; line-height: 1.6; white-space: pre-wrap;
+        animation: msg-pop 0.3s ease-out both; display: inline-block; max-width: 82%;
+        box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3); 
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e8cceb; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #d09cd6; }
+    </style>
+    <div style="background:linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%);border:2px solid #fae8ff;border-radius:24px;padding:24px;box-shadow:0 10px 40px rgba(187,56,208,0.05); margin-bottom: 4px; display: flex; flex-direction: column;">
+        <div style="font-size:14px;font-weight:800;color:#333;margin:0 0 12px 0;">텍스트 대화창</div>
+        <div id="chat-container" style="height: 600px; overflow-y:auto; overflow-x:hidden; background:#ffffff;border:1px solid #fae8ff;border-radius:16px;padding:20px;box-shadow:inset 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;">
+    """
+
+    for message in st.session_state.messages:
+        role = message.get("role")
+        content = message.get("content", "")
+        score = message.get("score")
+
+        content_str = content.get("content", "") if isinstance(content, dict) else str(content)
+        is_followup = "꼬리질문" in content_str
+
+        if role == "user":
+            score_badge = f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>' if score is not None else ""
+            chat_html += f"""
+            <div style="display:flex; justify-content:flex-end; margin-bottom:16px; flex-direction:column; align-items:flex-end; width: 100%;">
+                <div class="user-bubble">{content_str}</div>
+                {score_badge}
+            </div>
+            """
+        else:
+            followup_badge = '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>' if is_followup else ""
+            chat_html += f"""
+            <div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:16px; width: 100%;">
+                <div style="font-size: 32px; line-height: 1; flex-shrink: 0;">👾</div>
+                <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px; display: flex; align-items: center;">AI 면접관 {followup_badge}</div>
+                <div class="ai-bubble">{content_str}</div>
+                </div>
+            </div>
+            """
+
+    chat_html += """
+        </div>
+        <script>
+            var chatDiv = document.getElementById("chat-container");
+            if (chatDiv) {
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+                setTimeout(() => { chatDiv.scrollTo({ top: chatDiv.scrollHeight, behavior: 'smooth' }); }, 100);
+            }
+        </script>
+    </div>
+    """
+
+    components.html(chat_html, height=700, scrolling=False)
+
+    if st.session_state.latest_audio_content:
+        st.audio(st.session_state.latest_audio_content, format="audio/mp3", autoplay=True)
+        st.session_state.latest_audio_content = None
+
+    prompt = st.chat_input("메시지를 입력하세요")
+    if prompt:
+        with st.spinner("답변을 분석 중입니다..."):
+            # 🎯 FIX: 에러가 나면 False를 반환하여 화면 새로고침(rerun)을 막고 에러 메시지를 띄웁니다!
+            is_success = process_answer(prompt)
+        
+        # 🎯 성공했을 때만 다음 턴으로 넘어가기 위해 화면을 새로고침 합니다.
+        if is_success:
+            st.rerun()
+
+# 🎯 음성 모드: 카메라가 켜지는 2단(좌우) 레이아웃
+else:
     st.markdown(
         """
         <div style="background:#ffffff; border-radius:16px; border:1px solid #fae8ff; padding:16px 20px; margin-bottom:16px; box-shadow:0 4px 15px rgba(187,56,208,0.05); font-size:14px; color:#444; line-height:1.6;">
             <strong style="color:#bb38d0;">음성 인식 모드 가이드</strong><br>
-            하단의 시작 버튼을 누른 뒤 마이크에 답변을 말씀해 주세요. 답변 후 중지를 누르면 면접관이 평가를 진행합니다.
+            하단의 시작 버튼을 누른 뒤 마이크에 답변을 말씀해 주세요. 카메라를 통해 시선 처리 등의 태도가 함께 분석됩니다.
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-# 음성 부분 배치 (실험중)
-col1, col2 = st.columns([1, 1])
+    col_chat, col_cam = st.columns([1.1, 0.9])
 
-with col1:
-
-    if st.session_state.interview_mode == "text":
-
-        # 1. 완벽한 디자인 일치를 위해 HTML 컴포넌트로 전체 영역 렌더링
-        chat_html = """
-        <style>
-        * { font-family: 'Pretendard', -apple-system, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes msg-pop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .ai-bubble { 
-            background: #ffffff; border-radius: 6px 20px 20px 20px; border: 1px solid #fae8ff;
-            padding: 12px 22px; color: #111; font-size: 15px; line-height: 1.6; white-space: pre-wrap;
-            animation: msg-pop 0.3s ease-out both; display: inline-block; max-width: 500px;
-            box-shadow: 0 4px 20px rgba(187, 56, 208, 0.05);
-        }
-        .user-bubble { 
-            background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); border-radius: 20px 6px 20px 20px;
-            padding: 12px 20px; color: #ffffff; font-size: 15px; line-height: 1.6; white-space: pre-wrap;
-            animation: msg-pop 0.3s ease-out both; display: inline-block; max-width: 82%;
-            box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3); 
-        }
-        /* 스크롤바 디자인 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e8cceb; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #d09cd6; }
-        </style>
-        <div style="background:linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%);border:2px solid #fae8ff;border-radius:24px;padding:24px;box-shadow:0 10px 40px rgba(187,56,208,0.05); margin-bottom: 4px; height: 100%; display: flex; flex-direction: column;">
-            <div style="font-size:14px;font-weight:800;color:#333;margin:0 0 12px 0;">텍스트 대화창</div>
-            <div id="chat-container" style="flex: 1; overflow-y:auto; overflow-x:hidden; background:#ffffff;border:1px solid #fae8ff;border-radius:16px;padding:20px;box-shadow:inset 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;">
-        """
-
-        for message in st.session_state.messages:
-            role = message.get("role")
-            content = message.get("content", "")
-            score = message.get("score")
-
-            # content가 dict형태일 경우 처리 (혹시 모를 에러 방지)
-            content_str = (
-                content.get("content", "")
-                if isinstance(content, dict)
-                else str(content)
-            )
-            is_followup = "꼬리질문" in content_str
-
-            if role == "user":
-                score_badge = (
-                    f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>'
-                    if score is not None
-                    else ""
-                )
-                chat_html += f"""
-                <div style="display:flex; justify-content:flex-end; margin-bottom:16px; flex-direction:column; align-items:flex-end; width: 100%;">
-                  <div class="user-bubble">{content_str}</div>
-                  {score_badge}
-                </div>
-                """
-            else:
-                followup_badge = (
-                    '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>'
-                    if is_followup
-                    else ""
-                )
-                chat_html += f"""
-                <div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:16px; width: 100%;">
-                  <div style="font-size: 32px; line-height: 1; flex-shrink: 0;">👾</div>
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px; display: flex; align-items: center;">AI 면접관 {followup_badge}</div>
-                    <div class="ai-bubble">{content_str}</div>
-                  </div>
-                </div>
-                """
-
-        chat_html += """
-            </div>
-            <script>
-                var chatDiv = document.getElementById("chat-container");
-                if (chatDiv) {
-                    chatDiv.scrollTop = chatDiv.scrollHeight;
-                    // 새로운 메시지 도착 시 자연스럽게 스크롤
-                    setTimeout(() => { chatDiv.scrollTo({ top: chatDiv.scrollHeight, behavior: 'smooth' }); }, 100);
-                }
-            </script>
-        </div>
-        """
-
-        components.html(chat_html, height=520, scrolling=False)
-
-    if st.session_state.latest_audio_content:
-        st.audio(
-            st.session_state.latest_audio_content, format="audio/mp3", autoplay=True
-        )
-        st.session_state.latest_audio_content = None
-
-    if st.session_state.interview_mode == "text":
-        prompt = st.chat_input("메시지를 입력하세요")
-        if prompt:
-            with st.spinner("답변을 분석 중입니다..."):
-                process_answer(prompt)
-            st.rerun()
-    else:
+    with col_chat:
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key:
             st.error("OPENAI_API_KEY 환경변수가 필요합니다.")
@@ -1464,7 +1435,7 @@ with col1:
             .replace(
                 "__USER_ID__",
                 json.dumps(
-                    str(st.session_state.get("user_id", "guest")), ensure_ascii=False
+                    str(st.session_state.get("db_session_id", "guest")), ensure_ascii=False
                 ),
             )
             .replace(
