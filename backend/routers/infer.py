@@ -7,6 +7,7 @@ Description: AI 실행해주는 API 주소
 Modification History:
 - 2026-02-15: 초기 생성
 - 2026-02-22: RAG + DB 질문 풀 기반 AI 면접 실행 및 기록 API 통합, 면접 종료 시 최종 점수 계산 및 세션 정보 업데이트
+- 2026-02-28(양창일) : 태도값 추가
 """
 import os
 from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File
@@ -22,7 +23,7 @@ from backend.services import auth_service
 from backend.models.user import User
 
 router = APIRouter(prefix="/api/infer", tags=["infer"])
-# ✅ 서버 시작 시 즉시 초기화하지 않고, 실제 요청 시점에 초기화 (OpenAI/Chroma 블로킹 방지)
+# 서버 시작 시 즉시 초기화하지 않고, 실제 요청 시점에 초기화 (OpenAI/Chroma 블로킹 방지)
 def _get_ai():
     return get_ai_service()
 
@@ -35,6 +36,44 @@ def require_user(req: Request, db: Session) -> User:
     if not user:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
     return user
+
+def format_attitude_for_prompt(attitude: dict | None) -> str:
+    if not attitude:
+        return ""
+    metrics = attitude.get("metrics") or {}
+    events = attitude.get("events") or []
+    summary = (attitude.get("summary_text") or "").strip()
+
+    head_center = metrics.get("head_center_ratio")
+    downward = metrics.get("downward_ratio")
+    expr_var = metrics.get("expression_variability")
+    eye_var = metrics.get("eye_open_variability")
+
+    def _fmt(x):
+        try:
+            return f"{float(x):.2f}"
+        except Exception:
+            return "N/A"
+
+    # 이벤트는 너무 길면 2개까지만
+    ev_lines = []
+    for e in events[:2]:
+        ev_lines.append(
+            f"- {e.get('type')} ({e.get('t_start_ms')}~{e.get('t_end_ms')}ms)"
+        )
+    ev_text = "\n".join(ev_lines) if ev_lines else "- 없음"
+
+    # 프롬프트에 붙일 짧은 블록
+    return (
+        "\n\n[태도 신호(참고용)]\n"
+        f"- head_center_ratio: {_fmt(head_center)}\n"
+        f"- downward_ratio: {_fmt(downward)}\n"
+        f"- expression_variability: {_fmt(expr_var)}\n"
+        f"- eye_open_variability: {_fmt(eye_var)}\n"
+        f"- events:\n{ev_text}\n"
+        f"- summary: {summary if summary else 'N/A'}\n"
+        "주의: 위 신호는 추정치이며 성격/감정 단정 금지. 답변 코칭에만 활용.\n"
+    )
 
 @router.post("/ingest")
 async def ingest_resume(file: UploadFile = File(...), session_id: str = "default"):
@@ -298,6 +337,7 @@ def evaluate_turn(body: dict):
     resume_text = body.get("resume_text")
     next_main_question = body.get("next_main_question")
     followup_count = int(body.get("followup_count", 0))
+    attitude = body.get("attitude")
 
     if not answer or not str(answer).strip():
         raise HTTPException(status_code=400, detail="answer가 비어 있습니다.")
@@ -314,6 +354,22 @@ def evaluate_turn(body: dict):
             next_main_question=next_main_question,
             followup_count=followup_count,
         )
+        summary_text = ""
+        if isinstance(attitude, dict):
+            summary_text = (attitude.get("summary_text") or "").strip()
+        if summary_text:
+            base_feedback = (result.get("feedback") or "").strip()
+            base_reply = (result.get("reply_text") or "").strip()
+            result["feedback"] = (
+                f"{base_feedback} 태도 측면에서는 {summary_text}"
+                if base_feedback
+                else f"태도 측면에서는 {summary_text}"
+            )
+            result["reply_text"] = (
+                f"{base_reply}\n\n[태도 피드백] {summary_text}"
+                if base_reply
+                else f"[태도 피드백] {summary_text}"
+            )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"평가 실패: {str(e)}")

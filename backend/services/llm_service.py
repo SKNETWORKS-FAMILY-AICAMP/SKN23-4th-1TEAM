@@ -92,7 +92,11 @@ OUTPUT:
 }
 """
 
-def build_eval_user_prompt(question_list_row: dict, user_answer_text: str, rag_context: dict) -> str:
+def build_eval_user_prompt(
+    question_list_row: dict,
+    user_answer_text: str,
+    rag_context: dict,
+) -> str:
     return f"""
     주어진 입력을 평가하라.
 
@@ -116,7 +120,7 @@ def evaluate_and_respond(
     user_id: str, 
     resume_text: str | None,
     next_main_question: str | None,
-    followup_count: int
+    followup_count: int,
 ) -> dict:
     
     # 1. RAG 컨텍스트 추출
@@ -140,7 +144,17 @@ def evaluate_and_respond(
     question_row_dict = {"id": "current", "question": question, "answer": "모범 답안을 기준으로 평가하되 없으면 일반 기술 상식 활용"} 
     rag_context_dict = {"resume_context": rag_context_text} if rag_context_text else {"note": "이력서 관련 내용 없음"}
     
-    user_prompt = build_eval_user_prompt(question_row_dict, answer, rag_context_dict)
+    user_prompt = build_eval_user_prompt(
+        question_row_dict,
+        answer,
+        rag_context_dict,
+    )
+    print("\n[DEBUG][evaluate_and_respond] SYSTEM PROMPT START")
+    print(sys_prompt)
+    print("[DEBUG][evaluate_and_respond] SYSTEM PROMPT END")
+    print("[DEBUG][evaluate_and_respond] USER PROMPT START")
+    print(user_prompt)
+    print("[DEBUG][evaluate_and_respond] USER PROMPT END\n")
     
     if next_main_question:
         user_prompt += f"\n\n[NEXT_MAIN_QUESTION]\n{next_main_question}\n\n[🚨 번역 절대 원칙 🚨]\n위 [NEXT_MAIN_QUESTION]이 영문일 경우, 반드시 실제 한국인 면접관이 말하듯 아주 자연스러운 '한국어 존댓말(구어체)'로 완벽하게 번역해서 next_question_translated 필드에 넣어라. 절대 영어를 그대로 출력하지 마라."

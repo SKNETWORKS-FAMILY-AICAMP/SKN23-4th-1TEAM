@@ -852,6 +852,7 @@ with col1:
     let pc = null;
     let dc = null;
     let stream = null;
+    let camStream = null;
     let micTrack = null;
     let connected = false;
     let recording = false;
@@ -864,6 +865,12 @@ with col1:
     let pendingUserBubble = null;
     const userAudioClips = [];
     const assistantAudioClips = [];
+    let attFrames = [];
+    let attTimer = null;
+    let lastAttitude = null;
+    let pendingAttitudePromise = null;
+    let attVideoEl = null;
+    let attCanvasEl = null;
 
     function setStatus(text) { statusEl.textContent = text; }
     function setButtons() {
@@ -1058,7 +1065,7 @@ with col1:
       }
     }
 
-    async function evaluateTurn(answerText) {
+    async function evaluateTurn(answerText, attitude) {
       const nextQ = (qIdx + 1 < QUESTIONS.length) ? QUESTIONS[qIdx + 1] : null;
       const payload = {
         question: currentQuestion || "면접 질문",
@@ -1069,7 +1076,8 @@ with col1:
         user_id: USER_ID,
         resume_text: RESUME_TEXT,
         next_main_question: nextQ,
-        followup_count: followupCount
+        followup_count: followupCount,
+        attitude: attitude
       };
 
       const res = await fetch(`${BACKEND_BASE}/infer/evaluate-turn`, {
@@ -1105,7 +1113,17 @@ with col1:
 
       setStatus("답변 분석 및 평가 진행 중...");
       try {
-        const evalRes = await evaluateTurn(transcript.trim());
+        let attitudeResult = lastAttitude;
+        if (pendingAttitudePromise) {
+          try {
+            attitudeResult = await pendingAttitudePromise;
+          } catch (_) {
+            attitudeResult = null;
+          }
+          pendingAttitudePromise = null;
+        }
+
+        const evalRes = await evaluateTurn(transcript.trim(), attitudeResult);
         let reply = (evalRes.reply_text || "").trim();
         const isFollowup = !!evalRes.is_followup;
         const score = Number(evalRes.score || 0);
@@ -1158,6 +1176,35 @@ with col1:
       return true;
     }
 
+    function startAttitudeCapture() {
+      if (!attVideoEl || !attCanvasEl) return;
+      attFrames = [];
+      const ctx = attCanvasEl.getContext("2d");
+      const startTs = performance.now();
+
+      stopAttitudeCapture();
+      attTimer = setInterval(() => {
+        try {
+          if (attVideoEl.readyState < 2 || !attVideoEl.videoWidth) return;
+          const w = 320;
+          const h = Math.round((attVideoEl.videoHeight / attVideoEl.videoWidth) * w);
+          attCanvasEl.width = w;
+          attCanvasEl.height = h;
+          ctx.drawImage(attVideoEl, 0, 0, w, h);
+          const dataUrl = attCanvasEl.toDataURL("image/jpeg", 0.6);
+          attFrames.push({
+            t_ms: Math.round(performance.now() - startTs),
+            image_b64: dataUrl.split(",")[1],
+          });
+        } catch (_) {}
+      }, 500);
+    }
+
+    function stopAttitudeCapture() {
+      if (attTimer) clearInterval(attTimer);
+      attTimer = null;
+    }
+
     async function connect() {
       try {
         setStatus("마이크 권한 요청 중...");
@@ -1171,7 +1218,8 @@ with col1:
         } else {
           recorderMime = "";
         }
-        mediaRecorder = new MediaRecorder(stream, recorderMime ? { mimeType: recorderMime } : undefined);
+        const audioOnlyStream = new MediaStream([micTrack]);
+        mediaRecorder = new MediaRecorder(audioOnlyStream, recorderMime ? { mimeType: recorderMime } : undefined);
         mediaRecorder.ondataavailable = (e) => {
           if (e.data && e.data.size > 0) currentChunks.push(e.data);
         };
@@ -1190,6 +1238,26 @@ with col1:
             attachAudioControls(pendingUserBubble, clip);
           }
         };
+
+        if (!attVideoEl) {
+          attVideoEl = document.createElement("video");
+          attVideoEl.autoplay = true;
+          attVideoEl.muted = true;
+          attVideoEl.playsInline = true;
+          attVideoEl.style.display = "none";
+          document.body.appendChild(attVideoEl);
+        }
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        attVideoEl.srcObject = camStream;
+        try {
+          await attVideoEl.play();
+        } catch (_) {}
+
+        if (!attCanvasEl) {
+          attCanvasEl = document.createElement("canvas");
+          attCanvasEl.style.display = "none";
+          document.body.appendChild(attCanvasEl);
+        }
 
         pc = new RTCPeerConnection();
         pc.addTrack(micTrack, stream);
@@ -1286,6 +1354,7 @@ with col1:
       sendEvent({ type: "input_audio_buffer.clear" });
       setStatus("녹음 중... 답변 후 [제출]을 눌러주세요.");
       setButtons();
+      startAttitudeCapture();
     }
 
     function stopTurn() {
@@ -1299,6 +1368,8 @@ with col1:
       setStatus("음성을 텍스트로 변환하여 서버에 제출 중...");
       pendingUserBubble = appendBubble("user", "(음성 분석 및 제출 중...)");
       setButtons();
+      stopAttitudeCapture();
+      lastAttitude = null;
       setTimeout(() => {
         const ok = sendEvent({ type: "input_audio_buffer.commit" });
         if (!ok) {
@@ -1307,6 +1378,17 @@ with col1:
           setButtons();
         }
       }, 250);
+      pendingAttitudePromise = fetch(`${BACKEND_BASE}/infer/attitude`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ frames: attFrames.slice(0, 40) }),
+      })
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          lastAttitude = data;
+          return data;
+        })
+        .catch(() => null);
     }
 
     function endSession() {
@@ -1316,6 +1398,7 @@ with col1:
         if (dc) dc.close();
         if (pc) pc.close();
         if (stream) stream.getTracks().forEach(t => t.stop());
+        if (camStream) camStream.getTracks().forEach(t => t.stop());
       } catch (_) {}
       connected = false;
       recording = false;
@@ -1416,4 +1499,4 @@ with col1:
         st.markdown("<br>", unsafe_allow_html=True)
 
     with col2:
-        webcam_box(height=520)
+        webcam_box(height=606)
