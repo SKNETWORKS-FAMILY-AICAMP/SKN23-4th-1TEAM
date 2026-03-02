@@ -14,7 +14,7 @@ Modification History:
 - 2026-02-23 (김지우): 휴면 계정 복구 모달(Popup) 로직 수정
 - 2026-02-23 (김지우): 마이페이지 연동을 위해 로그인 성공 시 세션에 email, tier 정보 추가
 - 2026-02-25 (김지우): 쿠키 기반 자동 로그인(Route Protection) 로직 추가 및 경고창 픽스
-- 2026-02-28 (김지우): 자동로그인 및 일반 로그인 시 세션 id 누락 수정 및 쿠키 타이밍 이슈 픽스 🚀
+- 2026-02-28 (김지우): 자동로그인 및 일반 로그인 시 세션 id 누락 수정 및 쿠키 타이밍 이슈 픽스 
 """
 import streamlit as st
 import time
@@ -103,7 +103,7 @@ if os.path.exists(settings_path):
     except Exception:
         pass
 
-# 관리자 로그인 여부 (이미 접속한 경우)
+# 관리자 로그인 여부
 is_admin_logged_in = False
 if (
     "user" in st.session_state
@@ -112,7 +112,7 @@ if (
 ):
     is_admin_logged_in = True
 
-# 점검 모드 활성화 시 (관리자 제외 모두 차단)
+# 점검 모드 활성화 시
 if global_settings.get("maintenance_mode") and not is_admin_logged_in:
     st.markdown(
         """

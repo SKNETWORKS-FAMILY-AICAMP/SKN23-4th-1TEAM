@@ -259,9 +259,17 @@ def api_ingest_resume(file):
     except Exception as e:
         return False, f"알 수 없는 오류: {str(e)}"
 
-def api_start_interview(job_role):
+def api_start_interview(job_role, difficulty=None, persona=None, resume_used=False, resume_id=None, manual_tech_stack=None):
     """새 면접 세션을 시작하여 백엔드 DB에서 정수형 session_id를 발급받아 반환"""
-    return _handle_request("POST", "/infer/start", json={"job_role": job_role})
+    payload = {
+        "job_role": job_role,
+        "difficulty": difficulty,
+        "persona": persona,
+        "resume_used": resume_used,
+        "resume_id": resume_id,
+        "manual_tech_stack": manual_tech_stack
+    }
+    return _handle_request("POST", "/infer/start", json=payload)
 
 def api_get_next_question_v2(payload):
     """사용자 답변, 소요 시간, 직무, 난이도 등 전체 데이터를 RAG 기반 다음 질문 API에 전달"""

@@ -180,6 +180,67 @@ def delete_session_dialog(session_id):
                 ''', unsafe_allow_html=True)
 
 
+# ─── 상세 보기 모달 함수 ────────────────────────────────────
+@st.dialog("면접 기록 상세", width="large")
+def session_detail_dialog(sid):
+    st.markdown(f"<h3 style='margin:0; margin-bottom: 20px;'>세션 #{sid} 상세 기록</h3>", unsafe_allow_html=True)
+
+    try:
+        ok, result = api_get_interview_session_details(sid)
+        if not ok:
+            raise RuntimeError(result)
+        details = result.get("items", [])
+    except Exception as e:
+        st.error(f"상세 데이터 로드 실패: {e}")
+        st.stop()
+
+    if not details:
+        st.info("이 세션에 저장된 상세 기록이 없습니다.")
+    else:
+        scored = [d for d in details if d["score"] is not None]
+        if scored:
+            avg_10   = sum(d["score"] for d in scored) / len(scored)
+            avg_100  = round(avg_10 * 10, 1)
+            high_count = sum(1 for d in scored if d["score"] >= 7)
+            low_count  = sum(1 for d in scored if d["score"] < 5)
+
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("종합 점수", f"{avg_100:.1f}점")
+            col2.metric("총 답변",   f"{len(details)}개")
+            col3.metric("우수 답변", f"{high_count}개")
+            col4.metric("보완 필요", f"{low_count}개")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+        for d in details:
+            followup_tag = '<div class="followup-tag">꼬리질문</div>' if d["is_followup"] else ""
+            if d["score"] is not None:
+                sc = float(d["score"])
+                score_color = "#16a34a" if sc >= 7 else ("#d97706" if sc >= 5 else "#dc2626")
+                score_str = f'<span style="color:{score_color}; font-weight:800; font-size:14px; margin-left:8px;">✦ {sc:.1f}/10</span>'
+            else:
+                score_str = ""
+            feedback_html = (
+                f'<div class="feedback-box">💡 <b>피드백</b><br><div style="margin-top:6px;">{d["feedback"]}</div></div>'
+                if d.get("feedback") else ""
+            )
+            st.markdown(f"""
+            <div class="detail-card">
+                {followup_tag}
+                <div class="q-label">Q{d['turn_index'] + 1}. 면접관 질문 {score_str}</div>
+                <div class="q-text">{(d['question'] or '(질문 없음)').replace("\\n", "<br>")}</div>
+                <div class="a-label">지원자 답변</div>
+                <div class="a-text">{(d['answer'] or '(답변 없음)').replace("\\n", "<br>")}</div>
+                {feedback_html}
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_close1, col_close2, col_close3 = st.columns([4, 2, 4])
+    with col_close2:
+        if st.button("목록 닫기", use_container_width=True, key=f"back_btn_bottom_{sid}"):
+            st.rerun()
+
 st.markdown("<br><br>", unsafe_allow_html=True)
 
 # ─── 타이틀 ───────────────────────────────────────────────────
@@ -187,7 +248,7 @@ st.markdown("<div class='hero-title'>내 <span>면접 기록</span></div>", unsa
 st.markdown("<div class='hero-subtitle'>지금까지 진행한 모의 면접 결과를 확인하세요.</div>", unsafe_allow_html=True)
 st.markdown("<hr style='border:0; height:1px; background:#e5e7eb; margin-bottom:24px;'>", unsafe_allow_html=True)
 
-# ─── 세션 상태 초기화 ─────────────────────────────────────────
+# ─── 세션 상태 초기화 (삭제 잔재) ─────────────────────────────────────────
 if "selected_session_id" not in st.session_state:
     st.session_state.selected_session_id = None
 
@@ -269,81 +330,11 @@ with st.container(height=580, border=False):
                 
             with c3:
                 if st.button("상세 보기", key=f"detail_{s['id']}", use_container_width=True):
-                    st.session_state.selected_session_id = s["id"]
-                    st.rerun()
+                    session_detail_dialog(s["id"])
                     
             with c4:
                 if st.button("삭제", key=f"del_modal_btn_{s['id']}", use_container_width=True):
                     delete_session_dialog(s["id"])
 
 
-# ─── 상세 보기 (하단 렌더링) ──────────────────────────────────────────
-if st.session_state.selected_session_id:
-    sid = st.session_state.selected_session_id
-    st.markdown("<br><hr style='border:0; height:2px; background:#bb38d0; margin-bottom:30px;'>", unsafe_allow_html=True)
-
-    # 상세 헤더
-    detail_col1, detail_col2 = st.columns([8, 2])
-    with detail_col1:
-        st.markdown(f"<h3 style='margin:0;'>세션 #{sid} 상세 기록</h3>", unsafe_allow_html=True)
-    with detail_col2:
-        if st.button("↑ 목록 닫기", use_container_width=True):
-            st.session_state.selected_session_id = None
-            st.rerun()
-
-    try:
-        ok, result = api_get_interview_session_details(sid)
-        if not ok:
-            raise RuntimeError(result)
-        details = result.get("items", [])
-    except Exception as e:
-        st.error(f"상세 데이터 로드 실패: {e}")
-        st.stop()
-
-    if not details:
-        st.info("이 세션에 저장된 상세 기록이 없습니다.")
-    else:
-        scored = [d for d in details if d["score"] is not None]
-        if scored:
-            avg_10   = sum(d["score"] for d in scored) / len(scored)
-            avg_100  = round(avg_10 * 10, 1)
-            high_count = sum(1 for d in scored if d["score"] >= 7)
-            low_count  = sum(1 for d in scored if d["score"] < 5)
-
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("🏆 종합 점수", f"{avg_100:.1f}점")
-            col2.metric("📝 총 답변",   f"{len(details)}개")
-            col3.metric("✅ 우수 답변", f"{high_count}개")
-            col4.metric("⚠️ 보완 필요", f"{low_count}개")
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-        for d in details:
-            followup_tag = '<div class="followup-tag">꼬리질문</div>' if d["is_followup"] else ""
-            if d["score"] is not None:
-                sc = float(d["score"])
-                score_color = "#16a34a" if sc >= 7 else ("#d97706" if sc >= 5 else "#dc2626")
-                score_str = f'<span style="color:{score_color}; font-weight:800; font-size:14px; margin-left:8px;">✦ {sc:.1f}/10</span>'
-            else:
-                score_str = ""
-            feedback_html = (
-                f'<div class="feedback-box">💡 <b>피드백</b><br><div style="margin-top:6px;">{d["feedback"]}</div></div>'
-                if d.get("feedback") else ""
-            )
-            st.markdown(f"""
-            <div class="detail-card">
-                {followup_tag}
-                <div class="q-label">Q{d['turn_index'] + 1}. 면접관 질문 {score_str}</div>
-                <div class="q-text">{d['question'] or '(질문 없음)'}</div>
-                <div class="a-label">지원자 답변</div>
-                <div class="a-text">{d['answer'] or '(답변 없음)'}</div>
-                {feedback_html}
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    col_close1, col_close2, col_close3 = st.columns([4, 2, 4])
-    with col_close2:
-        if st.button("목록 닫기", use_container_width=True, key="back_btn_bottom"):
-            st.session_state.selected_session_id = None
-            st.rerun()
+# ─── (종료) ──────────────────────────────────────────

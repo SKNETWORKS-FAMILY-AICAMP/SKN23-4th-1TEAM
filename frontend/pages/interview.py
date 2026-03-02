@@ -1,6 +1,6 @@
 """
 File: pages/interview.py
-Description: AI 면접 페이지 - 애플 iMessage 스타일 UI, 모드별 카메라 동적 할당 및 이력서 RAG 완벽 연동
+Description: AI 면접 페이지
 """
 
 import base64
@@ -38,17 +38,15 @@ from utils.function import require_login, inject_custom_header
 from services.llm_service import generate_evaluation, analyze_resume_comprehensive
 from services.rag_service import store_resume
 
-# 1. 페이지 기본 설정
+# 페이지 기본 설정
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
-# 2. 문지기 출동
+# 문지기 출동
 user_id = require_login()
-
-# 3. 커스텀 헤더 주입
 inject_custom_header()
 
 
-# ─── 4. 글로벌 CSS 스타일링 (애플 iMessage 감성) ───
+# CSS 스타일
 st.markdown(
     """
     <style>
@@ -88,7 +86,7 @@ st.markdown(
     }
     .header-end-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(187, 56, 208, 0.4); }
 
-    /* 🎯 채팅 입력창 */
+    /* 채팅 입력창 */
     div[data-testid="stChatInput"] { 
         border-radius: 24px !important; 
         border: 2px solid #fae8ff !important; 
@@ -119,7 +117,7 @@ st.markdown(
         color: #adb5bd !important; 
     }
     
-    /* 🎯 전송 버튼 */
+    /* 전송 버튼 */
     button[data-testid="stChatInputSubmitButton"], 
     div[data-testid="stChatInputSubmitButton"] { 
         background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; 
@@ -159,7 +157,7 @@ st.markdown(
 )
 
 
-# ─── 헬퍼 함수 모음 ───
+# 헬퍼 함수 모음
 def extract_resume_text(uploaded_file) -> str:
     file_bytes = uploaded_file.getvalue()
     try:
@@ -186,8 +184,15 @@ def generate_tts(text: str) -> bytes | None:
     except Exception:
         return None
 
-def create_session(user_id, job_role, difficulty, persona, resume_used):
-    success, result = api_start_interview(job_role)
+def create_session(user_id, job_role, difficulty, persona, resume_used, resume_id=None, manual_tech_stack=None):
+    success, result = api_start_interview(
+        job_role=job_role,
+        difficulty=difficulty,
+        persona=persona,
+        resume_used=resume_used,
+        resume_id=resume_id,
+        manual_tech_stack=manual_tech_stack
+    )
     if not success:
         raise RuntimeError(result)
     return result.get("session_id")
@@ -199,7 +204,6 @@ def get_questions_by_role(job_role, difficulty, limit=3):
     return result.get("items", [])
 
 
-# 🚨🚨 [핵심 수정] 리턴 타입을 bool로 변경하여, 에러 시 화면 새로고침(rerun)을 막습니다! 🚨🚨
 def process_answer(answer_text: str) -> bool:
     print(f"[DEBUG] process_answer triggered with: {answer_text}")
     prev_question = st.session_state.pending_question or "면접 질문"
@@ -213,7 +217,6 @@ def process_answer(answer_text: str) -> bool:
 
     target_user_id = str(st.session_state.get("db_session_id", "guest"))
 
-    # 🎯 FIX 1: 백엔드 422 에러 방지를 위해 "attitude": None 파라미터 강제 추가!
     payload = {
         "question": prev_question,
         "answer": answer_text,
@@ -241,10 +244,10 @@ def process_answer(answer_text: str) -> bool:
         success = False
         result = str(e)
 
-    # 🎯 FIX 2: 에러가 나면 메시지를 띄우고 "False"를 반환하여 rerun을 막습니다!
+    # 에러가 나면 메시지를 띄우고 "False"를 반환하여 rerun을 막음
     if not success:
         st.session_state.messages.pop()
-        st.error(f"🚨 답변 처리 실패 (서버 로그를 확인하세요): {result}")
+        st.error(f"답변 처리 실패 (서버 로그를 확인하세요): {result}")
         return False
 
     score = float(result.get("score", 5.0))
@@ -257,7 +260,7 @@ def process_answer(answer_text: str) -> bool:
     st.session_state.turn_index += 1
 
     try:
-        access_token = st.session_state.get("access_token")
+        access_token = st.session_state.get("token")
         detail_payload = {
             "session_id": st.session_state.db_session_id,
             "turn_index": st.session_state.turn_index,
@@ -299,7 +302,7 @@ def process_answer(answer_text: str) -> bool:
     return True # 정상 완료 시 True 반환
 
 
-# ─── 5. 상태 초기화 ───
+# 상태 초기화
 defaults = {
     "messages": [],
     "interview_ended": False,
@@ -325,7 +328,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 
-# ─── 6. 팝업(모달) 선언 ───
+# 팝업(모달) 선언
 @st.dialog("면접 결과 리포트")
 def evaluation_modal():
     scores = st.session_state.db_scores
@@ -333,7 +336,7 @@ def evaluation_modal():
 
     if not st.session_state.get("is_db_ended") and st.session_state.db_session_id:
         try:
-            access_token = st.session_state.get("access_token")
+            access_token = st.session_state.get("token")
             requests.put(
                 f"{API_BASE_URL.rstrip('/')}/interview/sessions/{st.session_state.db_session_id}",
                 json={"total_score": total_score, "status": "COMPLETED"},
@@ -359,11 +362,18 @@ def evaluation_modal():
 
     if st.session_state.evaluation_result is None:
         with st.spinner("AI가 분석 중입니다..."):
-            st.session_state.evaluation_result = generate_evaluation(
+            raw_eval = generate_evaluation(
                 st.session_state.messages,
                 st.session_state.get("job_role"),
                 st.session_state.get("difficulty"),
                 eval_resume_text,
+            )
+            
+            import re
+            st.session_state.evaluation_result = re.sub(
+                r"\*\*[\d\.]+\s*/\s*100점\*\*",
+                f"**{total_score} / 100점**",
+                raw_eval
             )
 
     st.markdown(st.session_state.evaluation_result)
@@ -547,6 +557,8 @@ def interview_setup_modal():
                 difficulty=difficulty,
                 persona=persona_style,
                 resume_used=is_resume_used,
+                resume_id=st.session_state.get("resume_id") if has_saved_resume else None,
+                manual_tech_stack=manual_tech_stack if not has_saved_resume and not uploaded_resume else None
             )
         except Exception as e:
             st.error(f"세션 생성 오류: {e}")
@@ -562,7 +574,7 @@ def interview_setup_modal():
                 time.sleep(0.5) 
 
         try:
-            fixed_first_q = "간단하게 자기소개를 부탁드립니다."
+            fixed_first_q = "<b>간단하게 자기소개를 부탁드립니다.</b>"
             
             if final_resume_text:
                 with st.spinner("지원자님의 경험을 바탕으로 날카로운 실무 질문을 생성 중입니다..."):
@@ -570,10 +582,27 @@ def interview_setup_modal():
                     expected_qs = analysis_result.get("expected_questions", [])
                     
                     if expected_qs and len(expected_qs) > 0:
-                        db_questions = [fixed_first_q] + expected_qs[:q_count - 1]
+                        remain_count = q_count - 1
+                        
+                        # 이력서(AI) 질문과 직무 스택(DB) 랜덤 질문의 비율을 반반씩 혼합 (홀수면 이력서 1개 추가)
+                        tech_count = remain_count // 2
+                        resume_count = remain_count - tech_count
+                        
+                        resume_qs_subset = expected_qs[:resume_count]
+                        
+                        # DB에서 기술 질문 가져오기
+                        tech_qs_data = get_questions_by_role(job_role, difficulty, limit=tech_count)
+                        tech_qs = [q["question"] for q in tech_qs_data if "question" in q]
+                        
+                        # 만약 랜덤 기술 질문이 부족할 경우 남은 만큼 이력서 질문으로 메우기
+                        if len(tech_qs) < tech_count:
+                            shortfall = tech_count - len(tech_qs)
+                            resume_qs_subset = expected_qs[:resume_count + shortfall]
+                            
+                        db_questions = [fixed_first_q] + resume_qs_subset + tech_qs
                     else:
                         tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
-                        db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
+                        db_questions = [fixed_first_q] + [q["question"] for q in tech_qs if "question" in q]
             else:
                 tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
                 db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
@@ -609,7 +638,7 @@ def interview_setup_modal():
         st.rerun()
 
 
-# ─── 7. 메인 로직 ─────────────────────────
+# 메인 로직
 
 if not st.session_state.chatbot_started:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
@@ -644,7 +673,7 @@ st.markdown(
     f"""
     <div class="premium-chat-header">
         <div class="header-left">
-            <div class="header-icon">🎯</div>
+            <div class="header-icon">👾</div>
             <div class="header-text-info">
                 <div class="header-name">AI 면접관 <span class="header-badge">{st.session_state.persona_style}</span></div>
                 <div class="header-desc">{st.session_state.job_role} · 난이도 {st.session_state.difficulty} · {st.session_state.q_count}문항</div>
@@ -663,7 +692,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 🎯 텍스트 모드
+# 텍스트 모드
 if st.session_state.interview_mode == "text":
     st.markdown(
         """
@@ -750,14 +779,14 @@ if st.session_state.interview_mode == "text":
     prompt = st.chat_input("메시지를 입력하세요")
     if prompt:
         with st.spinner("답변을 분석 중입니다..."):
-            # 🎯 FIX: 에러가 나면 False를 반환하여 화면 새로고침(rerun)을 막고 에러 메시지를 띄웁니다!
+            # 에러가 나면 False를 반환하여 화면 새로고침(rerun)을 막고 에러 메시지를 띄움
             is_success = process_answer(prompt)
         
-        # 🎯 성공했을 때만 다음 턴으로 넘어가기 위해 화면을 새로고침 합니다.
+        # 성공했을 때만 다음 턴으로 넘어가기 위해 화면을 새로고침
         if is_success:
             st.rerun()
 
-# 🎯 음성 모드: 카메라가 켜지는 2단(좌우) 레이아웃
+# 음성 모드: 카메라가 켜지는 2단(좌우) 레이아웃
 else:
     st.markdown(
         """

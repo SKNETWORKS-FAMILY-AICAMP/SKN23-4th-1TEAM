@@ -37,7 +37,6 @@ def require_login():
         st.switch_page("app.py")
         st.stop()
 
-
     if "user" in st.session_state and st.session_state.user:
         return st.session_state.user.get("id", "guest")
 
@@ -59,7 +58,13 @@ def require_login():
             if "cookie_checking" in st.session_state:
                 del st.session_state["cookie_checking"]
                 
-            return st.session_state.user["id"]
+            user_id = st.session_state.user.get("id")
+            if user_id is None:
+                st.warning("유효하지 않은 유저 정보입니다. 다시 로그인해주세요.")
+                time.sleep(1)
+                st.switch_page("app.py")
+                st.stop()
+            return user_id
         else:
             st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
             time.sleep(1)
@@ -177,6 +182,10 @@ def inject_custom_header():
                     👤 {user_name} 님 ▾
                 </div>
                 <div class="header-dropdown">
+                    {
+                        '<a href="/admin" target="_self">🔥 관리자 대시보드</a>'
+                        if str(user_info.get("role")).lower() == "admin" else ""
+                    }
                     <a href="/login?logout=true" target="_self">로그아웃</a>
                 </div>
             </div>
