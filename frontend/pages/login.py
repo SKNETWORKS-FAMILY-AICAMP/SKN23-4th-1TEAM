@@ -327,13 +327,14 @@ st.markdown(
     [data-baseweb="menu"], [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
 
     /* === 모든 Streamlit 버튼 배경 강제 === */
-    [data-testid="stButton"] > button, [data-testid="stLinkButton"] > a,
-    [data-testid="stFormSubmitButton"] > button { background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important; }
+    [data-testid="stButton"] > button, [data-testid="stLinkButton"] > a { background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important; }
     [data-testid="stButton"] > button p, [data-testid="stLinkButton"] > a p { color: #111 !important; }
     button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
         background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; border: none !important; color: white !important;
     }
     button[kind="primary"] p, button[kind="primary"] span { color: #fff !important; }
+    [data-testid="stFormSubmitButton"] > button { background-color: #bb38d0 !important; color: #fff !important; border: none !important; }
+    [data-testid="stFormSubmitButton"] > button p { color: #fff !important; }
 
     @media (max-width: 768px) {
         .block-container { padding-top: 32px !important; padding-bottom: 32px !important; }
