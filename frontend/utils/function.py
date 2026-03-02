@@ -16,9 +16,10 @@ import streamlit as st
 import extra_streamlit_components as stx
 from utils.api_utils import api_verify_token
 
+
 def require_login():
     """
-    로그인 상태를 완벽하게 검증하고, 
+    로그인 상태를 완벽하게 검증하고,
     새로고침으로 세션이 날아갔다면 쿠키를 통해 자동 복구해주는 완벽한 문지기입니다.
     """
     cookie_manager = stx.CookieManager(key="global_auth_cookie")
@@ -54,10 +55,10 @@ def require_login():
                 "tier": result.get("tier", "normal"),
             }
             st.session_state.token = token
-            
+
             if "cookie_checking" in st.session_state:
                 del st.session_state["cookie_checking"]
-                
+
             user_id = st.session_state.user.get("id")
             if user_id is None:
                 st.warning("유효하지 않은 유저 정보입니다. 다시 로그인해주세요.")
@@ -68,17 +69,17 @@ def require_login():
         else:
             st.warning("세션이 만료되었습니다. 다시 로그인해주세요.")
             time.sleep(1)
-            st.switch_page("app.py") 
+            st.switch_page("app.py")
             st.stop()
     else:
         if "cookie_checking" not in st.session_state:
             st.session_state["cookie_checking"] = True
-            st.stop() 
+            st.stop()
         else:
             del st.session_state["cookie_checking"]
             st.warning("로그인이 필요한 서비스입니다.")
             time.sleep(1)
-            st.switch_page("app.py") 
+            st.switch_page("app.py")
             st.stop()
 
 
@@ -89,12 +90,12 @@ def get_image_base64(image_path):
 
 def inject_custom_header():
     user_info = st.session_state.get("user", {})
-    user_name = user_info.get("name", "사용자") 
-    
+    user_name = user_info.get("name", "사용자")
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     frontend_root = os.path.dirname(current_dir)
     image_path = os.path.join(frontend_root, "assets", "AIWORK.jpg")
-    
+
     try:
         img_base64 = get_image_base64(image_path)
         img_src = f"data:image/jpeg;base64,{img_base64}"
@@ -164,12 +165,53 @@ def inject_custom_header():
         opacity: 0 !important; overflow: hidden !important; z-index: -9999 !important; pointer-events: none !important;
         margin: 0 !important; padding: 0 !important;
     }}
+
+    /* === 햄버거 메뉴 (모바일, CSS-only) === */
+    #hamburger-toggle {{ display: none; }}
+    .hamburger-label {{
+        display: none; cursor: pointer;
+        width: 36px; height: 36px; padding: 6px; position: relative; z-index: 1000001;
+        flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    }}
+    .hamburger-label span {{
+        display: block; width: 22px; height: 2.5px; background: #111; border-radius: 2px;
+        transition: all 0.3s ease;
+    }}
+    #hamburger-toggle:checked ~ .custom-header .hamburger-label span:nth-child(1) {{ transform: translateY(7.5px) rotate(45deg); }}
+    #hamburger-toggle:checked ~ .custom-header .hamburger-label span:nth-child(2) {{ opacity: 0; }}
+    #hamburger-toggle:checked ~ .custom-header .hamburger-label span:nth-child(3) {{ transform: translateY(-7.5px) rotate(-45deg); }}
+
+    .mobile-menu {{
+        display: none; position: fixed; top: 60px; left: 0; right: 0;
+        background: #ffffff; border-bottom: 1px solid #e2e8f0;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08); z-index: 999998;
+        padding: 12px 0; flex-direction: column;
+    }}
+    #hamburger-toggle:checked ~ .mobile-menu {{ display: flex; }}
+    .mobile-menu a {{
+        text-decoration: none; color: #111 !important; font-size: 15px; font-weight: 600;
+        padding: 14px 24px; transition: background 0.2s;
+    }}
+    .mobile-menu a:hover {{ background: #fdf4ff; color: #bb38d0 !important; }}
+
+    @media (max-width: 768px) {{
+        .custom-header {{ padding: 0 16px; height: 60px; }}
+        .header-menu {{ display: none !important; }}
+        .hamburger-label {{ display: flex; }}
+        .block-container {{ padding-top: 80px !important; }}
+        .header-user-btn {{ font-size: 12px; padding: 6px 12px; }}
+    }}
     </style>
     
+    
+    <input type="checkbox" id="hamburger-toggle">
     <div class="custom-header">
         <a href="/home" target="_self" class="header-logo">
             <img src="{img_src}" alt="AIWORK 로고">
         </a>
+        <label for="hamburger-toggle" class="hamburger-label">
+            <span></span><span></span><span></span>
+        </label>
         <div class="header-menu">
             <a href="/interview" target="_self">AI면접</a>
             <a href="/resume" target="_self">이력서</a>
@@ -191,6 +233,12 @@ def inject_custom_header():
             </div>
         </div>
     </div>
+    <div class="mobile-menu">
+        <a href="/interview" target="_self">AI면접</a>
+        <a href="/resume" target="_self">이력서</a>
+        <a href="/mypage" target="_self">내 기록</a>
+        <a href="/my_info" target="_self">마이페이지</a>
+    </div>
     """
     st.markdown(header_html, unsafe_allow_html=True)
 
@@ -198,9 +246,10 @@ def inject_custom_header():
     st.markdown('<div id="global-logout-marker"></div>', unsafe_allow_html=True)
     if st.button("__global_logout__", key="global_logout_trigger"):
         st.toast("로그아웃 되었습니다.")
-        
+
         # 쿠키 삭제 및 세션 초기화
         import extra_streamlit_components as stx
+
         cookie_manager = stx.CookieManager(key="global_header_cookie")
         try:
             cookie_manager.delete("access_token")
@@ -208,9 +257,9 @@ def inject_custom_header():
             cookie_manager.delete("csrf_token")
         except Exception:
             pass
-            
+
         st.session_state.clear()
-        time.sleep(1) 
+        time.sleep(1)
         st.switch_page("login")
 
 
@@ -221,6 +270,8 @@ def render_memo_board(current_user_name="익명"):
 
 
 def render_realtime_ai_news():
-    from utils.home_api_render import render_realtime_ai_news as _render_realtime_ai_news
+    from utils.home_api_render import (
+        render_realtime_ai_news as _render_realtime_ai_news,
+    )
 
     return _render_realtime_ai_news()

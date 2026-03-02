@@ -26,7 +26,11 @@ if backend_dir not in sys.path:
 
 import streamlit as st
 from dotenv import load_dotenv
-from utils.api_utils import api_get_interview_sessions, api_get_interview_session_details, api_delete_interview_session
+from utils.api_utils import (
+    api_get_interview_sessions,
+    api_get_interview_session_details,
+    api_delete_interview_session,
+)
 from utils.function import inject_custom_header, require_login
 
 load_dotenv()
@@ -37,14 +41,18 @@ user_id = require_login()
 inject_custom_header()
 
 # ─── CSS ──────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Pretendard', sans-serif !important; box-sizing: border-box; }
+:root { color-scheme: light !important; }
+* { font-family: 'Pretendard', sans-serif !important; box-sizing: border-box; color: #111 !important; }
+p, span, div, label, h1, h2, h3, h4, h5, h6, li, a, td, th, small, strong, b, i, em { color: #111 !important; }
 
 /* 스크롤 완벽 차단 및 화면 고정 */
-html, body, [data-testid="stAppViewContainer"], .main {
+html, body, .stApp, [data-testid="stAppViewContainer"], .main {
     overflow: hidden !important; height: 100vh !important; touch-action: none !important;
+    color-scheme: light !important; color: #111 !important;
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -52,7 +60,33 @@ html, body, [data-testid="stAppViewContainer"], .main {
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
 [data-testid="stAppViewContainer"] { background-color: #f5f5f5 !important; }
-[data-testid="stHeader"] { display: none; }
+[data-testid="stAppViewContainer"] > .main { background-color: #f5f5f5 !important; }
+[data-testid="stHeader"], [data-testid="stToolbar"] { display: none; color-scheme: light !important; }
+
+/* === Streamlit 내부 컴포넌트 다크모드 차단 === */
+[data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"],
+[data-testid="stColumn"], [data-testid="stForm"],
+[data-testid="stMarkdownContainer"] { color: #111 !important; }
+[data-testid="stDialog"] > div > div,
+[data-testid="stDialog"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stDialog"] [data-testid="stVerticalBlock"],
+section[data-testid="stDialog"] { background-color: #ffffff !important; color: #111 !important; }
+[data-baseweb="input"], [data-baseweb="input"] > div,
+[data-baseweb="select"], [data-baseweb="select"] > div,
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"], [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
+/* === 모든 Streamlit 버튼 배경 강제 === */
+[data-testid="stButton"] > button, [data-testid="stLinkButton"] > a,
+[data-testid="stFormSubmitButton"] > button { background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important; }
+[data-testid="stButton"] > button p, [data-testid="stLinkButton"] > a p { color: #111 !important; }
+button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
+    background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; border: none !important; color: white !important;
+}
+button[kind="primary"] p, button[kind="primary"] span { color: #fff !important; }
+[data-testid="stDataFrame"], [data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] iframe,
+[data-testid="stTable"], [data-testid="stTable"] table, [data-testid="stTable"] th,
+[data-testid="stTable"] td { background-color: #ffffff !important; color: #111 !important; }
+[data-testid="stVerticalBlockBorderWrapper"] > div { background-color: transparent !important; }
 
 /* 전체 폭을 1024px로 확장 */
 .block-container { max-width: 1024px !important; padding: 2rem 2rem 4rem !important; margin: 0 auto; }
@@ -134,28 +168,44 @@ div[data-testid="stVerticalBlock"]:has(> div:first-child [id^="card-wrap-"]) {
     display: inline-block; background: #fff5e6; color: #d97706 !important; font-size: 12px; font-weight: 700; padding: 4px 10px;
     border-radius: 16px; margin-bottom: 8px;
 }
+@media (max-width: 768px) {
+    .block-container { max-width: 100% !important; padding: 1rem 1rem 3rem !important; }
+    .hero-title { font-size: 28px; }
+    .detail-card { padding: 16px 18px; }
+}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 # ─── 삭제 모달 함수 ────────────────────────────────────
 @st.dialog("면접 기록 삭제")
 def delete_session_dialog(session_id):
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="text-align:center; padding:10px 0 20px;">
         <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
         <p style="font-size:15px; color:#111; line-height:1.6; margin-bottom:0;">
             <b>세션 #{session_id}</b> 기록을 삭제하면 복구할 수 없습니다.<br>정말 삭제하시겠습니까?
         </p>
     </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("취소", use_container_width=True, key=f"cancel_btn_{session_id}"):
             st.rerun()
-            
+
     with col2:
-        delete_clicked = st.button("삭제", type="primary", use_container_width=True, key=f"confirm_btn_{session_id}")
+        delete_clicked = st.button(
+            "삭제",
+            type="primary",
+            use_container_width=True,
+            key=f"confirm_btn_{session_id}",
+        )
 
     msg_ph = st.empty()
 
@@ -165,25 +215,34 @@ def delete_session_dialog(session_id):
             if ok:
                 if st.session_state.get("selected_session_id") == session_id:
                     st.session_state.selected_session_id = None
-                msg_ph.markdown('''
+                msg_ph.markdown(
+                    """
                 <div class="status-msg text-success">
                     <b>삭제 완료!</b> 면접 기록이 깔끔하게 지워졌습니다.
                 </div>
-                ''', unsafe_allow_html=True)
-                time.sleep(1.0) 
+                """,
+                    unsafe_allow_html=True,
+                )
+                time.sleep(1.0)
                 st.rerun()
             else:
-                msg_ph.markdown(f'''
+                msg_ph.markdown(
+                    f"""
                 <div class="status-msg text-error">
                     <b>삭제 실패</b><br><span style="font-size:12px; font-weight:500;">{msg}</span>
                 </div>
-                ''', unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
 
 # ─── 상세 보기 모달 함수 ────────────────────────────────────
 @st.dialog("면접 기록 상세", width="large")
 def session_detail_dialog(sid):
-    st.markdown(f"<h3 style='margin:0; margin-bottom: 20px;'>세션 #{sid} 상세 기록</h3>", unsafe_allow_html=True)
+    st.markdown(
+        f"<h3 style='margin:0; margin-bottom: 20px;'>세션 #{sid} 상세 기록</h3>",
+        unsafe_allow_html=True,
+    )
 
     try:
         ok, result = api_get_interview_session_details(sid)
@@ -199,54 +258,75 @@ def session_detail_dialog(sid):
     else:
         scored = [d for d in details if d["score"] is not None]
         if scored:
-            avg_10   = sum(d["score"] for d in scored) / len(scored)
-            avg_100  = round(avg_10 * 10, 1)
+            avg_10 = sum(d["score"] for d in scored) / len(scored)
+            avg_100 = round(avg_10 * 10, 1)
             high_count = sum(1 for d in scored if d["score"] >= 7)
-            low_count  = sum(1 for d in scored if d["score"] < 5)
+            low_count = sum(1 for d in scored if d["score"] < 5)
 
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("종합 점수", f"{avg_100:.1f}점")
-            col2.metric("총 답변",   f"{len(details)}개")
+            col2.metric("총 답변", f"{len(details)}개")
             col3.metric("우수 답변", f"{high_count}개")
             col4.metric("보완 필요", f"{low_count}개")
 
             st.markdown("<br>", unsafe_allow_html=True)
 
         for d in details:
-            followup_tag = '<div class="followup-tag">꼬리질문</div>' if d["is_followup"] else ""
+            followup_tag = (
+                '<div class="followup-tag">꼬리질문</div>' if d["is_followup"] else ""
+            )
             if d["score"] is not None:
                 sc = float(d["score"])
-                score_color = "#16a34a" if sc >= 7 else ("#d97706" if sc >= 5 else "#dc2626")
+                score_color = (
+                    "#16a34a" if sc >= 7 else ("#d97706" if sc >= 5 else "#dc2626")
+                )
                 score_str = f'<span style="color:{score_color}; font-weight:800; font-size:14px; margin-left:8px;">✦ {sc:.1f}/10</span>'
             else:
                 score_str = ""
             feedback_html = (
                 f'<div class="feedback-box">💡 <b>피드백</b><br><div style="margin-top:6px;">{d["feedback"]}</div></div>'
-                if d.get("feedback") else ""
+                if d.get("feedback")
+                else ""
             )
-            st.markdown(f"""
+            q_text = (d["question"] or "(질문 없음)").replace("\\n", "<br>")
+            a_text = (d["answer"] or "(답변 없음)").replace("\\n", "<br>")
+            st.markdown(
+                f"""
             <div class="detail-card">
                 {followup_tag}
                 <div class="q-label">Q{d['turn_index'] + 1}. 면접관 질문 {score_str}</div>
-                <div class="q-text">{(d['question'] or '(질문 없음)').replace("\\n", "<br>")}</div>
+                <div class="q-text">{q_text}</div>
                 <div class="a-label">지원자 답변</div>
-                <div class="a-text">{(d['answer'] or '(답변 없음)').replace("\\n", "<br>")}</div>
+                <div class="a-text">{a_text}</div>
                 {feedback_html}
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
     st.markdown("<br>", unsafe_allow_html=True)
     col_close1, col_close2, col_close3 = st.columns([4, 2, 4])
     with col_close2:
-        if st.button("목록 닫기", use_container_width=True, key=f"back_btn_bottom_{sid}"):
+        if st.button(
+            "목록 닫기", use_container_width=True, key=f"back_btn_bottom_{sid}"
+        ):
             st.rerun()
+
 
 st.markdown("<br><br>", unsafe_allow_html=True)
 
 # ─── 타이틀 ───────────────────────────────────────────────────
-st.markdown("<div class='hero-title'>내 <span>면접 기록</span></div>", unsafe_allow_html=True)
-st.markdown("<div class='hero-subtitle'>지금까지 진행한 모의 면접 결과를 확인하세요.</div>", unsafe_allow_html=True)
-st.markdown("<hr style='border:0; height:1px; background:#e5e7eb; margin-bottom:24px;'>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='hero-title'>내 <span>면접 기록</span></div>", unsafe_allow_html=True
+)
+st.markdown(
+    "<div class='hero-subtitle'>지금까지 진행한 모의 면접 결과를 확인하세요.</div>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "<hr style='border:0; height:1px; background:#e5e7eb; margin-bottom:24px;'>",
+    unsafe_allow_html=True,
+)
 
 # ─── 세션 상태 초기화 (삭제 잔재) ─────────────────────────────────────────
 if "selected_session_id" not in st.session_state:
@@ -264,14 +344,17 @@ except Exception as e:
 
 # ─── 데이터가 없을 경우 (엠프티 스테이트 렌더링) ─────────────────
 if not sessions:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="empty-state-box">
         <div class="empty-state-icon">👾</div>
         <div class="empty-state-title">아직 면접 기록이 없습니다.</div>
         <div class="empty-state-desc">첫 번째 AI 모의면접을 시작하고 실력을 점검해보세요!</div>
     </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     # 예쁜 버튼을 박스 중앙 하단에 배치하기 위해 컬럼 사용
     emp_col1, emp_col2, emp_col3 = st.columns([3, 2, 3])
     with emp_col2:
@@ -283,7 +366,10 @@ if not sessions:
 # ─── 목록 헤더 ────────────────────────────────────────────────
 col_count, col_empty, col_new = st.columns([2, 6, 2])
 with col_count:
-    st.markdown(f"<div style='font-size:18px; font-weight:800; margin-top:8px;'>총 {len(sessions)}회 면접 기록</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='font-size:18px; font-weight:800; margin-top:8px;'>총 {len(sessions)}회 면접 기록</div>",
+        unsafe_allow_html=True,
+    )
 with col_new:
     if st.button("➕ 새 면접 시작", type="primary", use_container_width=True):
         st.switch_page("pages/interview.py")
@@ -301,7 +387,7 @@ with st.container(height=580, border=False):
             score_html = '<div class="score-badge no-score">채점 중</div>'
 
         resume_tag = "· 이력서 사용" if s["resume_used"] else ""
-        ended_raw  = s["ended_at"]
+        ended_raw = s["ended_at"]
         ended = (
             ended_raw[:16].replace("-", ".").replace("T", " ")
             if isinstance(ended_raw, str)
@@ -309,12 +395,16 @@ with st.container(height=580, border=False):
         )
 
         with st.container(border=False):
-            st.markdown(f'<div id="card-wrap-{s["id"]}" style="display:none;"></div>', unsafe_allow_html=True)
-            
+            st.markdown(
+                f'<div id="card-wrap-{s["id"]}" style="display:none;"></div>',
+                unsafe_allow_html=True,
+            )
+
             c1, c2, c3, c4 = st.columns([5.5, 2, 1.2, 1.2], vertical_alignment="center")
-            
+
             with c1:
-                st.markdown(f"""
+                st.markdown(
+                    f"""
                 <div style="margin-left: 4px;">
                     <div style="font-size: 18px; font-weight: 800; color: #000; margin-bottom: 6px; letter-spacing: -0.3px;">
                         {s['job_role']} <span style="font-size: 14px; color: #a1a1aa; font-weight: 500;">· {s['persona']}</span>
@@ -323,17 +413,23 @@ with st.container(height=580, border=False):
                         {s['difficulty']} · {ended} · 세션 #{s['id']} {resume_tag}
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
-            
+                """,
+                    unsafe_allow_html=True,
+                )
+
             with c2:
                 st.markdown(score_html, unsafe_allow_html=True)
-                
+
             with c3:
-                if st.button("상세 보기", key=f"detail_{s['id']}", use_container_width=True):
+                if st.button(
+                    "상세 보기", key=f"detail_{s['id']}", use_container_width=True
+                ):
                     session_detail_dialog(s["id"])
-                    
+
             with c4:
-                if st.button("삭제", key=f"del_modal_btn_{s['id']}", use_container_width=True):
+                if st.button(
+                    "삭제", key=f"del_modal_btn_{s['id']}", use_container_width=True
+                ):
                     delete_session_dialog(s["id"])
 
 

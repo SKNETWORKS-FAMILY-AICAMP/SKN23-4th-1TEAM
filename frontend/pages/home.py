@@ -59,6 +59,7 @@ user_profile_image_url = user_info.get("profile_image_url")
 def get_web_context_first(query):
     return "__USE_WEB_SEARCH__"
 
+
 def get_home_guide_response_stream(user_message, web_context):
     use_web_search = web_context == "__USE_WEB_SEARCH__"
     success, result = api_get_home_guide(user_message, use_web_search=use_web_search)
@@ -67,28 +68,101 @@ def get_home_guide_response_stream(user_message, web_context):
     else:
         yield str(result)
 
-# CSS 
+
+# CSS
 st.markdown(
     """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
-* { font-family: 'Pretendard', sans-serif; color: #000; }
-p, span, div, a { color: #000; }
-.subtext { color: #666; }
-.stApp { background-color: #f5f5f5 !important; background-image: none !important; }
-.block-container { max-width: 1050px !important; padding-top: 4rem !important; padding-bottom: 5rem !important; }
+:root { color-scheme: light !important; }
+* { font-family: 'Pretendard', sans-serif; color: #111 !important; }
+p, span, div, a, label, h1, h2, h3, h4, h5, h6, li, td, th, small, strong, b, i, em, caption { color: #111 !important; }
+.subtext { color: #666 !important; }
+.stApp, html, body { background-color: #f5f5f5 !important; background-image: none !important; color-scheme: light !important; color: #111 !important; }
 
-.block-container {
-    padding-top: 100px !important;   
-    padding-bottom: 1rem !important; 
-    padding-left: 0.5rem !important;   
-    padding-right: 0.5rem !important;  
-    max-width: 100% !important;      
+[data-testid="stAppViewContainer"] { background-color: #f5f7f9 !important; color-scheme: light !important; }
+[data-testid="stAppViewContainer"] > .main { background-color: #f5f7f9 !important; }
+[data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer, header { visibility:hidden; background:transparent; color-scheme: light !important; }
+
+/* === Streamlit 내부 컴포넌트 다크모드 완전 차단 === */
+[data-testid="stVerticalBlock"],
+[data-testid="stHorizontalBlock"],
+[data-testid="stColumn"],
+[data-testid="stForm"],
+[data-testid="stExpander"],
+[data-testid="stExpanderContent"],
+[data-testid="stMarkdownContainer"],
+[role="tabpanel"],
+[data-baseweb="tab-panel"],
+[data-baseweb="tab-list"],
+[data-baseweb="tab"],
+[data-testid="stRadio"],
+[data-testid="stRadio"] > div,
+[data-testid="stSelectbox"],
+[data-testid="stSelectbox"] > div,
+[data-testid="stMultiSelect"],
+[data-testid="stTextArea"],
+[data-testid="stSlider"],
+[data-testid="stCheckbox"],
+[data-testid="stMetric"],
+[data-testid="stDataFrame"],
+[data-testid="stTable"],
+[data-testid="stAlert"] { color: #111 !important; }
+
+/* Dialog / Modal */
+[data-testid="stDialog"] > div > div,
+[data-testid="stDialog"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stDialog"] [data-testid="stVerticalBlock"],
+section[data-testid="stDialog"] { background-color: #ffffff !important; color: #111 !important; }
+
+/* Baseweb 입력/선택 컴포넌트 */
+[data-baseweb="input"],
+[data-baseweb="input"] > div,
+[data-baseweb="select"],
+[data-baseweb="select"] > div,
+[data-baseweb="textarea"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"],
+[data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
+[data-baseweb="radio"] > div > div > div { color: #111 !important; }
+
+/* === 모든 Streamlit 버튼 배경 강제 === */
+[data-testid="stButton"] > button,
+[data-testid="stLinkButton"] > a,
+[data-testid="stFormSubmitButton"] > button {
+    background-color: #ffffff !important; color: #111 !important;
+    border: 1px solid #ddd !important;
 }
+[data-testid="stButton"] > button p,
+[data-testid="stLinkButton"] > a p,
+[data-testid="stFormSubmitButton"] > button p { color: #111 !important; }
+button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
+    background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important;
+    border: none !important; color: white !important;
+}
+button[kind="primary"] p, button[kind="primary"] span,
+[data-testid="stButton"] > button[kind="primary"] p { color: #fff !important; }
 
-[data-testid="stAppViewContainer"] { background-color: #f5f7f9 !important; }
-[data-testid="stHeader"], #MainMenu, footer, header { visibility:hidden; background:transparent; }
-.block-container { padding-top: 2rem !important; max-width: 1200px !important; }
+/* === 테이블/데이터프레임 배경 강제 === */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] > div,
+[data-testid="stDataFrame"] iframe,
+[data-testid="stTable"],
+[data-testid="stTable"] table,
+[data-testid="stTable"] th,
+[data-testid="stTable"] td { background-color: #ffffff !important; color: #111 !important; }
+
+/* === 컨테이너(border=True) 내부 배경 강제 === */
+[data-testid="stVerticalBlockBorderWrapper"] > div,
+[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] { background-color: transparent !important; }
+
+/* === 탭 패널 배경 === */
+[role="tabpanel"], [data-baseweb="tab-panel"] { background-color: transparent !important; }
+
+/* === Toggle/Checkbox === */
+[data-testid="stCheckbox"] label span,
+[data-testid="stToggle"] label span { color: #111 !important; }
+.block-container { padding-top: 2rem !important; max-width: 1200px !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-bottom: 1rem !important; }
 
 [data-testid="stVerticalBlockBorderWrapper"] {
     border: none !important;
@@ -144,6 +218,13 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
 div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] button::after {
     content: "👾" !important; font-size: 32px !important; color: white !important; position: absolute !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; text-indent: 0 !important; z-index: 1 !important; pointer-events: none !important;
 }
+@media (max-width: 768px) {
+    .block-container { padding: 1rem 0.75rem !important; }
+    [data-testid="stVerticalBlockBorderWrapper"] { padding: 1rem !important; }
+    div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] { bottom: 20px !important; right: 20px !important; width: 56px !important; height: 56px !important; }
+    div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] button { min-width: 56px !important; min-height: 56px !important; }
+    div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElementContainer"] button::after { font-size: 26px !important; }
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -151,10 +232,16 @@ div[data-testid="stElementContainer"]:has(#fab-marker) + div[data-testid="stElem
 
 
 def render_profile_card(user_name, user_email, user_tier, user_profile_image_url=None):
-    avatar_url = user_profile_image_url or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_name}"
-    tier_badge_class = "profile-badge-plus" if user_tier.lower() == "plus" else "profile-badge-normal"
+    avatar_url = (
+        user_profile_image_url
+        or f"https://api.dicebear.com/7.x/avataaars/svg?seed={user_name}"
+    )
+    tier_badge_class = (
+        "profile-badge-plus" if user_tier.lower() == "plus" else "profile-badge-normal"
+    )
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <style>
     .profile-card-wrap {{ background: #ffffff; border-radius: 16px; border: 1px solid #f1f3f5; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); padding: 20px 18px 0 18px; overflow: hidden; margin-bottom: 20px; }}
     .profile-top-row {{ display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }}
@@ -197,29 +284,34 @@ def render_profile_card(user_name, user_email, user_tier, user_profile_image_url
             <a class="profile-quick-item" href="/my_info" target="_self">내 정보</a>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
-
-
-st.markdown("""
+st.markdown(
+    """
 <style>
 .block-container {{
     padding-top: 100px !important;
 }}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 import base64
+
 try:
-    with open("assets/search.png", "rb") as image_file: 
+    with open("assets/search.png", "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
     search_icon_base64 = f"data:image/png;base64,{encoded_string}"
 except FileNotFoundError:
-    search_icon_base64 = "" 
+    search_icon_base64 = ""
 
-st.markdown(f"""
+st.markdown(
+    f"""
 <style>
 .search-wrapper {{
     position: relative; width: 100%; margin: 10px auto 30px; z-index: 9999;
@@ -288,9 +380,12 @@ st.markdown(f"""
         </a>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-components.html("""
+components.html(
+    """
 <script>
 function attachSearchEvents() {
     const doc = window.parent.document;
@@ -328,7 +423,10 @@ function attachSearchEvents() {
 }
 attachSearchEvents();
 </script>
-""", height=0, width=0)
+""",
+    height=0,
+    width=0,
+)
 
 left_col, _, right_col = st.columns([6.5, 0.2, 3.3])
 
@@ -338,7 +436,10 @@ with right_col:
 
     action_ph = st.empty()
     if st.button("AI 모의 면접 시작", type="primary", use_container_width=True):
-        action_ph.markdown('<div class="alert-ok">면접 대기실로 이동합니다!</div>', unsafe_allow_html=True)
+        action_ph.markdown(
+            '<div class="alert-ok">면접 대기실로 이동합니다!</div>',
+            unsafe_allow_html=True,
+        )
         time.sleep(1)
         st.switch_page("pages/interview.py")
 
@@ -365,13 +466,15 @@ with right_col:
 
     try:
         import base64
+
         def get_b64(path):
             with open(path, "rb") as f:
                 return base64.b64encode(f.read()).decode()
+
         ad_image_path = os.path.join(frontend_dir, "assets", "saja.png")
         ad_img_b64 = f"data:image/png;base64,{get_b64(ad_image_path)}"
     except:
-         ad_img_b64 = ""
+        ad_img_b64 = ""
 
     single_ad_banner_html = f"""
     <style>
@@ -420,15 +523,15 @@ with right_col:
     st.markdown(single_ad_banner_html, unsafe_allow_html=True)
 
 
-
-
 # 왼쪽 패널
 with left_col:
     try:
         import base64
+
         def get_b64(path):
             with open(path, "rb") as f:
                 return base64.b64encode(f.read()).decode()
+
         ad_image_path = os.path.join(frontend_dir, "assets", "AD.png")
         img1 = f"data:image/png;base64,{get_b64(ad_image_path)}"
         img2 = img1
@@ -472,7 +575,8 @@ setInterval(() => moveSlide(1), 5000);
 """
     st.markdown(slider_html, unsafe_allow_html=True)
 
-    st.markdown("""
+    st.markdown(
+        """
 <style>
 div[data-testid="stTabs"] { margin-top: 24px !important; background-color: #fcfcfc !important; border: none !important; border-radius: 16px !important; padding: 16px 20px 24px 20px !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important; }
 div[data-testid="stTabs"] > div[data-baseweb="tab-list"] { border-bottom: 2px solid #e1e4e8 !important; gap: 24px !important; padding: 0 4px !important; background: transparent !important; }
@@ -482,7 +586,9 @@ div[data-testid="stTabs"] > div[data-baseweb="tab-list"] button[aria-selected="t
 div[data-testid="stTabs"] > div[data-baseweb="tab-list"] button[aria-selected="true"]::after { content: '' !important; position: absolute !important; bottom: -2px !important; left: 0 !important; width: 100% !important; height: 3px !important; background: linear-gradient(90deg, #bb38d0, #9f24b5) !important; border-radius: 3px 3px 0 0 !important; z-index: 2 !important; }
 div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[data-testid="stVerticalBlockBorderWrapper"] { padding: 24px 0 0 0 !important; border: none !important; box-shadow: none !important; background: transparent !important; }
 </style>
-""", unsafe_allow_html=True)
+""",
+        unsafe_allow_html=True,
+    )
 
     tab1, tab2, tab3 = st.tabs(["추천 공고", "백엔드 트렌드", "게시판"])
 
@@ -504,7 +610,10 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
                     job_role = resume.get("job_role")
                     analysis_result = resume.get("analysis_result")
                     if job_role and analysis_result:
-                        parsed = {"job_role": job_role, "keywords": analysis_result.get("keywords", "")}
+                        parsed = {
+                            "job_role": job_role,
+                            "keywords": analysis_result.get("keywords", ""),
+                        }
 
                 payload.update({k: v for k, v in parsed.items() if v is not None})
                 data = search_jobs(payload)
@@ -516,10 +625,13 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
                 st.error(f"채용공고 조회 실패: {e}")
 
     # 백엔드 트렌드 탭
-    with tab2:  
+    with tab2:
         st.markdown("<br>", unsafe_allow_html=True)
         render_realtime_ai_news()
-        st.markdown("<p style='font-size:11px; color:#aaa; text-align:right; margin-top:20px;'>Powered by Tavily Search Engine</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<p style='font-size:11px; color:#aaa; text-align:right; margin-top:20px;'>Powered by Tavily Search Engine</p>",
+            unsafe_allow_html=True,
+        )
 
     # 게시판 탭
     with tab3:
@@ -527,9 +639,10 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
         render_memo_board(user_name)
 
 
-# AI tavily chatbot 모달 
+# AI tavily chatbot 모달
 def inject_chatbot_styles():
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     div[data-testid="stModal"] > div[data-testid="stDialog"] { margin: auto !important; }
     div[data-testid="stDialog"] > div > div { background-color: #f0f8ff !important; border-radius: 24px !important; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important; border: 1px solid rgba(0,0,0,0.05) !important; overflow-y: auto !important; max-height: 85vh !important; }
@@ -554,36 +667,59 @@ def inject_chatbot_styles():
     button[data-testid="stChatInputSubmitButton"]:active, div[data-testid="stChatInputSubmitButton"]:active { transform: scale(0.9) !important; }
     button[data-testid="stChatInputSubmitButton"] svg, div[data-testid="stChatInputSubmitButton"] svg { fill: #ffffff !important; color: #ffffff !important; width: 18px !important; height: 18px !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)) !important; }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 if "guide_chat" not in st.session_state:
     st.session_state.guide_chat = [
-        {"role": "assistant", "content": "안녕하세요! <strong>AIWORK 수석 어드바이저 사자개</strong>입니다. ✦\n\n플랫폼 사용법, 취업 트렌드, 직무 고민 등 무엇이든 물어보세요. 실시간 웹 검색으로 2026년 최신 데이터를 기반으로 답변드립니다."}
+        {
+            "role": "assistant",
+            "content": "안녕하세요! <strong>AIWORK 수석 어드바이저 사자개</strong>입니다. ✦\n\n플랫폼 사용법, 취업 트렌드, 직무 고민 등 무엇이든 물어보세요. 실시간 웹 검색으로 2026년 최신 데이터를 기반으로 답변드립니다.",
+        }
     ]
+
 
 @st.dialog(" ", width="medium")
 def chatbot_modal():
     inject_chatbot_styles()
-    st.markdown("""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin-bottom: 24px;"> <h2 style="font-weight: 700; font-size: 24px; color: #1d1d1f; letter-spacing: -0.5px; margin: 0 0 8px 0; padding: 0;">AIWORK 가이드 봇</h2> <div class="advisor-badge"> 실시간 탐색 연동 · 2026 채용 동향 팩트체크 </div> </div>""", unsafe_allow_html=True)
+    st.markdown(
+        """<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin-bottom: 24px;"> <h2 style="font-weight: 700; font-size: 24px; color: #1d1d1f; letter-spacing: -0.5px; margin: 0 0 8px 0; padding: 0;">AIWORK 가이드 봇</h2> <div class="advisor-badge"> 실시간 탐색 연동 · 2026 채용 동향 팩트체크 </div> </div>""",
+        unsafe_allow_html=True,
+    )
 
     use_web_search = st.toggle("웹 검색 기능 켜기", value=False)
-    if use_web_search: st.caption("활성화됨: 면접 동향, 직무 전망 등 최신 정보가 필요할 때 유용합니다.")
-    else: st.caption("비활성화됨: 플랫폼 사용법 등 일반적인 질문에 빠르게 답변합니다.")
+    if use_web_search:
+        st.caption(
+            "활성화됨: 면접 동향, 직무 전망 등 최신 정보가 필요할 때 유용합니다."
+        )
+    else:
+        st.caption("비활성화됨: 플랫폼 사용법 등 일반적인 질문에 빠르게 답변합니다.")
 
     chat_container = st.container(height=600)
 
     for chat in st.session_state.guide_chat:
         with chat_container:
             if chat["role"] == "assistant":
-                st.markdown(f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{chat["content"]}</div></div></div>""", unsafe_allow_html=True)
+                st.markdown(
+                    f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{chat["content"]}</div></div></div>""",
+                    unsafe_allow_html=True,
+                )
             else:
-                st.markdown(f"""<div style="display:flex; justify-content:flex-end; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div class="user-bubble">{chat["content"]}</div></div>""", unsafe_allow_html=True)
+                st.markdown(
+                    f"""<div style="display:flex; justify-content:flex-end; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div class="user-bubble">{chat["content"]}</div></div>""",
+                    unsafe_allow_html=True,
+                )
 
     if prompt := st.chat_input("예: 개발자 요새 전망 어때? / AIWORK는 어떻게 써?"):
         st.session_state.guide_chat.append({"role": "user", "content": prompt})
 
         with chat_container:
-            st.markdown(f"""<div style="display:flex; justify-content:flex-end; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div class="user-bubble">{prompt}</div></div>""", unsafe_allow_html=True)
+            st.markdown(
+                f"""<div style="display:flex; justify-content:flex-end; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div class="user-bubble">{prompt}</div></div>""",
+                unsafe_allow_html=True,
+            )
 
             web_info = ""
             if use_web_search:
@@ -595,16 +731,24 @@ def chatbot_modal():
 
             for chunk in get_home_guide_response_stream(prompt, web_info):
                 full_reply += chunk
-                placeholder.markdown(f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{full_reply}▌</div></div></div>""", unsafe_allow_html=True)
+                placeholder.markdown(
+                    f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{full_reply}▌</div></div></div>""",
+                    unsafe_allow_html=True,
+                )
 
-            placeholder.markdown(f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{full_reply}</div></div></div>""", unsafe_allow_html=True)
+            placeholder.markdown(
+                f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{full_reply}</div></div></div>""",
+                unsafe_allow_html=True,
+            )
 
         st.session_state.guide_chat.append({"role": "assistant", "content": full_reply})
+
 
 @st.fragment
 def render_fab_button():
     st.markdown('<div id="fab-marker"></div>', unsafe_allow_html=True)
     if st.button("chatbot_trigger_btn", key="fab_btn"):
         chatbot_modal()
+
 
 render_fab_button()

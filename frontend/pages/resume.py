@@ -17,7 +17,7 @@ if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
 from utils.api_utils import api_create_resume, api_list_resumes, api_delete_resume
-from utils.function import inject_custom_header, require_login 
+from utils.function import inject_custom_header, require_login
 
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
@@ -25,13 +25,43 @@ user_id = require_login()
 inject_custom_header()
 
 
-
 # CSS 스타일링
-st.markdown("""
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
-html, body, p, div, h1, h2, h3, h4, h5, h6, span, label, li { font-family: 'Pretendard', sans-serif; color: #000; }
+:root { color-scheme: light !important; }
+html, body, .stApp, p, div, h1, h2, h3, h4, h5, h6, span, label, li, a, td, th, small, strong, b, i, em { font-family: 'Pretendard', sans-serif; color: #111 !important; color-scheme: light !important; }
+* { color: #111 !important; }
 .stApp { background-color: #f5f5f5 !important; background-image: none !important; }
+[data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] > .main { background-color: #f5f5f5 !important; color-scheme: light !important; }
+[data-testid="stHeader"], [data-testid="stToolbar"], footer { visibility: hidden; color-scheme: light !important; }
+
+/* === Streamlit 내부 컴포넌트 다크모드 차단 === */
+[data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"],
+[data-testid="stColumn"], [data-testid="stForm"],
+[data-testid="stMarkdownContainer"] { color: #111 !important; }
+[data-testid="stDialog"] > div > div,
+[data-testid="stDialog"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stDialog"] [data-testid="stVerticalBlock"],
+section[data-testid="stDialog"] { background-color: #ffffff !important; color: #111 !important; }
+[data-baseweb="input"], [data-baseweb="input"] > div,
+[data-baseweb="select"], [data-baseweb="select"] > div,
+[data-baseweb="textarea"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"], [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
+/* === 모든 Streamlit 버튼 배경 강제 === */
+[data-testid="stButton"] > button, [data-testid="stLinkButton"] > a,
+[data-testid="stFormSubmitButton"] > button { background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important; }
+[data-testid="stButton"] > button p, [data-testid="stLinkButton"] > a p { color: #111 !important; }
+button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
+    background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; border: none !important; color: white !important;
+}
+button[kind="primary"] p, button[kind="primary"] span { color: #fff !important; }
+[data-testid="stDataFrame"], [data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] iframe,
+[data-testid="stTable"], [data-testid="stTable"] table, [data-testid="stTable"] th,
+[data-testid="stTable"] td { background-color: #ffffff !important; color: #111 !important; }
+[data-testid="stVerticalBlockBorderWrapper"] > div { background-color: transparent !important; }
 .block-container { max-width: 1050px !important; padding-top: 4rem !important; padding-bottom: 5rem !important; }
 
 .hero-title { font-size: 38px; font-weight: 800; color: #000; letter-spacing: -0.5px; margin-bottom: 12px; margin-top: 10px; }
@@ -84,15 +114,24 @@ hr { border-color: #e2e8f0 !important; margin: 2rem 0 !important; border-width: 
 /* 휴지통 버튼 투명화 */
 .delete-btn-wrapper button { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; font-size: 18px !important; }
 .delete-btn-wrapper button:hover { transform: scale(1.1); color: #ef4444 !important; }
+@media (max-width: 768px) {
+    .block-container { padding-top: 2rem !important; padding-bottom: 3rem !important; }
+    .hero-title { font-size: 28px; }
+    .resume-card { padding: 18px; }
+    .premium-card { padding: 20px; }
+}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ─── 헬퍼 함수 ───
 def extract_resume_text(uploaded_file) -> str:
-    file_bytes = uploaded_file.getvalue() # read() 대신 getvalue() 사용 권장
+    file_bytes = uploaded_file.getvalue()  # read() 대신 getvalue() 사용 권장
     try:
         import fitz
+
         doc = fitz.open(stream=file_bytes, filetype="pdf")
         return "".join(page.get_text() for page in doc).strip()
     except Exception:
@@ -107,30 +146,42 @@ if "selected_resume" not in st.session_state:
     st.session_state.selected_resume = None
 
 
-
-# 팝업 모달: 새 이력서 등록 
+# 팝업 모달: 새 이력서 등록
 @st.dialog("새 이력서 등록 및 AI 분석", width="large")
 def setup_modal():
-    st.markdown("<p style='color:#64748b; font-size:15px; margin-bottom:20px;'>이력서를 업로드하면 AI가 분석하여 보관함에 영구 저장합니다.</p>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='color:#64748b; font-size:15px; margin-bottom:20px;'>이력서를 업로드하면 AI가 분석하여 보관함에 영구 저장합니다.</p>",
+        unsafe_allow_html=True,
+    )
 
     selected_role = st.selectbox(
         "이 이력서는 어떤 직무용인가요?",
-        ["Python 백엔드 개발자", "Java 백엔드 개발자", "AI/ML 엔지니어", "데이터 엔지니어", "프론트엔드 개발자"]
+        [
+            "Python 백엔드 개발자",
+            "Java 백엔드 개발자",
+            "AI/ML 엔지니어",
+            "데이터 엔지니어",
+            "프론트엔드 개발자",
+        ],
     )
-    
+
     with st.form("resume_upload_form"):
         uploaded_file = st.file_uploader("PDF 이력서를 올려주세요", type=["pdf", "txt"])
-        submit_btn = st.form_submit_button("분석하기", type="primary", use_container_width=True)
-        
+        submit_btn = st.form_submit_button(
+            "분석하기", type="primary", use_container_width=True
+        )
+
         if submit_btn:
             if not uploaded_file:
                 st.warning("이력서 파일을 업로드해주세요!")
             else:
                 with st.spinner("이력서 분석중입니다..."):
                     resume_text = extract_resume_text(uploaded_file)
-                    
+
                     if not resume_text:
-                        st.error("이력서에서 텍스트를 추출할 수 없습니다. 정상적인 PDF/TXT 파일인지 확인해주세요.")
+                        st.error(
+                            "이력서에서 텍스트를 추출할 수 없습니다. 정상적인 PDF/TXT 파일인지 확인해주세요."
+                        )
                         time.sleep(2)
                         st.rerun()
 
@@ -144,18 +195,24 @@ def setup_modal():
                         st.error(result)
                         time.sleep(2)
                         st.rerun()
-                    
+
                     st.success("분석 완료! 이력서가 보관함에 안전하게 저장되었습니다.")
-                    time.sleep(1.5)  
-                    st.rerun()  
+                    time.sleep(1.5)
+                    st.rerun()
 
 
 # 화면 UI 구현
 # ─── 상태 1: 이력서 보관함 (리스트 뷰) ───
 if st.session_state.selected_resume is None:
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("<div class='hero-title'>내 이력서 <span>보관함</span></div>", unsafe_allow_html=True)
-    st.markdown("<div class='hero-subtitle'>저장된 이력서를 선택하여 AI 딥섹션 결과를 확인하고 모의면접을 시작하세요.</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='hero-title'>내 이력서 <span>보관함</span></div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='hero-subtitle'>저장된 이력서를 선택하여 AI 딥섹션 결과를 확인하고 모의면접을 시작하세요.</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
 
     # API에서 내 이력서 목록 가져오기
@@ -166,7 +223,7 @@ if st.session_state.selected_resume is None:
     saved_resumes = result.get("items", [])
 
     cols = st.columns(3, gap="medium")
-    
+
     # [1] 첫 번째 칸: "새 이력서 등록" 버튼 (모달 호출)
     with cols[0]:
         st.markdown("<div class='new-resume-card'>", unsafe_allow_html=True)
@@ -184,10 +241,13 @@ if st.session_state.selected_resume is None:
                 if isinstance(created_at, str)
                 else created_at.strftime("%Y.%m.%d")
             )
-            match_rate = r["analysis_result"].get("match_rate", 0) if r["analysis_result"] else 0
+            match_rate = (
+                r["analysis_result"].get("match_rate", 0) if r["analysis_result"] else 0
+            )
 
             # 카드 HTML 컨테이너
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class='resume-card'>
                 <div>
                     <div class='r-role'>{r['job_role']}</div>
@@ -195,17 +255,24 @@ if st.session_state.selected_resume is None:
                     <div class='r-date'>등록일: {date_str} &nbsp;|&nbsp; 적합도: <b>{match_rate}%</b></div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             c1, c2 = st.columns([4, 1])
             with c1:
                 st.markdown("<div style='margin-top:-60px;'>", unsafe_allow_html=True)
-                if st.button("대시보드", key=f"view_{r['id']}", use_container_width=True):
+                if st.button(
+                    "대시보드", key=f"view_{r['id']}", use_container_width=True
+                ):
                     st.session_state.selected_resume = r
                     st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
             with c2:
-                st.markdown("<div class='delete-btn-wrapper' style='margin-top:-60px;'>", unsafe_allow_html=True)
+                st.markdown(
+                    "<div class='delete-btn-wrapper' style='margin-top:-60px;'>",
+                    unsafe_allow_html=True,
+                )
                 if st.button("삭제", key=f"del_{r['id']}", help="이력서 삭제"):
                     api_delete_resume(r["id"])
                     st.rerun()
@@ -219,7 +286,7 @@ else:
     target_role = r.get("job_role", "직무 미상")
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    
+
     # 상단 내비게이션 (뒤로 가기)
     col_back, col_title = st.columns([1, 6])
     with col_back:
@@ -227,8 +294,14 @@ else:
             st.session_state.selected_resume = None
             st.rerun()
 
-    st.markdown(f"<div class='hero-title'>AI 이력서 <span>Deep Analysis</span></div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='hero-subtitle'><b>{r['title']}</b> ({target_role}) 분석 결과입니다.</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='hero-title'>AI 이력서 <span>Deep Analysis</span></div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<div class='hero-subtitle'><b>{r['title']}</b> ({target_role}) 분석 결과입니다.</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
 
     col_l, col_r = st.columns([1, 1.2], gap="large")
@@ -254,16 +327,25 @@ else:
     with col_r:
         questions = data.get("expected_questions", [])
         q_boxes_html = "".join(
-            [f"<div class='q-box'><div class='q-num'>Point {i+1}</div><div class='q-text'>{q}</div></div>" for i, q in enumerate(questions)]
+            [
+                f"<div class='q-box'><div class='q-num'>Point {i+1}</div><div class='q-text'>{q}</div></div>"
+                for i, q in enumerate(questions)
+            ]
         )
-        no_questions_html = "<div style='color:#94a3b8;'>질문을 생성하지 못했습니다.</div>"
-        
+        no_questions_html = (
+            "<div style='color:#94a3b8;'>질문을 생성하지 못했습니다.</div>"
+        )
+
         st.markdown(
             f"<div class='premium-card' style='border-left: 5px solid #bb38d0;'><div class='card-header'>면접관의 예상 압박 포인트 TOP</div>{q_boxes_html if q_boxes_html else no_questions_html}</div>",
             unsafe_allow_html=True,
         )
 
-        if st.button("이 이력서로 모의면접 바로 시작하기", type="primary", use_container_width=True):
+        if st.button(
+            "이 이력서로 모의면접 바로 시작하기",
+            type="primary",
+            use_container_width=True,
+        ):
             # 면접 페이지에서 사용할 수 있도록 세션 세팅
             st.session_state.job_role = target_role
             st.session_state.resume_text = r["resume_text"]
@@ -273,4 +355,9 @@ else:
 
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander("추출된 이력서 텍스트 원본 확인"):
-            st.text_area("수정이 불가능한 읽기 전용 텍스트입니다.", r["resume_text"], height=200, disabled=True)
+            st.text_area(
+                "수정이 불가능한 읽기 전용 텍스트입니다.",
+                r["resume_text"],
+                height=200,
+                disabled=True,
+            )

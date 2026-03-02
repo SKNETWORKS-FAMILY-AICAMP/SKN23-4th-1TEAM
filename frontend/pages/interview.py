@@ -51,9 +51,69 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-    * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; box-sizing: border-box; }
-    html, body, .stApp { background-color: #f8f9fa !important; }
-    [data-testid="stHeader"], footer { visibility: hidden; }
+    :root { color-scheme: light !important; }
+    * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; box-sizing: border-box; color-scheme: light !important; color: #111 !important; }
+    html, body, .stApp { background-color: #f8f9fa !important; color: #111 !important; color-scheme: light !important; }
+    [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] > .main { background-color: #f8f9fa !important; color-scheme: light !important; }
+    [data-testid="stHeader"], [data-testid="stToolbar"], footer { visibility: hidden; color-scheme: light !important; }
+    p, span, div, label, h1, h2, h3, h4, h5, h6, li, a, td, th, small, strong, b, i, em { color: #111 !important; }
+
+    /* === Streamlit 내부 컴포넌트 다크모드 완전 차단 === */
+    [data-testid="stVerticalBlock"],
+    [data-testid="stHorizontalBlock"],
+    [data-testid="stColumn"],
+    [data-testid="stForm"],
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stRadio"],
+    [data-testid="stRadio"] > div,
+    [data-testid="stSelectbox"],
+    [data-testid="stSelectbox"] > div,
+    [data-testid="stChatMessage"],
+    [data-testid="stChatMessage"] > div { color: #111 !important; }
+
+    /* Dialog / Modal - 면접 설정 모달 */
+    [data-testid="stDialog"] > div > div,
+    [data-testid="stDialog"] [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stDialog"] [data-testid="stVerticalBlock"],
+    [data-testid="stDialog"] [data-testid="stHorizontalBlock"],
+    [data-testid="stDialog"] [data-testid="stColumn"],
+    section[data-testid="stDialog"] { background-color: #ffffff !important; color: #111 !important; }
+
+    /* Baseweb 입력/선택 컴포넌트 */
+    [data-baseweb="input"], [data-baseweb="input"] > div,
+    [data-baseweb="select"], [data-baseweb="select"] > div,
+    [data-baseweb="textarea"],
+    [data-baseweb="popover"] > div,
+    [data-baseweb="menu"], [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
+    [data-baseweb="radio"] > div > div > div { color: #111 !important; }
+
+    /* 채팅 메시지 버블 */
+    [data-testid="stChatMessage"] { background-color: #ffffff !important; }
+    .stChatMessage { background-color: #ffffff !important; }
+
+    /* === 모든 Streamlit 버튼 배경 강제 === */
+    [data-testid="stButton"] > button,
+    [data-testid="stLinkButton"] > a,
+    [data-testid="stFormSubmitButton"] > button {
+        background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important;
+    }
+    [data-testid="stButton"] > button p, [data-testid="stLinkButton"] > a p { color: #111 !important; }
+    button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
+        background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important;
+        border: none !important; color: white !important;
+    }
+    button[kind="primary"] p, button[kind="primary"] span,
+    [data-testid="stButton"] > button[kind="primary"] p { color: #fff !important; }
+    .header-end-btn, .header-end-btn * { color: #fff !important; }
+    .header-badge { color: #fff !important; }
+
+    /* === 테이블/데이터프레임 === */
+    [data-testid="stDataFrame"], [data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] iframe,
+    [data-testid="stTable"], [data-testid="stTable"] table,
+    [data-testid="stTable"] th, [data-testid="stTable"] td { background-color: #ffffff !important; color: #111 !important; }
+
+    /* === 컨테이너 내부 === */
+    [data-testid="stVerticalBlockBorderWrapper"] > div { background-color: transparent !important; }
     
     /* 결과 모달 관련 스타일 */
     .result-card { background: #ffffff; border-radius: 16px; padding: 32px 24px; text-align: center; border: none; box-shadow: 0 4px 24px rgba(0,0,0,0.07); margin-bottom: 24px; }
@@ -151,6 +211,11 @@ st.markdown(
         width: 18px !important; 
         height: 18px !important; 
     }
+    @media (max-width: 768px) {
+        .premium-chat-header { flex-direction: column; gap: 12px; padding: 14px 16px; border-radius: 16px; }
+        .header-end-btn { width: 100%; text-align: center; padding: 10px 16px; }
+        div[data-testid="stChatInput"] { border-radius: 18px !important; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -162,6 +227,7 @@ def extract_resume_text(uploaded_file) -> str:
     file_bytes = uploaded_file.getvalue()
     try:
         import fitz
+
         return "".join(
             page.get_text() for page in fitz.open(stream=file_bytes, filetype="pdf")
         ).strip()
@@ -170,6 +236,7 @@ def extract_resume_text(uploaded_file) -> str:
             return file_bytes.decode("utf-8", errors="ignore")
         except Exception:
             return ""
+
 
 def generate_tts(text: str) -> bytes | None:
     api_key = os.getenv("OPENAI_API_KEY", "")
@@ -184,18 +251,28 @@ def generate_tts(text: str) -> bytes | None:
     except Exception:
         return None
 
-def create_session(user_id, job_role, difficulty, persona, resume_used, resume_id=None, manual_tech_stack=None):
+
+def create_session(
+    user_id,
+    job_role,
+    difficulty,
+    persona,
+    resume_used,
+    resume_id=None,
+    manual_tech_stack=None,
+):
     success, result = api_start_interview(
         job_role=job_role,
         difficulty=difficulty,
         persona=persona,
         resume_used=resume_used,
         resume_id=resume_id,
-        manual_tech_stack=manual_tech_stack
+        manual_tech_stack=manual_tech_stack,
     )
     if not success:
         raise RuntimeError(result)
     return result.get("session_id")
+
 
 def get_questions_by_role(job_role, difficulty, limit=3):
     success, result = api_get_question_pool(job_role, difficulty, limit)
@@ -223,23 +300,25 @@ def process_answer(answer_text: str) -> bool:
         "job_role": st.session_state.job_role,
         "difficulty": st.session_state.difficulty,
         "persona_style": st.session_state.get("persona_style", "깐깐한 기술팀장"),
-        "user_id": target_user_id,  
+        "user_id": target_user_id,
         "resume_text": st.session_state.get("resume_text", ""),
         "next_main_question": next_q,
         "followup_count": st.session_state.get("current_followup_count", 0),
-        "attitude": None
+        "attitude": None,
     }
 
     try:
-        res = requests.post(f"{API_BASE_URL.rstrip('/')}/infer/evaluate-turn", json=payload, timeout=30)
-        
+        res = requests.post(
+            f"{API_BASE_URL.rstrip('/')}/infer/evaluate-turn", json=payload, timeout=30
+        )
+
         if res.status_code == 200:
             result = res.json()
             success = True
         else:
             success = False
             result = f"서버 에러 ({res.status_code}): {res.text}"
-            
+
     except Exception as e:
         success = False
         result = str(e)
@@ -268,17 +347,17 @@ def process_answer(answer_text: str) -> bool:
             "answer": answer_text,
             "is_followup": is_followup,
             "score": score,
-            "feedback": feedback_text
+            "feedback": feedback_text,
         }
         requests.post(
             f"{API_BASE_URL.rstrip('/')}/interview/details",
             json=detail_payload,
             headers={"Authorization": f"Bearer {access_token}"} if access_token else {},
-            timeout=10
+            timeout=10,
         )
     except Exception as e:
         print(f"상세 기록 DB 저장 실패: {e}")
-    
+
     if is_followup:
         st.session_state.current_followup_count += 1
     else:
@@ -298,8 +377,8 @@ def process_answer(answer_text: str) -> bool:
     tts = generate_tts(ai_reply)
     if tts:
         st.session_state.latest_audio_content = tts
-        
-    return True # 정상 완료 시 True 반환
+
+    return True  # 정상 완료 시 True 반환
 
 
 # 상태 초기화
@@ -340,12 +419,14 @@ def evaluation_modal():
             requests.put(
                 f"{API_BASE_URL.rstrip('/')}/interview/sessions/{st.session_state.db_session_id}",
                 json={"total_score": total_score, "status": "COMPLETED"},
-                headers={"Authorization": f"Bearer {access_token}"} if access_token else {},
-                timeout=10
+                headers=(
+                    {"Authorization": f"Bearer {access_token}"} if access_token else {}
+                ),
+                timeout=10,
             )
         except Exception as e:
             print(f"세션 종료 DB 업데이트 실패: {e}")
-        st.session_state.is_db_ended = True 
+        st.session_state.is_db_ended = True
 
     st.markdown(
         f'<div class="score-circle"><span class="score-number">{total_score}</span><span class="score-label">/ 100</span></div>',
@@ -368,12 +449,11 @@ def evaluation_modal():
                 st.session_state.get("difficulty"),
                 eval_resume_text,
             )
-            
+
             import re
+
             st.session_state.evaluation_result = re.sub(
-                r"\*\*[\d\.]+\s*/\s*100점\*\*",
-                f"**{total_score} / 100점**",
-                raw_eval
+                r"\*\*[\d\.]+\s*/\s*100점\*\*", f"**{total_score} / 100점**", raw_eval
             )
 
     st.markdown(st.session_state.evaluation_result)
@@ -557,8 +637,14 @@ def interview_setup_modal():
                 difficulty=difficulty,
                 persona=persona_style,
                 resume_used=is_resume_used,
-                resume_id=st.session_state.get("resume_id") if has_saved_resume else None,
-                manual_tech_stack=manual_tech_stack if not has_saved_resume and not uploaded_resume else None
+                resume_id=(
+                    st.session_state.get("resume_id") if has_saved_resume else None
+                ),
+                manual_tech_stack=(
+                    manual_tech_stack
+                    if not has_saved_resume and not uploaded_resume
+                    else None
+                ),
             )
         except Exception as e:
             st.error(f"세션 생성 오류: {e}")
@@ -566,50 +652,67 @@ def interview_setup_modal():
 
         if final_resume_text and db_session_id and is_resume_used:
             with st.spinner("이력서를 벡터 DB에 안전하게 저장 중입니다..."):
-                chunk_count = store_resume(final_resume_text, user_id=str(db_session_id))
-                time.sleep(0.5) 
-                
+                chunk_count = store_resume(
+                    final_resume_text, user_id=str(db_session_id)
+                )
+                time.sleep(0.5)
+
             if chunk_count > 0:
-                st.toast(f"이력서가 {chunk_count}개의 청크로 분할되어 벡터 DB에 저장되었습니다!", icon="📄")
-                time.sleep(0.5) 
+                st.toast(
+                    f"이력서가 {chunk_count}개의 청크로 분할되어 벡터 DB에 저장되었습니다!",
+                    icon="📄",
+                )
+                time.sleep(0.5)
 
         try:
             fixed_first_q = "<b>간단하게 자기소개를 부탁드립니다.</b>"
-            
+
             if final_resume_text:
-                with st.spinner("지원자님의 경험을 바탕으로 날카로운 실무 질문을 생성 중입니다..."):
-                    analysis_result = analyze_resume_comprehensive(final_resume_text, job_role)
+                with st.spinner(
+                    "지원자님의 경험을 바탕으로 날카로운 실무 질문을 생성 중입니다..."
+                ):
+                    analysis_result = analyze_resume_comprehensive(
+                        final_resume_text, job_role
+                    )
                     expected_qs = analysis_result.get("expected_questions", [])
-                    
+
                     if expected_qs and len(expected_qs) > 0:
                         remain_count = q_count - 1
-                        
+
                         # 이력서(AI) 질문과 직무 스택(DB) 랜덤 질문의 비율을 반반씩 혼합 (홀수면 이력서 1개 추가)
                         tech_count = remain_count // 2
                         resume_count = remain_count - tech_count
-                        
+
                         resume_qs_subset = expected_qs[:resume_count]
-                        
+
                         # DB에서 기술 질문 가져오기
-                        tech_qs_data = get_questions_by_role(job_role, difficulty, limit=tech_count)
-                        tech_qs = [q["question"] for q in tech_qs_data if "question" in q]
-                        
+                        tech_qs_data = get_questions_by_role(
+                            job_role, difficulty, limit=tech_count
+                        )
+                        tech_qs = [
+                            q["question"] for q in tech_qs_data if "question" in q
+                        ]
+
                         # 만약 랜덤 기술 질문이 부족할 경우 남은 만큼 이력서 질문으로 메우기
                         if len(tech_qs) < tech_count:
                             shortfall = tech_count - len(tech_qs)
-                            resume_qs_subset = expected_qs[:resume_count + shortfall]
-                            
+                            resume_qs_subset = expected_qs[: resume_count + shortfall]
+
                         db_questions = [fixed_first_q] + resume_qs_subset + tech_qs
                     else:
-                        tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
-                        db_questions = [fixed_first_q] + [q["question"] for q in tech_qs if "question" in q]
+                        tech_qs = get_questions_by_role(
+                            job_role, difficulty, limit=q_count - 1
+                        )
+                        db_questions = [fixed_first_q] + [
+                            q["question"] for q in tech_qs if "question" in q
+                        ]
             else:
                 tech_qs = get_questions_by_role(job_role, difficulty, limit=q_count - 1)
                 db_questions = [fixed_first_q] + [q["question"] for q in tech_qs]
 
             if len(db_questions) == 1:
                 raise ValueError("질문이 생성되지 않았습니다.")
-                
+
         except Exception:
             db_questions = ["간단하게 자기소개를 부탁드립니다."] + [
                 f"{job_role} 관련 핵심 기술을 설명해주세요." for _ in range(q_count - 1)
@@ -703,7 +806,7 @@ if st.session_state.interview_mode == "text":
         """,
         unsafe_allow_html=True,
     )
-    
+
     chat_html = """
     <style>
     * { font-family: 'Pretendard', -apple-system, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
@@ -735,11 +838,17 @@ if st.session_state.interview_mode == "text":
         content = message.get("content", "")
         score = message.get("score")
 
-        content_str = content.get("content", "") if isinstance(content, dict) else str(content)
+        content_str = (
+            content.get("content", "") if isinstance(content, dict) else str(content)
+        )
         is_followup = "꼬리질문" in content_str
 
         if role == "user":
-            score_badge = f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>' if score is not None else ""
+            score_badge = (
+                f'<div style="font-size: 11px; font-weight: 600; color: #888; margin-top: 6px; margin-right: 4px;">AI 평가 점수: {score:.1f} / 10</div>'
+                if score is not None
+                else ""
+            )
             chat_html += f"""
             <div style="display:flex; justify-content:flex-end; margin-bottom:16px; flex-direction:column; align-items:flex-end; width: 100%;">
                 <div class="user-bubble">{content_str}</div>
@@ -747,7 +856,11 @@ if st.session_state.interview_mode == "text":
             </div>
             """
         else:
-            followup_badge = '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>' if is_followup else ""
+            followup_badge = (
+                '<span style="background: #fff0f0; color: #e03131; font-size: 10px; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight:700;">꼬리질문</span>'
+                if is_followup
+                else ""
+            )
             chat_html += f"""
             <div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:16px; width: 100%;">
                 <div style="font-size: 32px; line-height: 1; flex-shrink: 0;">👾</div>
@@ -773,7 +886,9 @@ if st.session_state.interview_mode == "text":
     components.html(chat_html, height=700, scrolling=False)
 
     if st.session_state.latest_audio_content:
-        st.audio(st.session_state.latest_audio_content, format="audio/mp3", autoplay=True)
+        st.audio(
+            st.session_state.latest_audio_content, format="audio/mp3", autoplay=True
+        )
         st.session_state.latest_audio_content = None
 
     prompt = st.chat_input("메시지를 입력하세요")
@@ -781,7 +896,7 @@ if st.session_state.interview_mode == "text":
         with st.spinner("답변을 분석 중입니다..."):
             # 에러가 나면 False를 반환하여 화면 새로고침(rerun)을 막고 에러 메시지를 띄움
             is_success = process_answer(prompt)
-        
+
         # 성공했을 때만 다음 턴으로 넘어가기 위해 화면을 새로고침
         if is_success:
             st.rerun()
@@ -1464,7 +1579,8 @@ else:
             .replace(
                 "__USER_ID__",
                 json.dumps(
-                    str(st.session_state.get("db_session_id", "guest")), ensure_ascii=False
+                    str(st.session_state.get("db_session_id", "guest")),
+                    ensure_ascii=False,
                 ),
             )
             .replace(

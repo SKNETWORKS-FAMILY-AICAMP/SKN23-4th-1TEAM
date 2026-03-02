@@ -68,17 +68,59 @@ st.markdown(
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
 
+    :root { color-scheme: light !important; }
+
     *, *::before, *::after {
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
         box-sizing: border-box;
+        color: #111 !important;
     }
 
     html, body, .stApp,
     [data-testid="stAppViewContainer"],
-    [data-testid="stMain"] {
+    [data-testid="stAppViewContainer"] > .main,
+    [data-testid="stMain"],
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"] {
         background: #f0f2f6 !important;
         color: #111111 !important;
+        color-scheme: light !important;
     }
+    p, span, div, label, h1, h2, h3, h4, h5, h6, li, a, td, th, small, strong, b, i, em, caption { color: #111 !important; }
+
+    /* === Streamlit 내부 컴포넌트 다크모드 차단 === */
+    [data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"],
+    [data-testid="stColumn"], [data-testid="stForm"],
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stRadio"], [data-testid="stRadio"] > div,
+    [data-testid="stSelectbox"], [data-testid="stSelectbox"] > div,
+    [data-testid="stMetric"], [data-testid="stDataFrame"],
+    [data-testid="stTable"] { color: #111 !important; }
+    [data-testid="stDialog"] > div > div,
+    [data-testid="stDialog"] [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stDialog"] [data-testid="stVerticalBlock"],
+    section[data-testid="stDialog"] { background-color: #ffffff !important; color: #111 !important; }
+    [data-baseweb="input"], [data-baseweb="input"] > div,
+    [data-baseweb="select"], [data-baseweb="select"] > div,
+    [data-baseweb="textarea"],
+    [data-baseweb="popover"] > div,
+    [data-baseweb="menu"], [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
+    [data-baseweb="radio"] > div > div > div { color: #111 !important; }
+    /* === 모든 Streamlit 버튼 배경 강제 === */
+    [data-testid="stButton"] > button, [data-testid="stLinkButton"] > a,
+    [data-testid="stFormSubmitButton"] > button { background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important; }
+    [data-testid="stButton"] > button p, [data-testid="stLinkButton"] > a p { color: #111 !important; }
+    button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
+        background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; border: none !important; color: white !important;
+    }
+    button[kind="primary"] p, button[kind="primary"] span { color: #fff !important; }
+
+    /* === 테이블/데이터프레임 배경 강제 (관리자 회원관리 표) === */
+    [data-testid="stDataFrame"], [data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] iframe,
+    [data-testid="stTable"], [data-testid="stTable"] table,
+    [data-testid="stTable"] th, [data-testid="stTable"] td,
+    .stDataFrame, .stDataFrame > div { background-color: #ffffff !important; color: #111 !important; }
+    [data-testid="stVerticalBlockBorderWrapper"] > div { background-color: transparent !important; }
 
     [data-testid="stSidebar"] { display: none !important; }
     header[data-testid="stHeader"] { display: none !important; }
@@ -640,15 +682,21 @@ with content_col:
                             else:
                                 st.error(f"변경 실패: {res}")
 
-
                     # 관리자 권한 관리
-                    st.markdown('<hr style="border:none;border-top:1px solid #f0f2f6;margin:16px 0;">', unsafe_allow_html=True)
-                    st.markdown('<p style="font-size:14px;font-weight:700;color:#374151;margin:0 0 12px 0;">관리자 권한 관리</p>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<hr style="border:none;border-top:1px solid #f0f2f6;margin:16px 0;">',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        '<p style="font-size:14px;font-weight:700;color:#374151;margin:0 0 12px 0;">관리자 권한 관리</p>',
+                        unsafe_allow_html=True,
+                    )
 
                     admins = [row for row in data if row.get("role") == "admin"]
                     if admins:
                         admin_names = ", ".join(
-                            row.get("name") or row.get("email") or f"id:{row['id']}" for row in admins
+                            row.get("name") or row.get("email") or f"id:{row['id']}"
+                            for row in admins
                         )
                         st.markdown(
                             f'<p style="font-size:12px;color:#6b7280;margin:0 0 12px 0;">현재 관리자: <strong style="color:#3b82f6;">{admin_names}</strong></p>',
@@ -670,9 +718,18 @@ with content_col:
                     with role_col2:
                         rc1, rc2 = st.columns(2)
                         with rc1:
-                            if st.button("관리자 부여", type="primary", use_container_width=True, key="grant_admin"):
+                            if st.button(
+                                "관리자 부여",
+                                type="primary",
+                                use_container_width=True,
+                                key="grant_admin",
+                            ):
                                 uid = int(target_role_user.split(":")[0])
-                                res = run_remote_sql(server_ip, "UPDATE users SET role = 'admin' WHERE id = %s", args=[uid])
+                                res = run_remote_sql(
+                                    server_ip,
+                                    "UPDATE users SET role = 'admin' WHERE id = %s",
+                                    args=[uid],
+                                )
                                 if "SUCCESS" in res:
                                     st.success("관리자 권한이 부여됐습니다.")
                                     time.sleep(1)
@@ -680,9 +737,17 @@ with content_col:
                                 else:
                                     st.error(f"실패: {res}")
                         with rc2:
-                            if st.button("권한 해제", use_container_width=True, key="revoke_admin"):
+                            if st.button(
+                                "권한 해제",
+                                use_container_width=True,
+                                key="revoke_admin",
+                            ):
                                 uid = int(target_role_user.split(":")[0])
-                                res = run_remote_sql(server_ip, "UPDATE users SET role = 'user' WHERE id = %s", args=[uid])
+                                res = run_remote_sql(
+                                    server_ip,
+                                    "UPDATE users SET role = 'user' WHERE id = %s",
+                                    args=[uid],
+                                )
                                 if "SUCCESS" in res:
                                     st.warning("관리자 권한이 해제됐습니다.")
                                     time.sleep(1)

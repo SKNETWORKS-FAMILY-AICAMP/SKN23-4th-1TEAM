@@ -21,23 +21,54 @@ st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
 
 # CSS (80% 스케일링 + 🚫 스크롤 완전 잠금 적용)
-st.markdown("""
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Pretendard', sans-serif; }
+:root { color-scheme: light !important; }
+* { font-family: 'Pretendard', sans-serif; color-scheme: light !important; color: #111 !important; }
+p, span, div, label, h1, h2, h3, h4, h5, h6, li, a, td, th, small, strong, b, i, em { color: #111 !important; }
 
-html, body, [data-testid="stAppViewContainer"], .main {
+html, body, .stApp, [data-testid="stAppViewContainer"], .main {
     overflow: hidden !important;
     height: 100vh !important;
-    touch-action: none !important; /* 모바일 터치 스크롤 방지 */
+    touch-action: none !important;
+    color-scheme: light !important;
+    color: #111 !important;
+    background-color: #f5f5f5 !important;
 }
+
+/* === Streamlit 내부 컴포넌트 다크모드 차단 === */
+[data-testid="stVerticalBlock"], [data-testid="stHorizontalBlock"],
+[data-testid="stColumn"], [data-testid="stForm"],
+[data-testid="stMarkdownContainer"] { color: #111 !important; }
+[data-testid="stDialog"] > div > div,
+[data-testid="stDialog"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stDialog"] [data-testid="stVerticalBlock"],
+section[data-testid="stDialog"] { background-color: #ffffff !important; color: #111 !important; }
+[data-baseweb="input"], [data-baseweb="input"] > div,
+[data-baseweb="select"], [data-baseweb="select"] > div,
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"], [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
+/* === 모든 Streamlit 버튼 배경 강제 === */
+[data-testid="stButton"] > button, [data-testid="stLinkButton"] > a,
+[data-testid="stFormSubmitButton"] > button { background-color: #ffffff !important; color: #111 !important; border: 1px solid #ddd !important; }
+[data-testid="stButton"] > button p, [data-testid="stLinkButton"] > a p { color: #111 !important; }
+button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
+    background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%) !important; border: none !important; color: white !important;
+}
+button[kind="primary"] p, button[kind="primary"] span { color: #fff !important; }
+[data-testid="stDataFrame"], [data-testid="stDataFrame"] > div, [data-testid="stDataFrame"] iframe,
+[data-testid="stTable"], [data-testid="stTable"] table, [data-testid="stTable"] th,
+[data-testid="stTable"] td { background-color: #ffffff !important; color: #111 !important; }
+[data-testid="stVerticalBlockBorderWrapper"] > div { background-color: transparent !important; }
 
 ::-webkit-scrollbar {
     display: none !important;
 }
 
 [data-testid="stAppViewContainer"] { background-color: #f5f5f5 !important; }
-[data-testid="stHeader"] { display: none; }
+[data-testid="stHeader"], [data-testid="stToolbar"] { display: none; color-scheme: light !important; }
 .block-container { max-width: 460px !important; padding: 1.5rem 1rem 3rem !important; }
 
 button[data-testid="baseButton-primary"] {
@@ -151,56 +182,82 @@ div[data-testid="stElementContainer"]:has(#withdraw-marker) + div[data-testid="s
     background-color: #fef2f2 !important;
 }
 
-</style>
-""", unsafe_allow_html=True)
+@media (max-width: 768px) {
+    .block-container { max-width: 100% !important; padding: 1rem 0.75rem 2rem !important; }
+    .profile-card { padding: 18px 16px 16px; }
+    .section-card { margin-bottom: 10px; }
+    .profile-avatar-wrap { width: 56px; height: 56px; }
+}
 
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 
 # 모달: 프로필 사진
 @st.dialog("프로필 사진 올리기")
 def upload_photo_dialog():
-    uploaded_file = st.file_uploader("이미지 파일 선택", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader(
+        "이미지 파일 선택", type=["jpg", "png", "jpeg"], label_visibility="collapsed"
+    )
     msg_ph = st.empty()
-    
+
     if uploaded_file:
-        st.image(uploaded_file, caption="미리보기", width=120) 
+        st.image(uploaded_file, caption="미리보기", width=120)
         if st.button("적용하기", type="primary", use_container_width=True):
             with st.spinner("서버에 저장 중..."):
                 is_success, result_url_or_msg = api_update_profile_image(uploaded_file)
                 if is_success:
                     st.session_state.user["profile_image_url"] = result_url_or_msg
-                    msg_ph.markdown('<div class="status-msg text-success">프로필 사진 변경 완료!</div>', unsafe_allow_html=True)
+                    msg_ph.markdown(
+                        '<div class="status-msg text-success">프로필 사진 변경 완료!</div>',
+                        unsafe_allow_html=True,
+                    )
                     time.sleep(1)
                     st.rerun()
                 else:
-                    msg_ph.markdown(f'<div class="status-msg text-error">실패: {result_url_or_msg}</div>', unsafe_allow_html=True)
+                    msg_ph.markdown(
+                        f'<div class="status-msg text-error">실패: {result_url_or_msg}</div>',
+                        unsafe_allow_html=True,
+                    )
 
 
 # 모달: 비밀번호 변경
 @st.dialog("비밀번호 변경")
 def change_password_dialog(user_email):
-    if "pw_step" not in st.session_state: st.session_state.pw_step = "request"
-    if "pw_auth_code" not in st.session_state: st.session_state.pw_auth_code = None
-    if "pw_verified" not in st.session_state: st.session_state.pw_verified = False
+    if "pw_step" not in st.session_state:
+        st.session_state.pw_step = "request"
+    if "pw_auth_code" not in st.session_state:
+        st.session_state.pw_auth_code = None
+    if "pw_verified" not in st.session_state:
+        st.session_state.pw_verified = False
 
     steps = ["이메일 인증", "코드 확인", "변경 완료"]
     step_idx = {"request": 0, "verify": 1, "change": 2}[st.session_state.pw_step]
     step_html = '<div style="display:flex; justify-content:center; gap:6px; margin-bottom:16px;">'
     for i, s in enumerate(steps):
         if i < step_idx:
-            color = "#bb38d0"; bg = "#fdf4ff"; border = "#bb38d0"
+            color = "#bb38d0"
+            bg = "#fdf4ff"
+            border = "#bb38d0"
         elif i == step_idx:
-            color = "#fff"; bg = "#bb38d0"; border = "#bb38d0"
+            color = "#fff"
+            bg = "#bb38d0"
+            border = "#bb38d0"
         else:
-            color = "#adb5bd"; bg = "#f8f9fa"; border = "#e9ecef"
+            color = "#adb5bd"
+            bg = "#f8f9fa"
+            border = "#e9ecef"
         step_html += f'<div style="padding:3px 12px; border-radius:16px; font-size:11px; font-weight:600; color:{color}; background:{bg}; border:1px solid {border};">{s}</div>'
-    step_html += '</div>'
+    step_html += "</div>"
     st.markdown(step_html, unsafe_allow_html=True)
 
     msg_ph = st.empty()
 
     if st.session_state.pw_step == "request":
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div style="text-align:center; padding:8px 0 16px;">
             <div style="font-size:32px; margin-bottom:8px;">📧</div>
             <p style="font-size:12px; color:#555; line-height:1.6;">
@@ -208,7 +265,9 @@ def change_password_dialog(user_email):
                 <b style="color:#bb38d0;">{user_email}</b>
             </p>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
         if st.button("인증 코드 발송", type="primary", use_container_width=True):
             code = str(random.randint(100000, 999999))
             st.session_state.pw_auth_code = code
@@ -216,15 +275,23 @@ def change_password_dialog(user_email):
             st.rerun()
 
     elif st.session_state.pw_step == "verify":
-        st.markdown("""
+        st.markdown(
+            """
         <div style="text-align:center; padding:8px 0 16px;">
             <div style="font-size:32px; margin-bottom:8px;">🔑</div>
             <p style="font-size:12px; color:#555;">이메일로 발송된 6자리 코드를 입력해주세요.</p>
         </div>
-        """, unsafe_allow_html=True)
-        
-        msg_ph.markdown('<div class="status-msg text-success">이메일 인증번호 발송 완료 (개발용: ' + str(st.session_state.pw_auth_code) + ')</div>', unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
+        msg_ph.markdown(
+            '<div class="status-msg text-success">이메일 인증번호 발송 완료 (개발용: '
+            + str(st.session_state.pw_auth_code)
+            + ")</div>",
+            unsafe_allow_html=True,
+        )
+
         input_code = st.text_input("인증 코드", placeholder="6자리 입력", max_chars=6)
         col1, col2 = st.columns(2)
         with col1:
@@ -239,32 +306,50 @@ def change_password_dialog(user_email):
                     st.session_state.pw_step = "change"
                     st.rerun()
                 else:
-                    msg_ph.markdown('<div class="status-msg text-error">인증 코드가 일치하지 않습니다.</div>', unsafe_allow_html=True)
+                    msg_ph.markdown(
+                        '<div class="status-msg text-error">인증 코드가 일치하지 않습니다.</div>',
+                        unsafe_allow_html=True,
+                    )
 
     elif st.session_state.pw_step == "change":
-        st.markdown("""
+        st.markdown(
+            """
         <div style="text-align:center; padding:8px 0 16px;">
             <div style="font-size:32px; margin-bottom:8px;">🔒</div>
             <p style="font-size:12px; color:#555;">새로운 비밀번호를 설정해주세요.</p>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
         new_pw = st.text_input("새 비밀번호", type="password")
         new_pw_confirm = st.text_input("새 비밀번호 확인", type="password")
-        
+
         if st.button("비밀번호 변경 완료", type="primary", use_container_width=True):
             if not new_pw or not new_pw_confirm:
-                msg_ph.markdown('<div class="status-msg text-warn">비밀번호를 모두 입력해주세요.</div>', unsafe_allow_html=True)
+                msg_ph.markdown(
+                    '<div class="status-msg text-warn">비밀번호를 모두 입력해주세요.</div>',
+                    unsafe_allow_html=True,
+                )
             elif len(new_pw) < 8:
-                msg_ph.markdown('<div class="status-msg text-error">비밀번호는 8자 이상이어야 합니다.</div>', unsafe_allow_html=True)
+                msg_ph.markdown(
+                    '<div class="status-msg text-error">비밀번호는 8자 이상이어야 합니다.</div>',
+                    unsafe_allow_html=True,
+                )
             elif new_pw != new_pw_confirm:
-                msg_ph.markdown('<div class="status-msg text-error">비밀번호가 일치하지 않습니다.</div>', unsafe_allow_html=True)
+                msg_ph.markdown(
+                    '<div class="status-msg text-error">비밀번호가 일치하지 않습니다.</div>',
+                    unsafe_allow_html=True,
+                )
             else:
                 with st.spinner("안전하게 변경 중입니다..."):
                     time.sleep(1)
                     st.session_state.pw_step = "request"
                     st.session_state.pw_auth_code = None
                     st.session_state.pw_verified = False
-                    msg_ph.markdown('<div class="status-msg text-success">비밀번호 변경 완료!</div>', unsafe_allow_html=True)
+                    msg_ph.markdown(
+                        '<div class="status-msg text-success">비밀번호 변경 완료!</div>',
+                        unsafe_allow_html=True,
+                    )
                     time.sleep(1.5)
                     st.rerun()
 
@@ -274,7 +359,8 @@ def change_password_dialog(user_email):
 # ───────────────────────────────────────────
 @st.dialog("회원 탈퇴")
 def withdraw_dialog(email):
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="text-align:center; padding:8px 0 16px;">
         <div style="font-size:36px; margin-bottom:10px;">😢</div>
         <p style="font-size:13px; color:#111; line-height:1.6; margin-bottom:6px;">
@@ -286,7 +372,9 @@ def withdraw_dialog(email):
             </p>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
     col1, col2 = st.columns(2)
     with col1:
         if st.button("취소", use_container_width=True):
@@ -297,9 +385,12 @@ def withdraw_dialog(email):
                 api_withdraw(email)
                 time.sleep(1.5)
                 import extra_streamlit_components as stx
+
                 cookie_manager = stx.CookieManager(key="global_auth_cookie")
-                try: cookie_manager.delete("access_token")
-                except: pass
+                try:
+                    cookie_manager.delete("access_token")
+                except:
+                    pass
                 st.session_state.clear()
                 st.rerun()
 
@@ -308,11 +399,14 @@ def withdraw_dialog(email):
 user_id = require_login()
 inject_custom_header()
 
-user        = st.session_state.user
-user_name   = user.get("name", "이름 없음")
-user_email  = user.get("email", "이메일 정보 없음")
+user = st.session_state.user
+user_name = user.get("name", "이름 없음")
+user_email = user.get("email", "이메일 정보 없음")
 user_tier_raw = user.get("tier", "FREE")
-profile_url = user.get("profile_image_url") or "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+profile_url = (
+    user.get("profile_image_url")
+    or "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+)
 
 
 # UI 렌더링
@@ -321,7 +415,8 @@ profile_url = user.get("profile_image_url") or "https://cdn.pixabay.com/photo/20
 
 # ── 프로필 영역 ──
 with st.container():
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div id="profile-card-hook" class="profile-card">
         <div class="profile-card-inner">
             <div class="profile-avatar-wrap">
@@ -335,7 +430,9 @@ with st.container():
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     if st.button("투명사진변경버튼", key="photo_btn"):
         upload_photo_dialog()
@@ -343,7 +440,8 @@ with st.container():
 st.markdown("<br>", unsafe_allow_html=True)
 
 # 계정 정보 섹션
-st.markdown(f"""
+st.markdown(
+    f"""
 <div class="section-card">
     <div class="section-title">계정 정보</div>
     <div class="list-row">
@@ -356,11 +454,14 @@ st.markdown(f"""
         <div><div class="list-label">회원 등급</div><div class="list-value" style="color: #6b7280;">{user_tier_raw} 회원</div></div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # 보안 섹션 (비밀번호 모달 연동)
 with st.container():
-    st.markdown("""
+    st.markdown(
+        """
     <div class="section-card">
         <div class="section-title">보안</div>
         <div class="list-row pw-row-box" style="border-bottom: none;">
@@ -372,18 +473,23 @@ with st.container():
         </div>
     </div>
     <span id="pw-marker"></span>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     if st.button("비밀번호 변경", key="pw_btn", use_container_width=True):
         change_password_dialog(user_email)
 
 
 # 회원 탈퇴 섹션
-st.markdown("""
+st.markdown(
+    """
 <div style="text-align: center; margin-top: 50px; margin-bottom: 5px;">
     <div style="font-size: 11px; color: #71717a; font-weight: 500;">더 이상 서비스를 이용하지 않으시나요?</div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 col_a, col_b, col_c = st.columns([1, 1, 1])
 with col_b:
