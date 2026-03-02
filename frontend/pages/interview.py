@@ -1614,5 +1614,6 @@ else:
         components.html(html, height=680, scrolling=False)
         st.markdown("<br>", unsafe_allow_html=True)
 
+    _, col2 = st.columns([3, 2])
     with col2:
         webcam_box(height=606)
