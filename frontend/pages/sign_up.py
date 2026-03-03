@@ -9,10 +9,9 @@ Modification History:
 - 2026-02-21 (김지우) : 이메일 인증 모달, 실시간 폼 검증, 약관 동의 및 가입 완료 프로세스 전체 구현, DB 연동
 - 2026-02-22 (김지우) : Back/Front 구분
 - 2026-02-23 (김지우) : DB 연결 에러 발생 시 전용 경고 알림창 UI 적용
--2026-02-26 (김지우) : 내용 수정 및 주석 및 코드 정리 (최종)
+- 2026-02-26 (김지우) : 내용 수정 및 주석 및 코드 정리 (최종)
 """
 
-# pip install pymysql bcrypt
 
 import streamlit as st
 import re

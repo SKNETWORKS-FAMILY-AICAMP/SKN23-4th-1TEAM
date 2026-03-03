@@ -89,34 +89,33 @@ AIWORK는 로그인, 회원 등급, 대시보드 등 표준화된 SaaS 아키텍
 **✶ B2C (구직자 대상 에듀테크 SaaS)**
 * 이력서 기반 무한 반복 AI 모의 면접 제공
 * 면접 전 예상 압박 질문 및 직무 매칭률을 보여주는 **AI 대시보드** 제공
-* 문항별 피드백 및 게이미피케이션 기반 성장 지표 제공
+* 문항별 피드백 제공
 
 
 ### 2. 핵심 비즈니스 전략 (Business Strategy)
-* **사용자 경험 혁신:** 고비용의 1:1 대면 모의면접 컨설팅을 대체할 수 있는 수준의 초개인화된 AI 면접 경험을 시공간 제약 없이 제공
-* **락인 효과 (Lock-in Effect):** 면접 데이터(이력서 청크, 누적 점수, 강약점 분석)가 마이페이지에 자산처럼 축적되어 지속적인 서비스 이용 유도
-* **확장 가능한 아키텍처:** 회원 등급제(Tier) 시스템을 내장하여, 향후 프리미엄 AI 모델 또는 에이전트 적용을 통한 수익화(Monetization) 전환이 용이한 구조
+* **사용자 경험 혁신 :** 고비용의 1:1 대면 모의면접 컨설팅을 대체할 수 있는 수준의 초개인화된 AI 면접 경험을 시공간 제약 없이 제공
+* **락인 효과 (Lock-in Effect) :** 면접 데이터(이력서 청크, 누적 점수, 강약점 분석)가 마이페이지에 자산처럼 축적되어 지속적인 서비스 이용 유도
+* **확장 가능한 아키텍처 :** 회원 등급제(Tier) 시스템을 내장하여, 향후 프리미엄 AI 모델 또는 에이전트 적용을 통한 수익화(Monetization) 전환이 용이한 구조
 
 <br>
 
 # 🎯 프로젝트 목표
 
 **1. 차세대 AI 지원형 SaaS 및 Dual DB 아키텍처 구축**
-* AI를 단순한 부가 기능(Add-on)이 아닌 시스템의 핵심 엔진으로 배치
+* AI를 단순한 부가 기능(Add-on)이 아닌 시스템의 핵심 기능으로 배치
 * **RDBMS (MySQL):** 사용자 세션, 면접 메타데이터, 질문 풀, 평가 기록 관리
 * **Vector DB (ChromaDB):** 이력서 텍스트 청크 임베딩 및 AI 문맥 검색
 
-**2. 초개인화 면접을 위한 동적 RAG(Continuous Learning RAG) 구현**
-* 지원자의 이력서 팩트와 실시간 답변을 맵핑하여 파고드는 '스마트 AI 면접관' 구현
+**2. 면접을 위한 동적 RAG(Continuous Learning RAG) 구현**
+* 지원자의 이력서와 실시간 답변을 맵핑하여 파고드는 '스마트 AI 면접관' 구현
 * 이전 답변 맥락을 기억하고 꼬리질문을 던지는 유기적인 면접 흐름 생성
 
 **3. 환각 현상(Hallucination) 통제 및 정교한 AI 제어 로직**
-* 엄격한 **JSON Schema**와 **4가지 평가 루브릭(정확성, 깊이, 구조, 명확성)** 기반 프롬프트 엔지니어링
+* 엄격한 **JSON Schema**와 **4가지 평가 지표 기반(정확성, 깊이, 구조, 명확성)** 기반 프롬프트 엔지니어링
 * 답변 품질(40점 이하)을 실시간으로 평가하여 부족한 답변에만 동적 꼬리질문(최대 2회) 생성
 
 **4. Seamless UX/UI를 통한 사용자 몰입감 극대화**
 * **Realtime Voice:** WebRTC 기반의 지연 없는 실시간 음성 대화 및 웹캠 환경
-* **Text Mode:** iMessage 스타일의 직관적인 채팅 UI와 동적 스크롤 렌더링
 
 <br>
 
@@ -132,7 +131,7 @@ AIWORK는 로그인, 회원 등급, 대시보드 등 표준화된 SaaS 아키텍
 
 | HuggingFace 기반 실시간 웹캠 태도 분석 | 웹캠 기반 비언어적 Feature 평가  |
   | :---: | :---|
-  | <img src="frontend/assets/images/huggingface.png" width="250"> |<br><p>모델이 태도를 직접 판단하지 않습니다.</p><p>얼굴 Feature를 **수치화 → 서비스 로직에서 해석**하는 구조입니다.</p><p>- **좌우 시선** → 코 위치 기반 *Yaw* 계산</p><p>- **아래 보기** → 코–눈 상대 좌표 기반 *Pitch* 계산</p><p>- **표정 변화** → 눈썹 이동 벡터 기반 신호 추출</p><p>이를 통해 단순 감정 분류가 아닌,면접 상황에 적합한 **비언어적 태도 지표**를 도출합니다.</p> |
+  | <img src="frontend/assets/images/huggingface.png" width="250"> |<br><p>모델이 태도를 직접 판단하지 않습니다.</p><p>얼굴 Feature를 **수치화 → 서비스 로직에서 해석**하는 구조입니다.</p><p>- **좌우 시선** → 코 위치 기반 계산</p><p>- **아래 보기** → 코–눈 상대 좌표 기반 계산</p><p>- **표정 변화** → 눈썹 이동 벡터 기반 신호 추출</p><p>이를 통해 단순 감정 분류가 아닌,면접 상황에 적합한 **비언어적 태도 지표**를 도출합니다.</p> |
 
 ### 2. 하이브리드 문항 출제
 
@@ -154,7 +153,7 @@ AIWORK는 로그인, 회원 등급, 대시보드 등 표준화된 SaaS 아키텍
 
 ### 4. 정밀 평가 리포트
 
-- 루브릭 기준 항목별 점수
+- 평가 지표 기준 항목별 점수
 - 종합 피드백
 - 강/약점 분석 마크다운 리포트 제공
 
@@ -187,7 +186,7 @@ AIWORK는 로그인, 회원 등급, 대시보드 등 표준화된 SaaS 아키텍
 2. 이력서 업로드
 3. AI 면접 진행
 4. 웹캠 기반 태도 분석 수행
-5. 루브릭 기반 평가 리포트 제공
+5. 평가 지표 기반 평가 리포트 제공
 6. 결과가 '내기록'에 누적 저장
 
 <br><br>
@@ -224,7 +223,7 @@ User Flow: AI 모의면접 진행 파이프라인
  │    │    └── 실무 역량 체크: MySQL `question_pool`에서 선택한 직무/난이도에 맞는 고정 기술 질문 혼합
  │    │
  │    ├── LLM Evaluation (실시간 답변 채점 및 꼬리질문 제어)
- │    │    ├── 4가지 루브릭(정확성, 깊이, 구조, 명확성) 기준 및 JSON 스키마를 적용하여 답변 채점
+ │    │    ├── 4가지 평가 지표(정확성, 깊이, 구조, 명확성) 기준 및 JSON 스키마를 적용하여 답변 채점
  │    │    └── [Hallucination Control] 환산 점수 40점 이하 시 ➔ 이력서 기반 날카로운 꼬리질문 즉시 생성 (최대 2회 제한)
  │    │
  │    └── 트랜잭션 로깅 (Data Integrity)
@@ -362,13 +361,48 @@ User Flow: AI 모의면접 진행 파이프라인
 
 <br><br>
 
-# 💡 시연 영상
+# 💡 시연 이미지
+### ✧ **로그인**
 
-| **메인 대시보드** | **직무 비교 페이지** |
-| --- | --- |
-| <img src="assets/images/main.gif" width="100%"> | <img src="assets/images/model.gif" width="100%"> |
-| **인사이트 페이지** | **예측 페이지** |
-| <img src="assets/images/insight.gif" width="100%"> | <img src="assets/images/predict.gif" width="100%"> |
+| **로그인** | **비밀번호 찾기** | **회원가입** |
+| --- | --- | --- |
+| <img src="frontend/assets/rm/login.png" width="90%"> | <img src="frontend/assets/rm/find_pw.png" width="90%"> | <img src="frontend/assets/rm/sign_up.png" width="100%"> |
+| **이메일 인증(pw)** | **이메일 인증(sign)** |
+| <img src="frontend/assets/rm/email_pw.png" width="90%"> | <img src="frontend/assets/rm/email_sign.png" width="100%"> |
+
+### ✧ **Home**
+
+| **홈** | **가이드 챗봇** |
+| :--- | :--- |
+| <img src="frontend/assets/rm/home.png" width="100%"> | <img src="frontend/assets/rm/guide_chatbot.png" width="100%"> | 
+
+### ✧ **면접**
+
+| **면접 설정** |  | |
+| :--- | :--- | :--- |
+| <img src="frontend/assets/rm/interview_setting.png" width="70%"> | || 
+| **면접 진행(Text)** | **면접 진행(TTS)** |
+| <img src="frontend/assets/rm/interview_text.png" width="70%"> | <img src="frontend/assets/rm/interview_cam.png" width="100%"> |
+| **면접 결과** | |
+| <img src="frontend/assets/rm/interview_result.png" width="70%"> | |
+
+### ✧ **면접 기록**
+
+| **면접 기록** | **면접 상세보기** |
+| :--- | :--- |
+| <img src="frontend/assets/rm/mypage.png" width="100%"> | <img src="frontend/assets/rm/mypage_detail.png" width="100%"> |
+
+### ✧ **이력서**
+
+| **이력서** | **이력서 등록** | |
+| :--- | :--- | :--- |
+| <img src="frontend/assets/rm/resume.png" width="100%"> | <img src="frontend/assets/rm/resume_result.png" width="100%"> | |
+
+### ✧ **내 정보 수정**
+
+| **내 정보 수정** | |
+| :--- | :--- |
+| <img src="frontend/assets/rm/myinfo.png" width="50%"> | |
 
 <br><br>
 

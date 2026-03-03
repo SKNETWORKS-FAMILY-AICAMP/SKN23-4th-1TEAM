@@ -34,7 +34,7 @@ def send_auth_email(receiver_email, auth_code):
     return api_send_reset_email(receiver_email, auth_code)
 
 
-# CSS (sign_up.py와 동일한 풀 스타일)
+# CSS
 st.markdown(
     """
 <style>
@@ -136,7 +136,6 @@ button[kind="primary"] p, button[kind="primary"] span { color: #fff !important; 
 )
 
 
-# 모달: 비밀번호 변경 완료
 @st.dialog("비밀번호 변경 완료", width="small")
 def pw_reset_success_modal():
     st.markdown(
@@ -178,9 +177,7 @@ if "target_email" not in st.session_state:
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="login-logo">비밀번호 찾기</div>', unsafe_allow_html=True)
 
-# ==========================================
-# [STEP 1] 이메일 입력 및 인증번호 발송
-# ==========================================
+
 if st.session_state.reset_step == 1:
     st.markdown(
         '<div class="info-text">가입하신 이메일 아이디를 입력해주세요.<br>비밀번호 재설정 인증번호를 보내드립니다.</div>',
@@ -230,9 +227,7 @@ if st.session_state.reset_step == 1:
                             unsafe_allow_html=True,
                         )
 
-# ==========================================
-# [STEP 2] 인증번호 확인
-# ==========================================
+
 elif st.session_state.reset_step == 2:
     st.markdown(
         f'<div class="info-text"><b>{st.session_state.target_email}</b>(으)로<br>인증번호를 발송했습니다. 6자리 숫자를 입력해주세요.</div>',
@@ -252,9 +247,7 @@ elif st.session_state.reset_step == 2:
                 unsafe_allow_html=True,
             )
 
-# ==========================================
-# [STEP 3] 새 비밀번호 설정
-# ==========================================
+# 새 비번 설정
 elif st.session_state.reset_step == 3:
     st.markdown(
         '<div class="info-text">이메일 인증이 완료되었습니다.<br>새로운 비밀번호를 설정해주세요.</div>',
@@ -329,9 +322,8 @@ elif st.session_state.reset_step == 3:
                     unsafe_allow_html=True,
                 )
 
-# ==========================================
+
 # 하단 링크
-# ==========================================
 st.markdown(
     """
 <div class="helper-links">

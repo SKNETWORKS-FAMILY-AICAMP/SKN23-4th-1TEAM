@@ -354,7 +354,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<br>", unsafe_allow_html=True)
+# st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="login-logo">AI<span>WORK</span></div>', unsafe_allow_html=True)
 
 # 일반 로그인 폼
@@ -402,9 +402,7 @@ if not st.session_state.get("show_admin_choice"):
                         "csrf_token", result.get("csrf_token"), key="set_csrf_normal"
                     )
 
-                    # ==========================================
-                    # 🚨 2. 일반 로그인 로직 수정 (user id 포함)
-                    # ==========================================
+                    # 일반 로그인 로직 수정 (user id 포함)    
                     st.session_state.user = {
                         "id": result.get("id"),
                         "name": result.get("name"),
@@ -418,7 +416,7 @@ if not st.session_state.get("show_admin_choice"):
                         st.session_state.show_admin_choice = True
                         st.rerun()
                     else:
-                        time.sleep(0.5)  # 🔥 쿠키가 저장될 시간을 0.5초 벌어줍니다!
+                        time.sleep(0.5) 
                         st.switch_page("pages/home.py")
                 else:
                     if "휴면" in result:

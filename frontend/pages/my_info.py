@@ -20,7 +20,7 @@ from utils.function import inject_custom_header, require_login
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="centered")
 
 
-# CSS (80% 스케일링 + 🚫 스크롤 완전 잠금 적용)
+# CSS
 st.markdown(
     """
 <style>
@@ -152,7 +152,7 @@ div[data-testid="stVerticalBlock"]:has(#profile-card-hook) button {
 }
 div[data-testid="stVerticalBlock"]:has(button:hover) .avatar-overlay { opacity: 1; }
 
-/* 🔑 2. 비밀번호 영역 (>) 클릭 유령 버튼 (높이 축소) */
+/* 비밀번호 영역 */
 div[data-testid="stElementContainer"]:has(#pw-marker) + div[data-testid="stElementContainer"] {
     margin-top: -55px; 
     position: relative; z-index: 10;
@@ -223,7 +223,6 @@ def upload_photo_dialog():
                     )
 
 
-# 모달: 비밀번호 변경
 @st.dialog("비밀번호 변경")
 def change_password_dialog(user_email):
     if "pw_step" not in st.session_state:
@@ -354,9 +353,6 @@ def change_password_dialog(user_email):
                     st.rerun()
 
 
-# ───────────────────────────────────────────
-# 모달: 회원 탈퇴
-# ───────────────────────────────────────────
 @st.dialog("회원 탈퇴")
 def withdraw_dialog(email):
     st.markdown(
@@ -395,7 +391,6 @@ def withdraw_dialog(email):
                 st.rerun()
 
 
-# 문지기 + 헤더
 user_id = require_login()
 inject_custom_header()
 
@@ -409,11 +404,6 @@ profile_url = (
 )
 
 
-# UI 렌더링
-# st.markdown("<br><br><br>", unsafe_allow_html=True)
-# st.markdown('<div class="page-title">마이페이지</div>', unsafe_allow_html=True)
-
-# ── 프로필 영역 ──
 with st.container():
     st.markdown(
         f"""
@@ -458,7 +448,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 보안 섹션 (비밀번호 모달 연동)
+# 보안 섹션
 with st.container():
     st.markdown(
         """

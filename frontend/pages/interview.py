@@ -883,7 +883,7 @@ else:
         unsafe_allow_html=True,
     )
 
-    col_chat, col_cam = st.columns([1.1, 0.9])
+    col_cam, col_chat = st.columns([0.9, 1.1])
 
     with col_chat:
         api_key = os.getenv("OPENAI_API_KEY", "")
