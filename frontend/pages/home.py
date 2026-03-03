@@ -597,8 +597,23 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
         unsafe_allow_html=True,
     )
 
-    tab1, tab2, tab3 = st.tabs(["추천 공고", "백엔드 트렌드", "게시판"])
+    resume = None
+    job_role = None
 
+    if user_id:
+        resume_cache = f"resume_latest:{user_id}"
+        if resume_cache not in st.session_state:
+            st.session_state[resume_cache] = get_latest_resume(user_id=user_id)
+
+        resume = st.session_state.get(resume_cache) or {}
+        job_role = resume.get("job_role")
+
+    if job_role:
+        tab1, tab2, tab3 = st.tabs(["추천 공고", f"{job_role} 트렌드", "게시판"])
+    else:
+        tab1, tab2, tab3 = st.tabs(["채용공고", "백엔드 트렌드", "게시판"])
+
+        
     # 채용공고 탭
     with tab1:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -609,9 +624,6 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
             try:
                 parsed = {}
                 resume_cache = f"resume_latest:{user_id}"
-                if resume_cache not in st.session_state:
-                    st.session_state[resume_cache] = get_latest_resume(user_id=user_id)
-                resume = st.session_state.get(resume_cache)
 
                 if resume:
                     job_role = resume.get("job_role")
@@ -634,7 +646,7 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
     # 백엔드 트렌드 탭
     with tab2:
         st.markdown("<br>", unsafe_allow_html=True)
-        render_realtime_ai_news()
+        render_realtime_ai_news(job_role)
         st.markdown(
             "<p style='font-size:11px; color:#aaa; text-align:right; margin-top:20px;'>Powered by Tavily Search Engine</p>",
             unsafe_allow_html=True,

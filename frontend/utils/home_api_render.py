@@ -217,13 +217,16 @@ def render_memo_board(current_user_name="익명"):
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def _get_cached_news_content():
-    success, result = api_get_home_news("latest AI and backend trends")
+def _get_cached_news_content(job_role=None):
+    if job_role:
+        success, result = api_get_home_news(f"latest AI and {job_role} trends")
+    else:
+        success, result = api_get_home_news("latest AI and backend trends")
     return result.get("content", "") if success else ""
 
 
-def render_realtime_ai_news():
-    raw_news = _get_cached_news_content()
+def render_realtime_ai_news(job_role=None):
+    raw_news = _get_cached_news_content(job_role)
 
     if not raw_news:
         st.info("No news is available right now.")
