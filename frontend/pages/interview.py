@@ -761,7 +761,7 @@ with col_h2:
         """, 
         unsafe_allow_html=True
     )
-    if st.button("면접 종료 ➔", type="primary", use_container_width=True):
+    if st.button("면접 종료", type="primary", use_container_width=True):
         st.session_state.interview_ended = True
         st.rerun()
 
@@ -870,7 +870,7 @@ if st.session_state.interview_mode == "text":
         if is_success:
             st.rerun()
 
-# 음성 모드: 카메라가 켜지는 2단(좌우) 레이아웃
+# 음성 모드
 else:
     st.markdown(
         """

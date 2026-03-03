@@ -194,7 +194,63 @@ AIWORK는 로그인, 회원 등급, 대시보드 등 표준화된 SaaS 아키텍
 
 # 📂 프로젝트 설계 (Directory Structure)
 
+<div align="center">
+
+## LLM 파이프라인
+</div>
+
+```plaintext
+User Flow: AI 모의면접 진행 파이프라인
+ │
+ ├── 1. 면접 환경 설정 및 데이터 전처리 (Initialization & Ingestion)
+ │    ├── 사용자 입력: 프론트엔드(Streamlit)에서 직무, 난이도, 페르소나 설정 및 이력서 업로드
+ │    ├── MySQL (RDBMS): 신규 면접 세션(Session) 생성 및 고유 식별자(Session ID) 발급
+ │    └── ChromaDB (Vector DB): 이력서 텍스트를 400자 청크(Chunk)로 분할 후 임베딩(text-embedding-3-small) 저장
+ │
+ ├── 2. 다중 모드 면접 실행 (Dual-Mode Interview Execution)
+ │    │
+ │    ├── [Text Mode] 텍스트 기반 면접
+ │    │    ├── 사용자가 채팅창에 답변 텍스트 입력
+ │    │    └── 백엔드 평가 엔진 API (`/api/infer/evaluate-turn`) 호출
+ │    │
+ │    └── [Voice Mode] 실시간 화상/음성 면접
+ │         ├── 음성 스트리밍: WebRTC 기반 OpenAI Realtime API로 지연 없는 STT/TTS 통신
+ │         └── 비전 태도 분석: 웹캠 이미지를 백엔드로 전송 ➔ Hugging Face 랜드마크 모델로 시선/표정 실시간 추론
+ │
+ ├── 3. 하이브리드 RAG & AI 추론 엔진 (Hybrid RAG & AI Inference Engine) ← [Core 핵심]
+ │    │
+ │    ├── Context Retrieval (하이브리드 문맥 검색)
+ │    │    ├── 이력서 팩트 체크: ChromaDB에서 지원자의 답변과 연관도 높은 이력서 청크(Top-K) 검색
+ │    │    └── 실무 역량 체크: MySQL `question_pool`에서 선택한 직무/난이도에 맞는 고정 기술 질문 혼합
+ │    │
+ │    ├── LLM Evaluation (실시간 답변 채점 및 꼬리질문 제어)
+ │    │    ├── 4가지 루브릭(정확성, 깊이, 구조, 명확성) 기준 및 JSON 스키마를 적용하여 답변 채점
+ │    │    └── [Hallucination Control] 환산 점수 40점 이하 시 ➔ 이력서 기반 날카로운 꼬리질문 즉시 생성 (최대 2회 제한)
+ │    │
+ │    └── 트랜잭션 로깅 (Data Integrity)
+ │         └── 매 턴(Turn)마다 주고받은 질문, 답변, 평가 점수, 피드백을 MySQL `interview_details` 테이블에 실시간 무결성 저장
+ │
+ └── 4. 면접 종료 및 결과 분석 (Termination & Analytics)
+      ├── 종료 감지: 지정된 문항 수 도달 시 AI가 `[INTERVIEW_END]` 시그널 송출
+      ├── 성과 집계: 백엔드에서 전체 턴의 평균 점수 계산 및 세션 상태 'COMPLETED' 업데이트 (DB 동기화)
+      ├── 리포트 생성: LLM이 세션 전체 로그를 종합 분석하여 강/약점 도출 마크다운 리포트 작성
+      └── 마이페이지 렌더링: Streamlit Native 모달(Modal) 창을 통해 사용자에게 최종 결과표 및 백분위 데이터 제공
 ```
+
+<div align="center">
+
+## 시스템 아키텍쳐
+
+<img src="frontend/assets/images/system_architecture.png" width="800">
+
+</div>
+
+<div align="center">
+
+## 파일 구조
+</div>
+
+```plaintext
 👾 SKN23-3rd-1TEAM/
 ├── README.md                               # 메인 프로젝트 소개 문서
 ├── requirements.txt                        # Python 라이브러리 의존성 목록
@@ -291,6 +347,8 @@ AIWORK는 로그인, 회원 등급, 대시보드 등 표준화된 SaaS 아키텍
 └── webcam_component/                       # 별도 웹캠 컴포넌트 디렉터리
 
 ```
+
+
 
 <br><br>
 

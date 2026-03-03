@@ -203,7 +203,6 @@ chroma.sqlite3
 *.toml
 
 # 이미지 파일 (깃 못올라가도록 설정)
-*.png
 *.jpg
 *.jpeg
 *.gif
