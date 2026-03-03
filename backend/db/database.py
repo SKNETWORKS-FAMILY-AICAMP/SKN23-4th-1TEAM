@@ -9,9 +9,8 @@ Modification History:
 - 2026-02-27 (김지우) :  기존 User 모델 외에 직무 분류, 질문 풀, 면접 기록 테이블 추가
 """
 
-
 import os
-import json 
+import json
 import pymysql
 from pymysql.cursors import DictCursor
 from contextlib import contextmanager
@@ -25,12 +24,12 @@ load_dotenv(dotenv_path=env_path, override=True)
 
 # ─── DB 연결 설정 (.env에서 읽기) ─────────────────────────────
 DB_CONFIG = {
-    "host":     os.getenv("DB_HOST",     "localhost"),
-    "port":     int(os.getenv("DB_PORT", "3306")),
-    "user":     os.getenv("DB_USER",     "root"),
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "user": os.getenv("DB_USER", "root"),
     "password": os.getenv("DB_PASSWORD", ""),
-    "db":       os.getenv("DB_NAME",     "ai_interview"),
-    "charset":  "utf8mb4",
+    "db": os.getenv("DB_NAME", "ai_interview"),
+    "charset": "utf8mb4",
     "cursorclass": DictCursor,
 }
 
@@ -116,26 +115,29 @@ CREATE TABLE IF NOT EXISTS guestbook_memos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     author VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
-    color VARCHAR(20),
-    border VARCHAR(20),
-    text_color VARCHAR(20),
+    color VARCHAR(200),
+    border VARCHAR(50),
+    text_color VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
+
 # ─── 커넥션 컨텍스트 매니저 ───────────────────────────────────
 @contextmanager
 def get_connection():
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    env_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"
+    )
     load_dotenv(dotenv_path=env_path, override=True)
 
     db_config = {
-        "host":     os.getenv("DB_HOST",     "localhost"),
-        "port":     int(os.getenv("DB_PORT", "3306")),
-        "user":     os.getenv("DB_USER",     "root"),
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "user": os.getenv("DB_USER", "root"),
         "password": os.getenv("DB_PASSWORD", ""),
-        "db":       os.getenv("DB_NAME",     "ai_interview"),
-        "charset":  "utf8mb4",
+        "db": os.getenv("DB_NAME", "ai_interview"),
+        "charset": "utf8mb4",
         "cursorclass": DictCursor,
     }
     conn = pymysql.connect(**db_config)
@@ -148,6 +150,7 @@ def get_connection():
     finally:
         conn.close()
 
+
 # ─── DB 초기화 ─────────────────────────
 def init_db():
     with get_connection() as conn:
@@ -156,20 +159,47 @@ def init_db():
                 stmt = stmt.strip()
                 if stmt:
                     cur.execute(stmt)
+            # 기존 테이블 컬럼 크기 마이그레이션 (이미 큰 경우 무해)
+            migrate_stmts = [
+                "ALTER TABLE guestbook_memos MODIFY color VARCHAR(200)",
+                "ALTER TABLE guestbook_memos MODIFY border VARCHAR(50)",
+                "ALTER TABLE guestbook_memos MODIFY text_color VARCHAR(50)",
+            ]
+            for stmt in migrate_stmts:
+                try:
+                    cur.execute(stmt)
+                except Exception:
+                    pass
+
 
 # ─── 세션 CRUD ────────────────────────────────────
-def create_session(user_id: int, job_role: str, difficulty: str = "미들",
-                   persona: str = "깐깐한 기술팀장", resume_used: bool = False,
-                   resume_id: int | None = None, manual_tech_stack: str | None = None) -> int:
+def create_session(
+    user_id: int,
+    job_role: str,
+    difficulty: str = "미들",
+    persona: str = "깐깐한 기술팀장",
+    resume_used: bool = False,
+    resume_id: int | None = None,
+    manual_tech_stack: str | None = None,
+) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """INSERT INTO interview_sessions
                    (user_id, job_role, difficulty, persona, resume_used, resume_id, manual_tech_stack)
                    VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (user_id, job_role, difficulty, persona, int(resume_used), resume_id, manual_tech_stack),
+                (
+                    user_id,
+                    job_role,
+                    difficulty,
+                    persona,
+                    int(resume_used),
+                    resume_id,
+                    manual_tech_stack,
+                ),
             )
             return conn.insert_id()
+
 
 def end_session(session_id: int, total_score: float):
     with get_connection() as conn:
@@ -179,18 +209,37 @@ def end_session(session_id: int, total_score: float):
                 (total_score, session_id),
             )
 
-def save_detail(session_id: int, turn_index: int, question: str,
-                answer: str, is_followup: bool,
-                score: float | None = None, feedback: str | None = None,
-                response_time: int | None = None, sentiment_score: float | None = None):
+
+def save_detail(
+    session_id: int,
+    turn_index: int,
+    question: str,
+    answer: str,
+    is_followup: bool,
+    score: float | None = None,
+    feedback: str | None = None,
+    response_time: int | None = None,
+    sentiment_score: float | None = None,
+):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """INSERT INTO interview_details
                    (session_id, turn_index, question, answer, is_followup, score, feedback, response_time, sentiment_score)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                (session_id, turn_index, question, answer, int(is_followup), score, feedback, response_time, sentiment_score),
+                (
+                    session_id,
+                    turn_index,
+                    question,
+                    answer,
+                    int(is_followup),
+                    score,
+                    feedback,
+                    response_time,
+                    sentiment_score,
+                ),
             )
+
 
 def get_sessions_by_user(user_id: int) -> list[dict]:
     with get_connection() as conn:
@@ -205,6 +254,7 @@ def get_sessions_by_user(user_id: int) -> list[dict]:
             )
             return cur.fetchall()
 
+
 def get_details_by_session(session_id: int) -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -218,9 +268,11 @@ def get_details_by_session(session_id: int) -> list[dict]:
             )
             return cur.fetchall()
 
+
 # ─── question_pool 헬퍼 ───────────
-def get_questions_by_role(job_role: str, difficulty: str,
-                          q_type: str = "기술", limit: int = 3) -> list[dict]:
+def get_questions_by_role(
+    job_role: str, difficulty: str, q_type: str = "기술", limit: int = 3
+) -> list[dict]:
     diff_map = {"주니어": "Easy", "미들": "Medium", "시니어": "Hard"}
     db_difficulty = diff_map.get(difficulty, difficulty)
 
@@ -236,6 +288,7 @@ def get_questions_by_role(job_role: str, difficulty: str,
             )
             return cur.fetchall()
 
+
 def get_common_questions(limit: int = 1) -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -247,7 +300,10 @@ def get_common_questions(limit: int = 1) -> list[dict]:
             )
             return cur.fetchall()
 
-def get_questions_by_resume_keywords(job_role: str, difficulty: str, keywords: list[str], limit: int = 3) -> list[dict]:
+
+def get_questions_by_resume_keywords(
+    job_role: str, difficulty: str, keywords: list[str], limit: int = 3
+) -> list[dict]:
     if not keywords:
         return get_questions_by_role(job_role, difficulty, "기술", limit)
 
@@ -261,7 +317,7 @@ def get_questions_by_resume_keywords(job_role: str, difficulty: str, keywords: l
             for k in keywords:
                 likes_clauses.append("(qp.content LIKE %s OR qp.keywords LIKE %s)")
                 params.extend([f"%{k}%", f"%{k}%"])
-            
+
             likes_sql = " OR ".join(likes_clauses)
             query = f"""
                 SELECT qp.id, qp.content AS question, qp.question_type, qp.difficulty
@@ -276,26 +332,33 @@ def get_questions_by_resume_keywords(job_role: str, difficulty: str, keywords: l
 
             if len(results) < limit:
                 needed = limit - len(results)
-                fallback = get_questions_by_role(job_role, difficulty, "기술", limit * 2) 
-                existing_ids = {r['id'] for r in results}
+                fallback = get_questions_by_role(
+                    job_role, difficulty, "기술", limit * 2
+                )
+                existing_ids = {r["id"] for r in results}
                 for f in fallback:
-                    if f['id'] not in existing_ids:
+                    if f["id"] not in existing_ids:
                         results.append(f)
-                        existing_ids.add(f['id'])
-                        if len(results) == limit: break
+                        existing_ids.add(f["id"])
+                        if len(results) == limit:
+                            break
             return results
 
+
 # ─── 이력서 보관함 CRUD ─────────────────────────────────────
-def save_user_resume(user_id: int, title: str, job_role: str, resume_text: str, analysis_result: dict) -> int:
+def save_user_resume(
+    user_id: int, title: str, job_role: str, resume_text: str, analysis_result: dict
+) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
             json_str = json.dumps(analysis_result, ensure_ascii=False)
             cur.execute(
                 """INSERT INTO user_resumes (user_id, title, job_role, resume_text, analysis_result)
                    VALUES (%s, %s, %s, %s, %s)""",
-                (user_id, title, job_role, resume_text, json_str)
+                (user_id, title, job_role, resume_text, json_str),
             )
             return conn.insert_id()
+
 
 def get_user_resumes(user_id: int) -> list[dict]:
     with get_connection() as conn:
@@ -304,18 +367,20 @@ def get_user_resumes(user_id: int) -> list[dict]:
                 """SELECT id, title, job_role, resume_text, analysis_result, created_at 
                    FROM user_resumes 
                    WHERE user_id=%s ORDER BY created_at DESC""",
-                (user_id,)
+                (user_id,),
             )
             rows = cur.fetchall()
             for r in rows:
-                if r['analysis_result'] and isinstance(r['analysis_result'], str):
-                    r['analysis_result'] = json.loads(r['analysis_result'])
+                if r["analysis_result"] and isinstance(r["analysis_result"], str):
+                    r["analysis_result"] = json.loads(r["analysis_result"])
             return rows
+
 
 def delete_user_resume(resume_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM user_resumes WHERE id=%s", (resume_id,))
+
 
 # ─── 방명록(게시판) CRUD ────────────────────────────────────
 def save_memo(author: str, content: str, color: str, border: str, text_color: str):
@@ -324,8 +389,9 @@ def save_memo(author: str, content: str, color: str, border: str, text_color: st
             cur.execute(
                 """INSERT INTO guestbook_memos (author, content, color, border, text_color)
                    VALUES (%s, %s, %s, %s, %s)""",
-                (author, content, color, border, text_color)
+                (author, content, color, border, text_color),
             )
+
 
 def get_all_memos(limit: int = 30) -> list[dict]:
     with get_connection() as conn:
@@ -335,6 +401,6 @@ def get_all_memos(limit: int = 30) -> list[dict]:
                    FROM guestbook_memos
                    ORDER BY created_at DESC
                    LIMIT %s""",
-                (limit,)
+                (limit,),
             )
             return cur.fetchall()

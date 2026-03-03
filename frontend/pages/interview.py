@@ -346,7 +346,7 @@ def process_answer(answer_text: str) -> bool:
     if tts:
         st.session_state.latest_audio_content = tts
 
-    return True  
+    return True
 
 
 # 상태 초기화
@@ -418,6 +418,7 @@ def evaluation_modal():
                 eval_resume_text,
             )
             import re
+
             st.session_state.evaluation_result = re.sub(
                 r"\*\*[\d\.]+\s*/\s*100점\*\*", f"**{total_score} / 100점**", raw_eval
             )
@@ -430,7 +431,7 @@ def evaluation_modal():
         data=st.session_state.evaluation_result,
         file_name=f"interview_report.txt",
         mime="text/plain",
-        use_container_width=True
+        use_container_width=True,
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -640,7 +641,7 @@ def interview_setup_modal():
                 time.sleep(0.5)
 
         try:
-            fixed_first_q = "<b>간단하게 자기소개를 부탁드립니다.</b>"
+            fixed_first_q = "간단하게 자기소개를 부탁드립니다."
 
             if final_resume_text:
                 with st.spinner(
@@ -691,7 +692,7 @@ def interview_setup_modal():
             ]
 
         first_q = db_questions[0]
-        greeting = f"안녕하세요. 오늘 {job_role} 직무 면접을 진행할 면접관입니다. 총 {q_count}개의 질문을 드릴 예정입니다.\n\n첫 번째 질문입니다.\n**{first_q}**"
+        greeting = f"안녕하세요. 오늘 {job_role} 직무 면접을 진행할 면접관입니다. 총 {q_count}개의 질문을 드릴 예정입니다.\n\n첫 번째 질문입니다.\n<strong>{first_q}</strong>"
 
         st.session_state.update(
             {
@@ -758,8 +759,8 @@ with col_h2:
             margin-top: 10px !important;
         }
         </style>
-        """, 
-        unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True,
     )
     if st.button("면접 종료", type="primary", use_container_width=True):
         st.session_state.interview_ended = True
@@ -1030,7 +1031,12 @@ else:
         bubble.style.animation = "msg-pop 0.3s ease-out both";
         
         const textEl = document.createElement("span");
-        textEl.textContent = text;
+        // HTML 태그가 포함된 텍스트도 정상 렌더링
+        if (/<[a-z][\s\S]*>/i.test(text)) {
+          textEl.innerHTML = text;
+        } else {
+          textEl.textContent = text;
+        }
         bubble.appendChild(textEl);
         bubble._textEl = textEl;
         
@@ -1291,51 +1297,104 @@ else:
 
     async function connect() {
       try {
-        setStatus("마이크 권한 요청 중...");
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        micTrack = stream.getAudioTracks()[0];
+        // iOS Safari HTTPS 필수 체크
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS && location.protocol !== 'https:' && location.hostname !== 'localhost') {
+          setStatus("iOS에서는 HTTPS 연결이 필요합니다. HTTPS로 접속해 주세요.");
+          return;
+        }
+
+        setStatus("마이크/카메라 권한 요청 중...");
+        // iOS에서는 audio+video를 한 번에 요청해야 스트림 충돌 방지
+        let combinedStream;
+        try {
+          combinedStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        } catch (permErr) {
+          // 카메라 없이 오디오만 시도
+          try {
+            combinedStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (audioErr) {
+            if (isIOS) {
+              setStatus("마이크 권한이 거부되었습니다. [설정 > Safari > 마이크]에서 권한을 허용해 주세요.");
+            } else {
+              setStatus("마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해 주세요.");
+            }
+            throw audioErr;
+          }
+        }
+
+        // 오디오/비디오 트랙 분리
+        micTrack = combinedStream.getAudioTracks()[0];
+        stream = new MediaStream([micTrack]);
         micTrack.enabled = false;
-        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-          recorderMime = "audio/webm;codecs=opus";
-        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
-          recorderMime = "audio/webm";
+
+        const videoTracks = combinedStream.getVideoTracks();
+        if (videoTracks.length > 0) {
+          camStream = new MediaStream(videoTracks);
+        }
+
+        // MediaRecorder MIME 타입 결정 (iOS Safari: audio/mp4 fallback)
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+          if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+            recorderMime = "audio/webm;codecs=opus";
+          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+            recorderMime = "audio/webm";
+          } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+            recorderMime = "audio/mp4";
+          } else {
+            recorderMime = "";
+          }
         } else {
           recorderMime = "";
         }
+
         const audioOnlyStream = new MediaStream([micTrack]);
-        mediaRecorder = new MediaRecorder(audioOnlyStream, recorderMime ? { mimeType: recorderMime } : undefined);
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) currentChunks.push(e.data);
-        };
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(currentChunks, { type: mediaRecorder.mimeType || "audio/webm" });
-          currentChunks = [];
-          if (blob.size <= 0) return;
-          const url = URL.createObjectURL(blob);
-          const ts = new Date();
-          const clip = {
-            url,
-            filename: `user_turn_${ts.toISOString().replace(/[:.]/g, "-")}.webm`,
+        try {
+          mediaRecorder = new MediaRecorder(audioOnlyStream, recorderMime ? { mimeType: recorderMime } : undefined);
+        } catch (mrErr) {
+          // MediaRecorder 미지원 시 (일부 구형 iOS)
+          mediaRecorder = null;
+          console.warn("MediaRecorder 생성 실패:", mrErr);
+        }
+        if (mediaRecorder) {
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) currentChunks.push(e.data);
           };
-          userAudioClips.push(clip);
-          if (pendingUserBubble) {
-            attachAudioControls(pendingUserBubble, clip);
-          }
-        };
+          mediaRecorder.onstop = () => {
+            const mimeType = mediaRecorder.mimeType || recorderMime || "audio/webm";
+            const ext = mimeType.includes("mp4") ? "m4a" : "webm";
+            const blob = new Blob(currentChunks, { type: mimeType });
+            currentChunks = [];
+            if (blob.size <= 0) return;
+            const url = URL.createObjectURL(blob);
+            const ts = new Date();
+            const clip = {
+              url,
+              filename: `user_turn_${ts.toISOString().replace(/[:.]/g, "-")}.${ext}`,
+            };
+            userAudioClips.push(clip);
+            if (pendingUserBubble) {
+              attachAudioControls(pendingUserBubble, clip);
+            }
+          };
+        }
 
         if (!attVideoEl) {
           attVideoEl = document.createElement("video");
           attVideoEl.autoplay = true;
           attVideoEl.muted = true;
           attVideoEl.playsInline = true;
+          attVideoEl.setAttribute("playsinline", "");
+          attVideoEl.setAttribute("webkit-playsinline", "");
           attVideoEl.style.display = "none";
           document.body.appendChild(attVideoEl);
         }
-        camStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        attVideoEl.srcObject = camStream;
-        try {
-          await attVideoEl.play();
-        } catch (_) {}
+        if (camStream) {
+          attVideoEl.srcObject = camStream;
+          try {
+            await attVideoEl.play();
+          } catch (_) {}
+        }
 
         if (!attCanvasEl) {
           attCanvasEl = document.createElement("canvas");

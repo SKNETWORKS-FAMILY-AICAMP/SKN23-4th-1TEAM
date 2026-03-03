@@ -19,8 +19,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8501",
         "http://localhost:8502",
+        "http://localhost:8503",
         "http://127.0.0.1:8501",
         "http://127.0.0.1:8502",
+        "http://127.0.0.1:8503",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -36,10 +38,30 @@ def on_startup():
 
 app.include_router(auth.router)
 app.include_router(social_auth.router)
-app.add_api_route("/api/v1/auth/kakao/start", social_auth.kakao_start, methods=["GET"], tags=["social-auth"])
-app.add_api_route("/api/v1/auth/kakao/callback", social_auth.kakao_callback, methods=["GET"], tags=["social-auth"])
-app.add_api_route("/api/v1/auth/google/start", social_auth.google_start, methods=["GET"], tags=["social-auth"])
-app.add_api_route("/api/v1/auth/google/callback", social_auth.google_callback, methods=["GET"], tags=["social-auth"])
+app.add_api_route(
+    "/api/v1/auth/kakao/start",
+    social_auth.kakao_start,
+    methods=["GET"],
+    tags=["social-auth"],
+)
+app.add_api_route(
+    "/api/v1/auth/kakao/callback",
+    social_auth.kakao_callback,
+    methods=["GET"],
+    tags=["social-auth"],
+)
+app.add_api_route(
+    "/api/v1/auth/google/start",
+    social_auth.google_start,
+    methods=["GET"],
+    tags=["social-auth"],
+)
+app.add_api_route(
+    "/api/v1/auth/google/callback",
+    social_auth.google_callback,
+    methods=["GET"],
+    tags=["social-auth"],
+)
 app.include_router(admin.router)
 app.include_router(home.router)
 app.include_router(infer.router)
