@@ -613,7 +613,6 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
     else:
         tab1, tab2, tab3 = st.tabs(["채용공고", "백엔드 트렌드", "게시판"])
 
-        
     # 채용공고 탭
     with tab1:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -664,7 +663,7 @@ def inject_chatbot_styles():
         """
     <style>
     div[data-testid="stModal"] > div[data-testid="stDialog"] { margin: auto !important; }
-    div[data-testid="stDialog"] > div > div { background-color: #f0f8ff !important; border-radius: 24px !important; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important; border: 1px solid rgba(0,0,0,0.05) !important; overflow-y: auto !important; max-height: 85vh !important; }
+    div[data-testid="stDialog"] > div > div { border-radius: 24px !important; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important; border: 1px solid rgba(0,0,0,0.05) !important; overflow-y: auto !important; max-height: 85vh !important; }
     div[data-testid="stDialog"] > div > div > div { padding: 32px 36px 28px !important; }
     div[data-testid="stDialog"] h2 { font-weight: 800 !important; font-size: 1.5rem !important; letter-spacing: -0.5px !important; background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px !important; }
     .advisor-badge { display: inline-flex; align-items: center; gap: 6px; background: #f5f5f7; border: 1px solid #e5e5ea; border-radius: 12px; padding: 4px 10px; font-size: 0.75rem; font-weight: 500; color: #8e8e93; margin-bottom: 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }

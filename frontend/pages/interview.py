@@ -1297,9 +1297,9 @@ else:
 
     async function connect() {
       try {
-        // iOS Safari HTTPS 필수 체크
+        // iOS Safari 보안 컨텍스트 체크 (iframe 내부에서도 정확히 동작)
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        if (isIOS && location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        if (isIOS && !window.isSecureContext) {
           setStatus("iOS에서는 HTTPS 연결이 필요합니다. HTTPS로 접속해 주세요.");
           return;
         }
