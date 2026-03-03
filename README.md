@@ -422,6 +422,12 @@ User Flow: AI 모의면접 진행 파이프라인
 | :--- | :--- |
 | <img src="frontend/assets/rm/myinfo.png" width="50%"> | |
 
+### ✧ **관리자 페이지**
+
+| **관리자 페이지** | |
+| :--- | :--- |
+| <img src="frontend/assets/rm/admin_login.png" width="100%"> | <img src="frontend/assets/rm/admin_setting.png" width="100%"> |
+
 <br><br>
 
 # 🛠️ 기술 스택 (Tech Stack)
