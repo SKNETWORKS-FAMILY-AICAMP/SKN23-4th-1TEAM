@@ -388,7 +388,7 @@ User Flow: AI 모의면접 진행 파이프라인
 | **이메일 인증(pw)** | **이메일 인증(sign)** |
 | <img src="frontend/assets/rm/email_pw.png" width="90%"> | <img src="frontend/assets/rm/email_sign.png" width="100%"> |
 
-### ✧ **Home**
+### ✧ **메인**
 
 | **홈** | **가이드 챗봇** |
 | :--- | :--- |
@@ -396,13 +396,13 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ### ✧ **면접**
 
-| **면접 설정** |  | |
-| :--- | :--- | :--- |
-| <img src="frontend/assets/rm/interview_setting.png" width="70%"> | || 
+| **면접 설정** |  |
+| :--- | :--- | 
+| <img src="frontend/assets/rm/interview_setting.png" width="70%"> | | 
 | **면접 진행(Text)** | **면접 진행(TTS)** |
 | <img src="frontend/assets/rm/interview_text.png" width="70%"> | <img src="frontend/assets/rm/interview_cam.png" width="100%"> |
-| **면접 결과** | |
-| <img src="frontend/assets/rm/interview_result.png" width="70%"> | |
+| **면접 결과** ||
+| <img src="frontend/assets/rm/interview_result.png" width="70%"> |
 
 ### ✧ **면접 기록**
 
@@ -412,9 +412,9 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ### ✧ **이력서**
 
-| **이력서** | **이력서 등록** | |
-| :--- | :--- | :--- |
-| <img src="frontend/assets/rm/resume.png" width="100%"> | <img src="frontend/assets/rm/resume_result.png" width="100%"> | |
+| **이력서** | **이력서 등록** |
+| :--- | :--- |
+| <img src="frontend/assets/rm/resume.png" width="100%"> | <img src="frontend/assets/rm/resume_result.png" width="100%"> |
 
 ### ✧ **내 정보 수정**
 
