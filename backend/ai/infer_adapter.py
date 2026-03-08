@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from ai.state import init_state, set_user_answer, set_question, InterviewState
-from ai.graph import build_answer_graph
-from ai.question_bank import get_bank
+from backend.ai.state import init_state, set_user_answer, set_question, InterviewState
+from backend.ai.graph import build_answer_graph
+from backend.ai.question_bank import get_bank
 
 
 class InterviewEngine:

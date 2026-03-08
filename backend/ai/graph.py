@@ -12,15 +12,15 @@ from __future__ import annotations
 
 from langgraph.graph import StateGraph, END
 
-from ai.state import (
+from backend.ai.state import (
     InterviewState,
     set_question,
     set_evaluation,
     need_follow_up,
     get_follow_up_question,
 )
-from ai.question_bank import get_bank
-from ai.evaluator import evaluate_answer
+from backend.ai.question_bank import get_bank
+from backend.ai.evaluator import evaluate_answer
 
 # 면접관 에이전트 : 라우터의 결정에 따라 실제 사용자에게 던질 대사 세팅함. 꼬리 질문시 이전 질문의 메타데이터(topic, subcategory)를 활용해 관련 질문을 던짐
 def node_pick_question(st: InterviewState) -> InterviewState:

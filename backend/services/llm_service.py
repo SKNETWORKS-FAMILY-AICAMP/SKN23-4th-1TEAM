@@ -26,6 +26,7 @@ PERSONA_MAP = {
     "깐깐한 기술팀장": "당신은 10년 경력의 깐깐한 기술팀장입니다. 의심 많고 세부사항을 완벽하게 파고드는 직설적인 스타일입니다.",
     "부드러운 인사담당자": "당신은 경험 많은 HR 매니저입니다. 부드럽고 공감하는 톤으로 대화를 이끌지만, 동기를 깊게 파고듭니다.",
     "스타트업 CTO": "당신은 성장지향적인 스타트업 CTO입니다. 실용성과 비즈니스 임팩트를 중시합니다.",
+    "ISTP 시니어 개발자" : "당신은 ISTP 성격 유형을 가진 15년차 시니어 개발자입니다. 실용성과 효율성을 중시하며, 논리적이고 간결하게 대답하고 감정적인 답변보다는 사실에 기반한 답변을 선호합니다."
 }
 
 SYSTEM_PROMPT_EVAL = """
@@ -110,7 +111,7 @@ def build_eval_user_prompt(
     "{user_answer_text}"
     """
 
-# 메인 평가
+# 메인 평가 : 이력서 확인
 def evaluate_and_respond(
     question: str, 
     answer: str, 
@@ -130,13 +131,13 @@ def evaluate_and_respond(
 
     # 2. 긴급 통제 규칙 (4점 이하일 때만 꼬리물기, 최대 2회)
     control_rules = f"""
-[🚨 긴급 통제 규칙 (매우 중요) 🚨]
+[긴급 통제 규칙 (매우 중요)]
 1. 현재 이 문항에 대한 꼬리질문 누적 횟수: {followup_count}회
 2. 만약 이번 답변의 score가 40점(100점 만점 기준 40점 = 10점 만점 기준 4점) 이하라면 꼬리질문(follow_up_needed=true)을 1회 생성하라.
 3. 단, 꼬리질문 누적 횟수가 2회 이상이거나, score가 40점을 초과하여 양호하다면 절대 꼬리질문을 생성하지 마라 (follow_up_needed=false).
     """
 
-    # 3. 시스템 프롬프트 조립
+    # 3. 시스템 프롬프트 조립 : 페르소나 + 평가 지침 + JSON 형식 + Few-shot + 긴급 통제 규칙
     persona_desc = PERSONA_MAP.get(persona_style, PERSONA_MAP["깐깐한 기술팀장"])
     sys_prompt = f"{persona_desc}\n\n{SYSTEM_PROMPT_EVAL}\n\n{EVAL_JSON_SCHEMA_INSTRUCTIONS}\n\n{EVAL_FEWSHOT}\n\n{control_rules}"
 
@@ -157,7 +158,7 @@ def evaluate_and_respond(
     print("[DEBUG][evaluate_and_respond] USER PROMPT END\n")
     
     if next_main_question:
-        user_prompt += f"\n\n[NEXT_MAIN_QUESTION]\n{next_main_question}\n\n[🚨 번역 절대 원칙 🚨]\n위 [NEXT_MAIN_QUESTION]이 영문일 경우, 반드시 실제 한국인 면접관이 말하듯 아주 자연스러운 '한국어 존댓말(구어체)'로 완벽하게 번역해서 next_question_translated 필드에 넣어라. 절대 영어를 그대로 출력하지 마라."
+        user_prompt += f"\n\n[NEXT_MAIN_QUESTION]\n{next_main_question}\n\n[번역 절대 원칙]\n위 [NEXT_MAIN_QUESTION]이 영문일 경우, 반드시 실제 한국인 면접관이 말하듯 아주 자연스러운 '한국어 존댓말(구어체)'로 완벽하게 번역해서 next_question_translated 필드에 넣어라. 절대 영어를 그대로 출력하지 마라."
 
     # 5. LLM 호출 (JSON 강제)
     try:
@@ -353,7 +354,7 @@ def analyze_resume_comprehensive(resume_text: str, job_role: str) -> dict:
             model="gpt-4.1-mini",
             messages=[{"role": "user", "content": prompt}],
             response_format={ "type": "json_object" },
-            temperature=0.3,
+            temperature=0.3,  # 창의성 적게
         )
         raw_json = response.choices[0].message.content.strip()
         data = json.loads(raw_json)
@@ -451,7 +452,6 @@ def get_translated_news_summary(raw_news_data: str) -> str:
         print(f"LLM 번역 에러: {e}")
         return ""
 
-        # services/llm_service.py 파일 맨 아래 추가!
 
 def get_home_guide_response_stream(user_message: str, web_context: str):
     """홈 화면 가이드 챗봇 응답을 한 글자씩 실시간으로 스트리밍(Streaming)합니다."""

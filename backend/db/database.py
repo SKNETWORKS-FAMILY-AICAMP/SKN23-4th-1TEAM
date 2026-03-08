@@ -37,64 +37,75 @@ DB_CONFIG = {
 DDL = """
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    provider VARCHAR(20) DEFAULT NULL,          
-    provider_user_id VARCHAR(255) DEFAULT NULL,  
-    role VARCHAR(20) DEFAULT 'user',             
-    name VARCHAR(100) NULL,                      
-    password VARCHAR(255) NULL,                  
-    tier VARCHAR(20) DEFAULT 'normal',           
-    status VARCHAR(20) DEFAULT 'active',         
-    profile_image_url VARCHAR(512) NULL,         
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    email VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    provider VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,          
+    provider_user_id VARCHAR(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,  
+    role VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'user',             
+    name VARCHAR(100) COLLATE utf8mb4_unicode_ci NULL,                      
+    password VARCHAR(255) COLLATE utf8mb4_unicode_ci NULL,                  
+    tier VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'normal',           
+    status VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'active',         
+    profile_image_url VARCHAR(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 프로필 이미지 URL 또는 로컬 경로',
+    payment_status VARCHAR(20) DEFAULT NULL, -- ERD 반영용
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    jti VARCHAR(64) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    token_hash VARCHAR(256) COLLATE utf8mb4_unicode_ci NOT NULL,
+    expires_at DATETIME NOT NULL,
+    revoked_at DATETIME DEFAULT NULL,
+    CONSTRAINT fk_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS job_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    main_category VARCHAR(50),
-    sub_category VARCHAR(50),
-    target_role VARCHAR(50) UNIQUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    main_category VARCHAR(50) DEFAULT NULL,
+    sub_category VARCHAR(50) DEFAULT NULL,
+    target_role VARCHAR(50) DEFAULT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS question_pool (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    category_id INT,
-    question_type VARCHAR(30),
-    skill_tag VARCHAR(100),
-    difficulty VARCHAR(20),
+    category_id INT DEFAULT NULL,
+    question_type VARCHAR(30) DEFAULT NULL,
+    skill_tag VARCHAR(100) DEFAULT NULL,
+    difficulty VARCHAR(20) DEFAULT NULL,
     content TEXT NOT NULL,
     reference_answer TEXT,
-    keywords VARCHAR(255),
-    FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    keywords VARCHAR(255) DEFAULT NULL,
+    CONSTRAINT fk_question_category FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS user_resumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL, 
     title VARCHAR(255) NOT NULL,
-    job_role VARCHAR(100),
+    job_role VARCHAR(100) DEFAULT NULL,
     resume_text MEDIUMTEXT,
-    analysis_result JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    analysis_result JSON DEFAULT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_resumes FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS interview_sessions (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    user_id      INT, 
-    job_role     VARCHAR(100),
-    difficulty   VARCHAR(20),
-    persona      VARCHAR(50),
-    total_score  FLOAT DEFAULT 0.0,
+    user_id      INT DEFAULT NULL, 
+    job_role     VARCHAR(100) DEFAULT NULL,
+    difficulty   VARCHAR(20) DEFAULT NULL,
+    persona      VARCHAR(50) DEFAULT NULL,
+    total_score  FLOAT DEFAULT NULL,
     status       VARCHAR(20) DEFAULT 'START', 
-    started_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ended_at     TIMESTAMP NULL,
-    resume_used  TINYINT(1) DEFAULT 0,
-    resume_id    INT NULL,
-    manual_tech_stack TEXT NULL,
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_resume FOREIGN KEY (resume_id) REFERENCES user_resumes(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    started_at   TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    ended_at     TIMESTAMP NULL DEFAULT NULL,
+    resume_used  TINYINT(1) DEFAULT '0',
+    resume_id    INT DEFAULT NULL,
+    manual_tech_stack TEXT DEFAULT NULL,
+    CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_session_resume FOREIGN KEY (resume_id) REFERENCES user_resumes(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS interview_details (
     id              INT AUTO_INCREMENT PRIMARY KEY,
@@ -102,24 +113,24 @@ CREATE TABLE IF NOT EXISTS interview_details (
     turn_index      INT NOT NULL,
     question        TEXT, 
     answer          TEXT, 
-    is_followup     TINYINT(1) DEFAULT 0,
+    is_followup     TINYINT(1) DEFAULT '0',
     response_time   INT DEFAULT NULL,  
     score           FLOAT DEFAULT NULL,
     feedback        TEXT,
     sentiment_score FLOAT DEFAULT NULL, 
-    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    created_at      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_detail_session FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS guestbook_memos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     author VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
-    color VARCHAR(200),
-    border VARCHAR(50),
-    text_color VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    color VARCHAR(200) DEFAULT NULL,
+    border VARCHAR(50) DEFAULT NULL,
+    text_color VARCHAR(50) DEFAULT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 """
 
 
@@ -159,7 +170,7 @@ def init_db():
                 stmt = stmt.strip()
                 if stmt:
                     cur.execute(stmt)
-            # 기존 테이블 컬럼 크기 마이그레이션 (이미 큰 경우 무해)
+            # 기존 테이블 컬럼 크기 마이그레이션
             migrate_stmts = [
                 "ALTER TABLE guestbook_memos MODIFY color VARCHAR(200)",
                 "ALTER TABLE guestbook_memos MODIFY border VARCHAR(50)",

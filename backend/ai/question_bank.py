@@ -113,7 +113,7 @@ def resolve_default_csv_path() -> str:
         os.path.join(os.getcwd(), "python_interview_questions_500.csv"),
         os.path.join(os.getcwd(), "data", "python_interview_questions_500.csv"),
         os.path.join(os.getcwd(), "backend", "data", "python_interview_questions_500.csv"),
-        os.path.join(_base_dir, "backend", "data", "python_interview_questions_500.csv"), # 최상위 폴더 기준 절대경로 추가
+        os.path.join(_base_dir,"data", "python_interview_questions_500.csv"), # 최상위 폴더 기준 절대경로 추가
     ]
     for p in candidates:
         if os.path.exists(p):
