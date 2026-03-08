@@ -7,7 +7,7 @@ from typing import Any, Dict, Tuple
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from ai.prompts import (
+from backend.ai.prompts import (
     SYSTEM_PROMPT_EVAL,
     EVAL_JSON_SCHEMA_INSTRUCTIONS,
     EVAL_FEWSHOT,

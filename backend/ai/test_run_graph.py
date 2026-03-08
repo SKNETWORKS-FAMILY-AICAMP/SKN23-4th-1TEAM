@@ -2,8 +2,8 @@ import os
 import json
 from datetime import datetime
 
-from ai.state import init_state, set_user_answer
-from ai.graph import build_start_graph, build_answer_graph
+from backend.ai.state import init_state, set_user_answer
+from backend.ai.graph import build_start_graph, build_answer_graph
 
 
 def append_jsonl(path: str, obj: dict) -> None:
@@ -19,7 +19,7 @@ def main():
     session_id = f"sess-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     st = init_state(session_id)
 
-    log_path = os.path.join("ai/logs", f"session_{session_id}.jsonl")
+    log_path = os.path.join("backend/ai/logs", f"session_{session_id}.jsonl")
 
     # 첫 질문
     st = g_start.invoke(st)
