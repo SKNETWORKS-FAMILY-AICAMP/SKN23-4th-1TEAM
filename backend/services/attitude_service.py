@@ -16,9 +16,9 @@ from backend.services.attitude_metrics_service import compute_frame_features, co
 def analyze_attitude(frames: List[dict], fps: float = 2.0) -> Dict[str, Any]:
     # 1) 프레임 과다 방지: 최대 40장(20초 @2fps)
     frames = frames[:40]
-    if len(frames) > 10:
-        step = max(1, len(frames) // 10)
-        frames = frames[::step][:10]
+    if len(frames) > 8:
+        step = max(1, len(frames) // 8)
+        frames = frames[::step][:8]
 
     t_ms_list = []
     feats = []
@@ -32,10 +32,8 @@ def analyze_attitude(frames: List[dict], fps: float = 2.0) -> Dict[str, Any]:
 
     indexed_frames = list(enumerate(frames, start=1))
     results = []
-    for batch_start in range(0, len(indexed_frames), 5):
-        batch = indexed_frames[batch_start:batch_start + 5]
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            results.extend(executor.map(_analyze_frame, batch))
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(_analyze_frame, indexed_frames))
 
     results = sorted(results, key=lambda item: item[0])
     for idx, t_ms, groups, ff in results:
