@@ -102,6 +102,24 @@ if "board_questions" not in st.session_state:
 st.markdown(
     """
 <style>
+.board-compose {
+    background: #ffffff;
+    border: 2px solid #f0ddf5;
+    border-radius: 28px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+}
+.compose-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111111;
+    margin-bottom: 12px;
+}
+.compose-desc {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #7b8190;
+}
 .question-card-hook {
     display: none;
 }
@@ -209,6 +227,19 @@ questions = st.session_state.get("board_questions", [])
 if not ok:
     st.error(f"게시판 질문을 불러오지 못했습니다. {result}")
     st.stop()
+
+st.markdown(
+    """
+<div class="board-compose">
+  <div class="compose-title">인성면접 질문 둘러보기</div>
+  <div class="compose-desc">
+    실제 면접에서 사용했던 표현, 고민 포인트, 답변 방식을 자유롭게 공유해보세요.
+    좋아요가 많은 상위 답변을 먼저 보여줍니다.
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
 
 @st.dialog("질문 답변 보기", width="large")
@@ -350,5 +381,4 @@ for row_idx, row_questions in enumerate(rows):
                     if st.button("답변 보기", key=f"open_question_{question['id']}", use_container_width=True):
                         question_dialog(question)
                     st.markdown("</div>", unsafe_allow_html=True)
-
 
