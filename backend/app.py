@@ -4,10 +4,11 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.api.v1.endpoints import jobs_api, resume_api
 from backend.db.base import Base
+from backend.db.database import init_db
 from backend.db.schema_patch import patch_user_table_columns
 from backend.db.session import engine
 from backend.models import refresh_token, user
-from backend.routers import admin, auth, home, infer, social_auth, interview, attitude, agent
+from backend.routers import admin, auth, home, infer, social_auth, interview, attitude, agent, board
 
 # 앱 생성 및 정적 파일 세팅
 app = FastAPI()
@@ -36,6 +37,7 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    init_db()
     # 기존 테이블 구조 변경시 에러 안나게 DB 스키마 덧대는 커스텀 함수
     patch_user_table_columns()
 
@@ -68,6 +70,7 @@ app.add_api_route(
 )
 app.include_router(admin.router)
 app.include_router(home.router)
+app.include_router(board.router)
 app.include_router(infer.router)
 app.include_router(jobs_api.router)
 app.include_router(resume_api.router, prefix="/api")
