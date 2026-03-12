@@ -131,7 +131,60 @@ CREATE TABLE IF NOT EXISTS guestbook_memos (
     text_color VARCHAR(50) DEFAULT NULL,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS board_questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    content TEXT NOT NULL,
+    display_order INT NOT NULL,
+    is_active TINYINT(1) DEFAULT '1',
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS board_answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL,
+    user_id INT NOT NULL,
+    author_name VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_board_answer_question FOREIGN KEY (question_id) REFERENCES board_questions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_board_answer_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS board_answer_likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    answer_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_board_answer_like (answer_id, user_id),
+    CONSTRAINT fk_board_like_answer FOREIGN KEY (answer_id) REFERENCES board_answers(id) ON DELETE CASCADE,
+    CONSTRAINT fk_board_like_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 """
+
+BOARD_QUESTIONS = [
+    "본인의 성격을 한 단어로 표현한다면 무엇인가요?",
+    "팀 프로젝트에서 갈등이 생겼을 때 어떻게 해결했나요?",
+    "실패했던 경험과 그 경험을 통해 배운 점을 말씀해주세요.",
+    "본인이 생각하는 가장 큰 장점은 무엇인가요?",
+    "본인이 생각하는 가장 보완해야 할 점은 무엇인가요?",
+    "협업할 때 중요하게 생각하는 태도는 무엇인가요?",
+    "스트레스를 받는 상황에서 어떻게 대처하나요?",
+    "의견이 다른 팀원과 일해야 할 때 어떻게 행동하나요?",
+    "리더 역할과 팔로워 역할 중 어느 쪽이 더 익숙한가요?",
+    "예상치 못한 문제가 발생했을 때 어떻게 대응하나요?",
+    "업무 우선순위가 충돌할 때 어떻게 정리하나요?",
+    "최근 스스로를 성장시켰다고 느낀 경험은 무엇인가요?",
+    "피드백을 받았을 때 어떻게 받아들이고 반영하나요?",
+    "책임감 있게 행동했던 경험을 말씀해주세요.",
+    "팀에 기여했다고 느낀 순간은 언제였나요?",
+    "반대로 팀에 미안했던 경험이 있다면 무엇인가요?",
+    "지원 직무와 무관해 보여도 본인에게 중요했던 경험은 무엇인가요?",
+    "어려운 사람과 함께 일해야 한다면 어떻게 관계를 풀어가겠나요?",
+    "회사 생활에서 가장 중요하다고 생각하는 가치는 무엇인가요?",
+    "왜 우리가 당신과 함께 일해야 한다고 생각하나요?",
+]
 
 
 # 커넥션 컨텍스트 매니저
@@ -181,6 +234,21 @@ def init_db():
                     cur.execute(stmt)
                 except Exception:
                     pass
+    seed_board_questions()
+
+
+def seed_board_questions():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS cnt FROM board_questions")
+            row = cur.fetchone() or {}
+            if int(row.get("cnt", 0)) > 0:
+                return
+            cur.executemany(
+                """INSERT INTO board_questions (content, display_order, is_active)
+                   VALUES (%s, %s, 1)""",
+                [(content, idx) for idx, content in enumerate(BOARD_QUESTIONS, start=1)],
+            )
 
 
 # 세션 CRUD
@@ -415,3 +483,114 @@ def get_all_memos(limit: int = 30) -> list[dict]:
                 (limit,),
             )
             return cur.fetchall()
+
+
+def get_board_questions() -> list[dict]:
+    seed_board_questions()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT q.id, q.content, q.display_order, q.created_at,
+                          COUNT(a.id) AS answer_count,
+                          MAX(a.created_at) AS latest_answer_at
+                   FROM board_questions q
+                   LEFT JOIN board_answers a ON a.question_id = q.id
+                   WHERE q.is_active = 1
+                   GROUP BY q.id, q.content, q.display_order, q.created_at
+                   ORDER BY q.display_order ASC"""
+            )
+            return cur.fetchall()
+
+
+def get_board_question(question_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, content, display_order, created_at
+                   FROM board_questions
+                   WHERE id=%s AND is_active=1""",
+                (question_id,),
+            )
+            return cur.fetchone()
+
+
+def get_board_answers(
+    question_id: int,
+    limit: int = 10,
+    offset: int = 0,
+    viewer_id: int | None = None,
+) -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT a.id, a.question_id, a.user_id, a.author_name, a.content, a.created_at, a.updated_at,
+                          COUNT(l.id) AS like_count,
+                          MAX(CASE WHEN l.user_id = %s THEN 1 ELSE 0 END) AS liked_by_me
+                   FROM board_answers a
+                   LEFT JOIN board_answer_likes l ON l.answer_id = a.id
+                   WHERE a.question_id=%s
+                   GROUP BY a.id, a.question_id, a.user_id, a.author_name, a.content, a.created_at, a.updated_at
+                   ORDER BY like_count DESC, a.created_at DESC
+                   LIMIT %s OFFSET %s""",
+                (viewer_id or 0, question_id, limit, offset),
+            )
+            return cur.fetchall()
+
+
+def count_board_answers(question_id: int) -> int:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) AS cnt FROM board_answers WHERE question_id=%s",
+                (question_id,),
+            )
+            row = cur.fetchone() or {}
+            return int(row.get("cnt", 0))
+
+
+def create_board_answer(question_id: int, user_id: int, author_name: str, content: str) -> int:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO board_answers (question_id, user_id, author_name, content)
+                   VALUES (%s, %s, %s, %s)""",
+                (question_id, user_id, author_name, content),
+            )
+            return conn.insert_id()
+
+
+def toggle_board_answer_like(answer_id: int, user_id: int) -> bool:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM board_answer_likes WHERE answer_id=%s AND user_id=%s",
+                (answer_id, user_id),
+            )
+            row = cur.fetchone()
+            if row:
+                cur.execute(
+                    "DELETE FROM board_answer_likes WHERE answer_id=%s AND user_id=%s",
+                    (answer_id, user_id),
+                )
+                return False
+
+            cur.execute(
+                "INSERT INTO board_answer_likes (answer_id, user_id) VALUES (%s, %s)",
+                (answer_id, user_id),
+            )
+            return True
+
+
+def get_board_answer(answer_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT a.id, a.question_id, a.user_id, a.author_name, a.content,
+                          COUNT(l.id) AS like_count
+                   FROM board_answers a
+                   LEFT JOIN board_answer_likes l ON l.answer_id = a.id
+                   WHERE a.id=%s
+                   GROUP BY a.id, a.question_id, a.user_id, a.author_name, a.content""",
+                (answer_id,),
+            )
+            return cur.fetchone()
