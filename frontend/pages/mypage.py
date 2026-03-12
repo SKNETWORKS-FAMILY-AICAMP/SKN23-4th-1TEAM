@@ -9,23 +9,25 @@ Modification History:
 - 2026-02-24 (김지우): 세션 클릭 시 질문-답변 상세 + 개별 점수 확인
 - 2026-02-28 (김지우): 만능 문지기(require_login) 적용 및 로직 최적화
 - 2026-03-01 (김지우): 와이드 레이아웃, 오리지널 카드 디자인 복구, 모달 알림 고도화, 엠프티 스테이트 UI 적용
+- 2026-03-12 (김지우): 프론트엔드/백엔드 폴더 의존성 완벽 분리 및 불필요한 dotenv 제거 (Architecture Refactoring)
 """
 
 import os
 import sys
 import time
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(os.path.dirname(current_dir))
-backend_dir = os.path.join(root_dir, "backend")
-
-if root_dir not in sys.path:
-    sys.path.append(root_dir)
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
-
 import streamlit as st
-from dotenv import load_dotenv
+
+# ─── 1. 프론트엔드 전용 경로 설정 (의존성 분리 마법) ────────────────────────────────────
+# 현재 파일(mypage.py)의 위치: frontend/pages
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 프론트엔드 최상위 폴더 위치: frontend
+frontend_dir = os.path.dirname(current_dir)
+
+# 파이썬 지도(sys.path)에 백엔드 말고 'frontend' 폴더만 1순위로 강제 등록!
+if frontend_dir not in sys.path:
+    sys.path.insert(0, frontend_dir)
+
+# 이제 파이썬이 frontend 폴더 내부의 utils를 정확하게 찾아옵니다.
 from utils.api_utils import (
     api_get_interview_sessions,
     api_get_interview_session_details,
@@ -33,14 +35,14 @@ from utils.api_utils import (
 )
 from utils.function import inject_custom_header, require_login
 
-load_dotenv()
+# ─── 2. 기본 페이지 설정 및 로그인 체크 ────────────────────────────────────
 # 넓은 화면을 위해 layout="wide"로 설정
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
 user_id = require_login()
 inject_custom_header()
 
-# CSS
+# ─── 3. 커스텀 CSS ────────────────────────────────────
 st.markdown(
     """
 <style>
@@ -179,7 +181,8 @@ div[data-testid="stVerticalBlock"]:has(> div:first-child [id^="card-wrap-"]) {
 )
 
 
-# ─── 삭제 모달 함수 ────────────────────────────────────
+# ─── 4. 모달 및 기능 함수 ────────────────────────────────────
+
 @st.dialog("면접 기록 삭제")
 def delete_session_dialog(session_id):
     st.markdown(
@@ -235,8 +238,6 @@ def delete_session_dialog(session_id):
                     unsafe_allow_html=True,
                 )
 
-
-# 상세 보기 모달 함수
 @st.dialog("면접 기록 상세", width="large")
 def session_detail_dialog(sid):
     st.markdown(
@@ -313,9 +314,9 @@ def session_detail_dialog(sid):
             st.rerun()
 
 
+# ─── 5. 메인 UI 렌더링 ────────────────────────────────────
 st.markdown("<br><br>", unsafe_allow_html=True)
 
-# 타이틀
 st.markdown(
     "<div class='hero-title'>내 <span>면접 기록</span></div>", unsafe_allow_html=True
 )
@@ -328,11 +329,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 세션 상태 초기화 (삭제 잔재)
 if "selected_session_id" not in st.session_state:
     st.session_state.selected_session_id = None
 
-# 세션 목록 조회
 try:
     ok, result = api_get_interview_sessions(user_id)
     if not ok:
@@ -342,7 +341,6 @@ except Exception as e:
     st.error(f"DB 연결 오류: {e}")
     st.stop()
 
-# 데이터가 없을 경우 (엠프티 스테이트 렌더링)
 if not sessions:
     st.markdown(
         """
@@ -355,7 +353,6 @@ if not sessions:
         unsafe_allow_html=True,
     )
 
-    # 예쁜 버튼을 박스 중앙 하단에 배치하기 위해 컬럼 사용
     emp_col1, emp_col2, emp_col3 = st.columns([3, 2, 3])
     with emp_col2:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -363,7 +360,6 @@ if not sessions:
             st.switch_page("pages/interview.py")
     st.stop()
 
-# 목록 헤더
 col_count, col_empty, col_new = st.columns([2, 6, 2])
 with col_count:
     st.markdown(
@@ -376,7 +372,6 @@ with col_new:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 세션 카드 목록
 with st.container(height=580, border=False):
     for s in sessions:
         if s["total_score"] is not None:
@@ -431,5 +426,3 @@ with st.container(height=580, border=False):
                     "삭제", key=f"del_modal_btn_{s['id']}", use_container_width=True
                 ):
                     delete_session_dialog(s["id"])
-
-
