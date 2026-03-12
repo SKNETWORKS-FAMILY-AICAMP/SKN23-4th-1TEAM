@@ -1,4 +1,4 @@
-﻿"""
+"""
 File: auth_schema.py
 Author: 양창일
 Created: 2026-02-15
@@ -19,7 +19,7 @@ from typing import Optional
 class SignupRequest(BaseModel):
     email: str = Field(min_length=3, max_length=255)  
     name: str | None = Field(default=None, min_length=1, max_length=100)
-    password: str = Field(min_length=8, max_length=128)  
+    password: str = Field(min_length=8, max_length=72, pattern=r"^[\x20-\x7E]+$")
 
 class LoginRequest(BaseModel):
     email: str  

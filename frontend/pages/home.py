@@ -2,7 +2,7 @@
 File: home.py
 Author: 김지우
 Created: 2026-02-20
-Description: 메인 화면 (프리미엄 대시보드 UI)
+Description: 메인 화면 (프리미엄 대시보드 UI 및 에이전트 연동)
 
 Modification History:
 - 2026-02-21 (김지우): JWT 해독 로직 백엔드 이관
@@ -11,11 +11,13 @@ Modification History:
 - 2026-02-23 (김지우): UI 적용 및 마이페이지(my_info) 라우팅 연결, 프로필 기능 추가
 - 2026-02-24 (유헌상): 채용공고 APi 호출 및 연결
 - 2026-02-28 (김지우): require_login 중앙화 및 유령 버튼 투명화 버그 픽스
+- 2026-03-10 (김지우): 자비스 에이전트(Zero-Click Navigation) 챗봇 UI 통합 및 컴포넌트 분리
 """
 
 import streamlit as st
 import time
 import sys, os
+import requests 
 
 # 경로 설정
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -38,10 +40,12 @@ from api.jobs import search_jobs, get_latest_resume
 from services.jobs_service import build_job_cards_data
 from components.job_cards import render_job_cards
 
+# 챗봇 컴포넌트 임포트
+from components.chatbot_modal import render_fab_button
+
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
 user_id = require_login()
-
 
 from urllib.parse import urlencode
 
@@ -84,7 +88,7 @@ p, span, div, a, label, h1, h2, h3, h4, h5, h6, li, td, th, small, strong, b, i,
 [data-testid="stAppViewContainer"] > .main { background-color: #f5f7f9 !important; }
 [data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer, header { visibility:hidden; background:transparent; color-scheme: light !important; }
 
-/* === Streamlit 내부 컴포넌트 다크모드 완전 차단 === */
+/* Streamlit 내부 컴포넌트 다크모드 완전 차단 */
 [data-testid="stVerticalBlock"],
 [data-testid="stHorizontalBlock"],
 [data-testid="stColumn"],
@@ -126,7 +130,7 @@ section[data-testid="stDialog"] { background-color: #ffffff !important; color: #
 [data-baseweb="menu"] li { background-color: #ffffff !important; color: #111 !important; }
 [data-baseweb="radio"] > div > div > div { color: #111 !important; }
 
-/* === 모든 Streamlit 버튼 배경 강제 === */
+/* 모든 Streamlit 버튼 배경 강제 */
 [data-testid="stButton"] > button,
 [data-testid="stLinkButton"] > a,
 [data-testid="stFormSubmitButton"] > button {
@@ -143,7 +147,7 @@ button[kind="primary"], [data-testid="stButton"] > button[kind="primary"] {
 button[kind="primary"] p, button[kind="primary"] span,
 [data-testid="stButton"] > button[kind="primary"] p { color: #fff !important; }
 
-/* === 테이블/데이터프레임 배경 강제 === */
+/* 테이블/데이터프레임 배경 강제 */
 [data-testid="stDataFrame"],
 [data-testid="stDataFrame"] > div,
 [data-testid="stDataFrame"] iframe,
@@ -152,14 +156,14 @@ button[kind="primary"] p, button[kind="primary"] span,
 [data-testid="stTable"] th,
 [data-testid="stTable"] td { background-color: #ffffff !important; color: #111 !important; }
 
-/* === 컨테이너(border=True) 내부 배경 강제 === */
+/* 컨테이너(border=True) 내부 배경 강제 */
 [data-testid="stVerticalBlockBorderWrapper"] > div,
 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] { background-color: transparent !important; }
 
-/* === 탭 패널 배경 === */
+/* 탭 패널 배경 */
 [role="tabpanel"], [data-baseweb="tab-panel"] { background-color: transparent !important; }
 
-/* === Toggle/Checkbox === */
+/* Toggle/Checkbox */
 [data-testid="stCheckbox"] label span,
 [data-testid="stToggle"] label span { color: #111 !important; }
 .block-container { padding-top: 2rem !important; max-width: 1200px !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-bottom: 1rem !important; }
@@ -452,7 +456,7 @@ with right_col:
 
     if user_role == "admin":
         st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-        if st.button("⚙️ 관리자 대시보드", use_container_width=True):
+        if st.button("관리자 대시보드", use_container_width=True):
             st.switch_page("pages/admin.py")
 
     st.write("")
@@ -488,7 +492,7 @@ with right_col:
         .banner-link {{
             display: inline-block;
             text-decoration: none;
-            width: 380px; /* 기존에 설정하신 너비 */
+            width: 380px; 
         }}
         
         .banner-container {{
@@ -500,7 +504,6 @@ with right_col:
             box-shadow: 0 10px 40px rgba(187, 56, 208, 0.08);
             border: 2px solid #fae8ff; 
             
-            /* 높이 355px 고정 */
             height: 355px; 
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -526,7 +529,6 @@ with right_col:
     </a>
     """
 
-    # 화면 렌더링
     st.markdown(single_ad_banner_html, unsafe_allow_html=True)
 
 
@@ -656,117 +658,5 @@ div[data-testid="stTabs"] > div[role="tabpanel"], div[data-testid="stTabs"] div[
         st.markdown("<br>", unsafe_allow_html=True)
         render_memo_board(user_name)
 
-
-# AI tavily chatbot 모달
-def inject_chatbot_styles():
-    st.markdown(
-        """
-    <style>
-    div[data-testid="stModal"] > div[data-testid="stDialog"] { margin: auto !important; }
-    div[data-testid="stDialog"] > div > div { border-radius: 24px !important; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important; border: 1px solid rgba(0,0,0,0.05) !important; overflow-y: auto !important; max-height: 85vh !important; }
-    div[data-testid="stDialog"] > div > div > div { padding: 32px 36px 28px !important; }
-    div[data-testid="stDialog"] h2 { font-weight: 800 !important; font-size: 1.5rem !important; letter-spacing: -0.5px !important; background: linear-gradient(135deg, #bb38d0 0%, #872a96 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px !important; }
-    .advisor-badge { display: inline-flex; align-items: center; gap: 6px; background: #f5f5f7; border: 1px solid #e5e5ea; border-radius: 12px; padding: 4px 10px; font-size: 0.75rem; font-weight: 500; color: #8e8e93; margin-bottom: 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .advisor-badge::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #34c759; box-shadow: 0 0 4px rgba(52,199,89,0.4); animation: pulse-dot 2s ease-in-out infinite; }
-    @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }
-    div[data-testid="stDialog"] div[data-testid="stVerticalBlockBorderWrapper"] { background: #ffffff !important; border: none !important; padding: 0 !important; }
-    @keyframes msg-pop { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .ai-bubble { background: #e9e9eb; border-radius: 18px 18px 18px 4px; padding: 12px 16px; color: #000000 !important; font-size: 15px; line-height: 1.4; white-space: pre-wrap; animation: msg-pop 0.3s ease-out both; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: inline-block; max-width: fit-content; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); }
-    .user-bubble { background: #007aff; border-radius: 18px 18px 4px 18px; padding: 12px 16px; color: #ffffff !important; font-size: 15px; line-height: 1.4; white-space: pre-wrap; animation: msg-pop 0.3s ease-out both; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: inline-block; max-width: fit-content; box-shadow: 0 4px 14px rgba(0, 122, 255, 0.2); }
-    .sender-label { display: none; }
-    :root { --apple-blue: #007aff; --apple-blue-hover: #0056b3; }
-    div[data-testid="stChatInput"] { border-radius: 20px !important; border: 1px solid #d1d1d6 !important; background: #ffffff !important; padding: 0px 10px 0px 5px !important; margin-top: -9px !important; margin-bottom: 20px !important; transition: all 0.2s ease-in-out !important; }
-    div[data-testid="stChatInput"]:focus-within { border-color: var(--apple-blue) !important; box-shadow: 0 0 0 1px var(--apple-blue) !important; }
-    div[data-testid="stChatInput"] > div, div[data-testid="stChatInput"] div[data-baseweb="textarea"], div[data-testid="stChatInput"] div[data-baseweb="base-input"] { background-color: transparent !important; border: none !important; }
-    div[data-testid="stChatInput"] textarea { background-color: transparent !important; color: #000000 !important; font-size: 15px !important; font-weight: 400 !important; caret-color: var(--apple-blue) !important; }
-    div[data-testid="stChatInput"] textarea::placeholder { color: #c7c7cc !important; }
-    button[data-testid="stChatInputSubmitButton"], div[data-testid="stChatInputSubmitButton"] { background: var(--apple-blue) !important; color: white !important; border-radius: 50% !important; width: 32px !important; height: 32px !important; min-width: 32px !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all 0.2s ease !important; margin-top: 4px !important; margin-bottom: 4px !important; }
-    button[data-testid="stChatInputSubmitButton"]:hover, div[data-testid="stChatInputSubmitButton"]:hover { background: var(--apple-blue-hover) !important; }
-    button[data-testid="stChatInputSubmitButton"]:active, div[data-testid="stChatInputSubmitButton"]:active { transform: scale(0.9) !important; }
-    button[data-testid="stChatInputSubmitButton"] svg, div[data-testid="stChatInputSubmitButton"] svg { fill: #ffffff !important; color: #ffffff !important; width: 18px !important; height: 18px !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)) !important; }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
-
-
-if "guide_chat" not in st.session_state:
-    st.session_state.guide_chat = [
-        {
-            "role": "assistant",
-            "content": "안녕하세요! <strong>AIWORK 수석 어드바이저 사자개</strong>입니다. ✦\n\n플랫폼 사용법, 취업 트렌드, 직무 고민 등 무엇이든 물어보세요. 실시간 웹 검색으로 2026년 최신 데이터를 기반으로 답변드립니다.",
-        }
-    ]
-
-
-@st.dialog(" ", width="medium")
-def chatbot_modal():
-    inject_chatbot_styles()
-    st.markdown(
-        """<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin-bottom: 24px;"> <h2 style="font-weight: 700; font-size: 24px; color: #1d1d1f; letter-spacing: -0.5px; margin: 0 0 8px 0; padding: 0;">AIWORK 가이드 봇</h2> <div class="advisor-badge"> 실시간 탐색 연동 · 2026 채용 동향 팩트체크 </div> </div>""",
-        unsafe_allow_html=True,
-    )
-
-    use_web_search = st.toggle("웹 검색 기능 켜기", value=False)
-    if use_web_search:
-        st.caption(
-            "활성화됨: 면접 동향, 직무 전망 등 최신 정보가 필요할 때 유용합니다."
-        )
-    else:
-        st.caption("비활성화됨: 플랫폼 사용법 등 일반적인 질문에 빠르게 답변합니다.")
-
-    chat_container = st.container(height=600)
-
-    for chat in st.session_state.guide_chat:
-        with chat_container:
-            if chat["role"] == "assistant":
-                st.markdown(
-                    f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{chat["content"]}</div></div></div>""",
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"""<div style="display:flex; justify-content:flex-end; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div class="user-bubble">{chat["content"]}</div></div>""",
-                    unsafe_allow_html=True,
-                )
-
-    if prompt := st.chat_input("예: 개발자 요새 전망 어때? / AIWORK는 어떻게 써?"):
-        st.session_state.guide_chat.append({"role": "user", "content": prompt})
-
-        with chat_container:
-            st.markdown(
-                f"""<div style="display:flex; justify-content:flex-end; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div class="user-bubble">{prompt}</div></div>""",
-                unsafe_allow_html=True,
-            )
-
-            web_info = ""
-            if use_web_search:
-                with st.spinner("웹을 탐색 중입니다..."):
-                    web_info = get_web_context_first(prompt)
-
-            placeholder = st.empty()
-            full_reply = ""
-
-            for chunk in get_home_guide_response_stream(prompt, web_info):
-                full_reply += chunk
-                placeholder.markdown(
-                    f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{full_reply}▌</div></div></div>""",
-                    unsafe_allow_html=True,
-                )
-
-            placeholder.markdown(
-                f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:12px; font-family: -apple-system, sans-serif;"><div style="font-size: 28px; line-height: 1;">🦁</div><div><div style="font-size: 12px; font-weight: 600; color: #bb38d0; margin-bottom: 4px; margin-left: 4px;">AI 사자개</div><div class="ai-bubble">{full_reply}</div></div></div>""",
-                unsafe_allow_html=True,
-            )
-
-        st.session_state.guide_chat.append({"role": "assistant", "content": full_reply})
-
-
-@st.fragment
-def render_fab_button():
-    st.markdown('<div id="fab-marker"></div>', unsafe_allow_html=True)
-    if st.button("chatbot_trigger_btn", key="fab_btn"):
-        chatbot_modal()
-
-
+# 분리된 컴포넌트 호출 (파일 가장 마지막)
 render_fab_button()

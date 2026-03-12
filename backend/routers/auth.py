@@ -1,4 +1,4 @@
-﻿"""
+"""
 File: auth.py
 Author: 양창일, 김지우
 Created: 2026-02-15
@@ -94,8 +94,10 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
     try:
         auth_service.signup(db, req.email, req.password, req.name)
         return {"ok": True}
-    except ValueError:
-        raise HTTPException(status_code=400, detail="유효하지 않은 요청입니다.")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"서버 내부 오류: {str(e)}")
 
 
 @router.get("/check-email")

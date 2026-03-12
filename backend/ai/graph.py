@@ -112,19 +112,3 @@ def build_answer_graph():
     g.add_edge("follow_up", END)
     g.add_edge("pick_question", END)
     return g.compile()
-
-
-"""
-수정할 부분 
-1. node_pick_question : 이력서 기반 + 기술 기반 출제 연동
-- 현재 get_bank()를 호출해 고정된 질문 (qustion_pool)에서만 문제 가져옴.
-- 여기서 벡터DB(ChromaDB)를 활용해 이력서 기반 + 기술 기반 출제 (1:1)연동 로직 추가하기.
-- 이번 턴이 직무 지식을 물어볼지 아니면 이력서 경험(RAG)을 물어볼지 결정하는 로직 추가하기.
-
-2. node_evaluate : 평가 로직 고도화
-- 지금은 상태값에 이미 저장된 st.get("rag_context")를 그대로 평가에 사용
-- 실제 면접처럼 강점/약점 분석, 개선 방향 제시 등 상세 피드백을 생성하도록 수정하기.
-- LLM을 활용해 평가 로직을 더 정교하게 만들기.
-- 사용자의 답변(ans) 텍스트 자체를 쿼리로 삼아 ChromaDB를 한 번 더 검색해 오는 로직을 추가
-    - 지원자가 답변 중에 이력서에 없는 기술을 언급했는지 팩트 체크용
-"""
