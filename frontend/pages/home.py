@@ -12,29 +12,32 @@ Modification History:
 - 2026-02-24 (유헌상): 채용공고 APi 호출 및 연결
 - 2026-02-28 (김지우): require_login 중앙화 및 유령 버튼 투명화 버그 픽스
 - 2026-03-10 (김지우): 자비스 에이전트(Zero-Click Navigation) 챗봇 UI 통합 및 컴포넌트 분리
+- 2026-03-12 (김지우): 프론트엔드/백엔드 폴더 의존성 완벽 분리 및 임포트 최적화 (Architecture Refactoring)
 """
 
-import streamlit as st
+import os
+import sys
 import time
-import sys, os
-import requests 
+import requests
+from urllib.parse import urlencode
 
-# 경로 설정
-current_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_dir = os.path.dirname(current_dir)
-root_dir = os.path.dirname(frontend_dir)
-backend_dir = os.path.join(root_dir, "backend")
-
-if root_dir not in sys.path:
-    sys.path.append(root_dir)
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
-
-# 서드파티 및 모듈
+import streamlit as st
 import streamlit.components.v1 as components
-from utils.function import inject_custom_header, require_login, render_memo_board
-from utils.home_api_render import render_memo_board, render_realtime_ai_news
 from streamlit_option_menu import option_menu
+
+# ─── 1. 프론트엔드 전용 경로 설정 (백엔드 의존성 완벽 차단) ────────────────────────────────────
+# 현재 파일(home.py)의 위치: frontend/pages
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 프론트엔드 최상위 폴더 위치: frontend
+frontend_dir = os.path.dirname(current_dir)
+
+# 파이썬 지도(sys.path)에 백엔드 말고 'frontend' 폴더만 1순위로 강제 등록!
+if frontend_dir not in sys.path:
+    sys.path.insert(0, frontend_dir)
+
+# 이제 파이썬이 frontend 폴더 내부 모듈들을 정확하게 찾아옵니다.
+from utils.function import inject_custom_header, require_login
+from utils.home_api_render import render_memo_board, render_realtime_ai_news
 from utils.api_utils import api_get_home_guide
 from api.jobs import search_jobs, get_latest_resume
 from services.jobs_service import build_job_cards_data
@@ -43,13 +46,12 @@ from components.job_cards import render_job_cards
 # 챗봇 컴포넌트 임포트
 from components.chatbot_modal import render_fab_button
 
+# ─── 2. 기본 페이지 설정 및 로그인 체크 ────────────────────────────────────
 st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
 user_id = require_login()
-
-from urllib.parse import urlencode
-
 inject_custom_header()
+
 
 # 유저 정보 바인딩
 user_info = st.session_state.user or {}

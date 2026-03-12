@@ -6,28 +6,31 @@ Description: AI 면접 페이지 (제로 클릭 네비게이션 연동 완료)
 
 Modification History:
 - 2026-03-11 (김지우): 제로 클릭 네비게이션 연동 완료
+- 2026-03-12 (김지우): 프론트엔드/백엔드 폴더 의존성 완벽 분리 (Architecture Refactoring)
 """
 
 import base64
 import io
 import json
 import os
+import sys
 import time
 import requests
 
 import streamlit as st
 import streamlit.components.v1 as components
 
+# ─── 1. 프론트엔드 전용 경로 설정 (백엔드 의존성 완벽 차단) ────────────────────────────────────
+# 현재 파일(interview.py)의 위치: frontend/pages
 current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(os.path.dirname(current_dir))
-backend_dir = os.path.join(root_dir, "backend")
-import sys
+# 프론트엔드 최상위 폴더 위치: frontend
+frontend_dir = os.path.dirname(current_dir)
 
-if root_dir not in sys.path:
-    sys.path.append(root_dir)
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
+# 파이썬 지도(sys.path)에 백엔드 말고 'frontend' 폴더만 1순위로 강제 등록!
+if frontend_dir not in sys.path:
+    sys.path.insert(0, frontend_dir)
 
+# 이제 파이썬이 엉뚱한 곳을 가지 않고 frontend/utils 에서만 정확히 모듈을 찾아옵니다.
 from utils.api_utils import (
     api_end_interview,
     api_get_question_pool,
@@ -42,7 +45,6 @@ st.set_page_config(page_title="AIWORK", page_icon="👾", layout="wide")
 
 user_id = require_login()
 inject_custom_header()
-
 
 st.markdown(
     """

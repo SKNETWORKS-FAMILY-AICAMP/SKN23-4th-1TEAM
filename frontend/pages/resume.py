@@ -9,13 +9,17 @@ import time
 import streamlit as st
 from datetime import datetime
 
-# 백엔드 모듈 경로 추가
+# ─── 1. 프론트엔드 전용 경로 설정 (백엔드 의존성 완벽 차단) ────────────────────────────────────
+# 현재 파일(resume.py)의 위치: frontend/pages
 current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(os.path.dirname(current_dir))
-backend_dir = os.path.join(root_dir, "backend")
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
+# 프론트엔드 최상위 폴더 위치: frontend
+frontend_dir = os.path.dirname(current_dir)
 
+# 파이썬 지도(sys.path)에 백엔드 말고 'frontend' 폴더만 1순위로 강제 등록!
+if frontend_dir not in sys.path:
+    sys.path.insert(0, frontend_dir)
+
+# 이제 파이썬이 엉뚱한 곳을 가지 않고 frontend/utils 에서만 함수를 찾아옵니다.
 from utils.api_utils import api_create_resume, api_list_resumes, api_delete_resume
 from utils.function import inject_custom_header, require_login
 
