@@ -188,6 +188,7 @@ def inject_custom_header():
             <a href="/interview" target="_self">AI면접</a>
             <a href="/resume" target="_self">이력서</a>
             <a href="/mypage" target="_self">내 기록</a>
+            <a href="/board" target="_self">게시판</a>
             <a href="/my_info" target="_self">마이페이지</a>
         </div>
         <div class="header-utils">
@@ -200,6 +201,7 @@ def inject_custom_header():
                         <a href="/interview" target="_self">AI면접</a>
                         <a href="/resume" target="_self">이력서</a>
                         <a href="/mypage" target="_self">내 기록</a>
+                        <a href="/board" target="_self">게시판</a>
                         <a href="/my_info" target="_self">마이페이지</a>
                         <div class="dropdown-divider"></div>
                     </div>
