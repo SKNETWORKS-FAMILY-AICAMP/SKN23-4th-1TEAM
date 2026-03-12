@@ -6,6 +6,7 @@ Description: # 기본 설정
 
 Modification History:
 - 2026-02-15: 초기 생성
+- 2026-03-12 (김지우): 프론트엔드에 있던 AWS 및 인프라 보안 설정 백엔드로 이관
 """
 
 import os
@@ -40,9 +41,24 @@ class Settings(BaseModel):
     NAVER_CLIENT_ID: str = os.getenv("NAVER_CLIENT_ID", "")
     NAVER_CLIENT_SECRET: str = os.getenv("NAVER_CLIENT_SECRET", "")
 
-    WORKNET_URL_BASE: str = os.getenv("WORKNET_URL_BASE")
-    WORKNET_API_KEY: str = os.getenv("WORKNET_API_KEY")
+    WORKNET_URL_BASE: str = os.getenv("WORKNET_URL_BASE", "")
+    WORKNET_API_KEY: str = os.getenv("WORKNET_API_KEY", "")
     WORKNET_TIMEOUT_SEC: int = 10
+
+
+    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    AWS_REGION: str = os.getenv("AWS_REGION", "ap-northeast-2")
+    AWS_DEFAULT_REGION: str = os.getenv("AWS_DEFAULT_REGION", "ap-northeast-2")
+    EC2_INSTANCE_ID: str = os.getenv("EC2_INSTANCE_ID", "")
+    SSH_KEY_PATH: str = os.getenv("SSH_KEY_PATH", "")
+    NGROK_AUTHTOKEN: str = os.getenv("NGROK_AUTHTOKEN", "")
+    GITHUB_REPO_URL: str = os.getenv("GITHUB_REPO_URL", "")
+
+    REMOTE_DB_PATH: str = "3team/AI_Interviewer/db/interview.db"
+    REMOTE_APP_DIR: str = "~/3team/app"
+    REMOTE_APP_FILE: str = "app.py"
+    STREAMLIT_PORT: int = 8502
 
     @property
     def FRONTEND_REDIRECT_URL(self) -> str:

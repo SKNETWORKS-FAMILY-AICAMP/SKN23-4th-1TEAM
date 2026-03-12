@@ -1,8 +1,6 @@
 import requests
-import os
-from dotenv import load_dotenv
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api")
+from utils.config import API_BASE_URL
 
 JOB_MAPPING = {
     '133300': ('웹 개발자', '프론트엔드 개발자', 'AI/ML 엔지니어', '백엔드개발자', '백엔드 개발자', 'Python 백엔드 개발자',),
@@ -25,7 +23,6 @@ JOB_MAPPING = {
 
 def search_jobs(payload: dict):
     # 매 호출 시마다 최신 환경변수를 로드하여 캐싱 현상 방지
-    load_dotenv(override=True)
     job_role = payload.get("job_role")
     
     jobsCd_list = []

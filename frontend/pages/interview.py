@@ -17,7 +17,6 @@ import requests
 
 import streamlit as st
 import streamlit.components.v1 as components
-from openai import OpenAI
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(os.path.dirname(current_dir))
@@ -160,16 +159,18 @@ def extract_resume_text(uploaded_file) -> str:
             return ""
 
 def generate_tts(text: str) -> bytes | None:
-    api_key = os.getenv("OPENAI_API_KEY", "")
-    if not api_key:
-        return None
     try:
-        client = OpenAI(api_key=api_key)
-        tts_response = client.audio.speech.create(
-            model="tts-1", voice="echo", input=text
+        # 백엔드의 TTS API로 텍스트를 보내고 음성 파일을 받아옵니다.
+        res = requests.post(
+            f"{API_BASE_URL.rstrip('/')}/infer/tts",
+            json={"text": text},
+            timeout=10
         )
-        return tts_response.content
-    except Exception:
+        if res.ok:
+            return res.content
+        return None
+    except Exception as e:
+        print(f"TTS 서버 통신 에러: {e}")
         return None
 
 def create_session(user_id, job_role, difficulty, persona, resume_used, resume_id=None, manual_tech_stack=None):
@@ -785,11 +786,6 @@ else:
     col_cam, col_chat = st.columns([0.9, 1.1])
 
     with col_chat:
-        api_key = os.getenv("OPENAI_API_KEY", "")
-        if not api_key:
-            st.error("OPENAI_API_KEY 환경변수가 필요합니다.")
-            st.stop()
-
         html = """
   <style>
   @keyframes msg-pop { 
@@ -1358,14 +1354,22 @@ else:
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
+  
+        setStatus("보안 토큰 발급 중...");
+        const tokenRes = await fetch(`${BACKEND_BASE}/infer/realtime-token`);
+        if (!tokenRes.ok) throw new Error("서버에서 보안 토큰을 발급받지 못했습니다.");
+        const tokenData = await tokenRes.json();
+        const ephemeralKey = tokenData.client_secret.value; // 백엔드가 준 1분짜리 임시 키
+
         const sdpResponse = await fetch(`https://api.openai.com/v1/realtime?model=${encodeURIComponent(MODEL)}`, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${API_KEY}`,
+            "Authorization": `Bearer ${ephemeralKey}`, 
             "Content-Type": "application/sdp"
           },
           body: offer.sdp
         });
+       
         if (!sdpResponse.ok) {
           const errText = await sdpResponse.text();
           throw new Error(`Realtime 연결 실패: ${sdpResponse.status} ${errText}`);
@@ -1461,8 +1465,7 @@ else:
   </script>
   """
         html = (
-            html.replace("__API_KEY__", json.dumps(api_key))
-            .replace("__MODEL__", json.dumps(os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")))
+            html.replace("__MODEL__", json.dumps(os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")))
             .replace("__BACKEND_BASE__", json.dumps(API_BASE_URL.rstrip("/")))
             .replace("__QUESTIONS__", json.dumps(st.session_state.get("db_questions", []), ensure_ascii=False))
             .replace("__JOB_ROLE__", json.dumps(st.session_state.get("job_role", "Python 백엔드 개발자"), ensure_ascii=False))

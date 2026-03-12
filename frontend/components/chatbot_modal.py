@@ -134,13 +134,9 @@ def chatbot_modal():
     if prompt:
         st.session_state.guide_chat.append({"role": "user", "content": prompt})
         
-        # 버튼을 클릭한 경우 즉시 UI 업데이트를 위해 rerun
-        if clicked_guide:
-            st.rerun()
-
         with chat_container:
-            if not clicked_guide: 
-                st.markdown(f"""<div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><div class="user-bubble">{prompt}</div></div>""", unsafe_allow_html=True)
+            # 텍스트 입력이든 가이드 버튼 클릭이든 차별 없이 무조건 사용자 말풍선을 즉시 그려줍니다.
+            st.markdown(f"""<div style="display:flex; justify-content:flex-end; margin-bottom:16px;"><div class="user-bubble">{prompt}</div></div>""", unsafe_allow_html=True)
 
             with st.spinner("요청을 처리 중입니다..."):
                 try:
@@ -154,6 +150,7 @@ def chatbot_modal():
                     session_params = data.get("session_params", {})
                     reply_message = data.get("message", "처리가 완료되었습니다.")
 
+                    # 백엔드에서 받은 대답을 모달창 안에 즉시 렌더링합니다.
                     st.markdown(
                         f"""<div style="display:flex; align-items:flex-start; gap:10px; justify-content:flex-start; margin-bottom:8px;">
                             <div style="font-size: 32px; line-height: 1; margin-top: 4px;">🦁</div>
@@ -167,6 +164,7 @@ def chatbot_modal():
                     
                     feedback_content = session_params.get("feedback_result", "")
                     
+                    # 대화 기록 세션에 저장 (다음 렌더링을 위해)
                     st.session_state.guide_chat.append({
                         "role": "assistant", 
                         "content": reply_message,
@@ -174,6 +172,7 @@ def chatbot_modal():
                         "feedback_content": feedback_content
                     })
 
+                    # 첨삭 기능일 경우 버튼 렌더링
                     if action == "provide_feedback" and feedback_content:
                         st.download_button(
                             label="첨삭 결과 다운로드 (TXT)",
@@ -183,7 +182,7 @@ def chatbot_modal():
                             key=f"dl_new_{len(st.session_state.guide_chat)}"
                         )
 
-                    # 페이지 라우팅 분기
+                    # 페이지 라우팅 분기 (이동 명령일 때만 페이지 전환)
                     if action == "navigate" and target_page:
                         st.success(f"{reply_message}")
                         time.sleep(1.2)
