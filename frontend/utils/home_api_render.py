@@ -1,33 +1,26 @@
 import random
-
 import streamlit as st
-
 from utils.api_utils import api_create_memo, api_get_home_news, api_get_memos
-
 
 def render_memo_board(current_user_name="익명"):
     import random
-    import sys
-    import os
+    import requests
     import streamlit as st
+    from utils.config import API_BASE_URL
 
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(os.path.dirname(current_dir))
-    if project_root not in sys.path:
-        sys.path.append(project_root)
 
     try:
-        from backend.db.database import save_memo, get_all_memos
-    except Exception as e:
-        st.error(f"DB Import Error: {e}")
-        return
-
-    try:
-        memos = get_all_memos(limit=30)
+        res = requests.get(f"{API_BASE_URL.rstrip('/')}/home/memos", params={"limit": 30}, timeout=10)
+        if res.ok:
+            # 백엔드가 {"items": [...]} 형태로 주므로 "items" 키를 꺼냅니다.
+            memos = res.json().get("items", [])
+        else:
+            memos = []
     except Exception as e:
         st.warning(f"Load Error: {e}")
         memos = []
 
+    # 메모가 없을 경우 기본 메모 세팅
     if not memos:
         default_memos = [
             {"author": "시스템", "content": "AIWORK에 오신 것을 환영합니다! 자유롭게 발자취를 남겨주세요.", "color": "linear-gradient(135deg, #fdf4ff 0%, #ffffff 100%)", "border": "#fae8ff", "text_color": "#bb38d0"},
@@ -37,76 +30,37 @@ def render_memo_board(current_user_name="익명"):
         
         for m in default_memos:
             try:
-                save_memo(
-                    author=m["author"],
-                    content=m["content"],
-                    color=m["color"],
-                    border=m["border"],
-                    text_color=m["text_color"]
+                requests.post(
+                    f"{API_BASE_URL.rstrip('/')}/home/memos",
+                    json={
+                        "author": m["author"],
+                        "content": m["content"],
+                        "color": m["color"],
+                        "border": m["border"],
+                        "text_color": m["text_color"]
+                    },
+                    timeout=5
                 )
-            except Exception as e:
-                st.error(f"Init DB Error: {e}")
+            except Exception:
+                pass
                 
         try:
-            memos = get_all_memos(limit=30)
+            res = requests.get(f"{API_BASE_URL.rstrip('/')}/home/memos", params={"limit": 30}, timeout=10)
+            memos = res.json().get("items", []) if res.ok else default_memos
         except Exception:
             memos = default_memos
 
-        st.markdown(
+    st.markdown(
         """
         <style>
-        div[data-testid="stForm"] {
-            border: 2px solid #fae8ff !important;
-            border-radius: 20px !important;
-            padding: 24px !important;
-            background: #ffffff !important;
-            box-shadow: 0 10px 30px rgba(187, 56, 208, 0.05) !important;
-            margin-bottom: 10px !important;
-        }
-        
-        div[data-testid="stForm"] > div > p {
-            font-size: 16px !important; font-weight: 800 !important; color: #111 !important; margin-bottom: 8px !important;
-        }
-        
-        div[data-testid="stForm"] input {
-            border-radius: 12px !important; border: 1px solid #e2e8f0 !important;
-            background: #f8f9fa !important; font-size: 15px !important; padding: 12px !important;
-            transition: all 0.2s ease !important;
-        }
-        div[data-testid="stForm"] input:focus {
-            border-color: #bb38d0 !important; box-shadow: 0 0 0 2px rgba(187, 56, 208, 0.1) !important; background: #fff !important;
-        }
-        
-        div[data-testid="stForm"] button {
-            background-color: #bb38d0 !important; /* 보라색 배경 */
-            border: none !important; 
-            border-radius: 10px !important;
-            height: 40px !important; 
-            min-height: 40px !important;
-            padding: 0 16px !important;
-            box-shadow: 0 4px 15px rgba(187, 56, 208, 0.2) !important; 
-            transition: all 0.2s ease !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        
-        div[data-testid="stForm"] button * {
-            color: #ffffff !important; 
-            font-weight: 800 !important; 
-            font-size: 15px !important;
-            margin: 0 !important;
-        }
-        
-        div[data-testid="stForm"] button:hover {
-            transform: translateY(-2px) !important; 
-            box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3) !important; 
-            filter: brightness(1.1);
-        }
-        div[data-testid="stForm"] button:active {
-            transform: translateY(0) !important; 
-            box-shadow: 0 4px 10px rgba(187, 56, 208, 0.2) !important;
-        }
+        div[data-testid="stForm"] { border: 2px solid #fae8ff !important; border-radius: 20px !important; padding: 24px !important; background: #ffffff !important; box-shadow: 0 10px 30px rgba(187, 56, 208, 0.05) !important; margin-bottom: 10px !important; }
+        div[data-testid="stForm"] > div > p { font-size: 16px !important; font-weight: 800 !important; color: #111 !important; margin-bottom: 8px !important; }
+        div[data-testid="stForm"] input { border-radius: 12px !important; border: 1px solid #e2e8f0 !important; background: #f8f9fa !important; font-size: 15px !important; padding: 12px !important; transition: all 0.2s ease !important; }
+        div[data-testid="stForm"] input:focus { border-color: #bb38d0 !important; box-shadow: 0 0 0 2px rgba(187, 56, 208, 0.1) !important; background: #fff !important; }
+        div[data-testid="stForm"] button { background-color: #bb38d0 !important; border: none !important; border-radius: 10px !important; height: 40px !important; min-height: 40px !important; padding: 0 16px !important; box-shadow: 0 4px 15px rgba(187, 56, 208, 0.2) !important; transition: all 0.2s ease !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+        div[data-testid="stForm"] button * { color: #ffffff !important; font-weight: 800 !important; font-size: 15px !important; margin: 0 !important; }
+        div[data-testid="stForm"] button:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3) !important; filter: brightness(1.1); }
+        div[data-testid="stForm"] button:active { transform: translateY(0) !important; box-shadow: 0 4px 10px rgba(187, 56, 208, 0.2) !important; }
         </style>
         """, unsafe_allow_html=True
     )
@@ -129,13 +83,18 @@ def render_memo_board(current_user_name="익명"):
                 ]
                 picked_color = random.choice(colors)
                 
+
                 try:
-                    save_memo(
-                        author=current_user_name,
-                        content=new_memo_text,
-                        color=picked_color["color"],
-                        border=picked_color["border"],
-                        text_color=picked_color["text_color"]
+                    requests.post(
+                        f"{API_BASE_URL.rstrip('/')}/home/memos",
+                        json={
+                            "author": current_user_name,
+                            "content": new_memo_text,
+                            "color": picked_color["color"],
+                            "border": picked_color["border"],
+                            "text_color": picked_color["text_color"]
+                        },
+                        timeout=5
                     )
                 except Exception as e:
                     st.error(f"Save Error: {e}")
@@ -144,65 +103,25 @@ def render_memo_board(current_user_name="익명"):
 
     memo_html = """
     <style>
-
-    .scrollable-memo-container {
-        padding: 5px 10px 20px 5px; 
-        margin-top: 10px;
-    }
-    
-    .memo-board { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
-        gap: 20px; 
-    }
-    
-    .memo-card {
-        padding: 22px;
-        border-radius: 20px; 
-        box-shadow: 0 8px 24px rgba(0,0,0,0.04);
-        position: relative; 
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        overflow: hidden;
-    }
-    .memo-card::before {
-        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-        background: rgba(255,255,255,0.6);
-    }
-    .memo-card:hover { 
-        transform: translateY(-6px); 
-        box-shadow: 0 16px 32px rgba(0,0,0,0.08); 
-    }
-    
-    .memo-author {
-        font-size: 13px; font-weight: 800; 
-        display: inline-flex; align-items: center; gap: 6px;
-        background: rgba(255,255,255,0.7); 
-        padding: 6px 12px; 
-        border-radius: 12px;
-        width: fit-content;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    }
-    
-    .memo-content { 
-        font-size: 15px; line-height: 1.6; font-weight: 600; 
-        word-break: keep-all; padding-left: 2px;
-    }
+    .scrollable-memo-container { padding: 5px 10px 20px 5px; margin-top: 10px; }
+    .memo-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    .memo-card { padding: 22px; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+    .memo-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.6); }
+    .memo-card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(0,0,0,0.08); }
+    .memo-author { font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.7); padding: 6px 12px; border-radius: 12px; width: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .memo-content { font-size: 15px; line-height: 1.6; font-weight: 600; word-break: keep-all; padding-left: 2px; }
     </style>
-    
     <div class="scrollable-memo-container">
         <div class="memo-board">
     """
 
     for memo in memos:
         memo_html += f"""
-            <div class="memo-card" style="background: {memo['color']}; border: 1px solid {memo['border']}; color: {memo['text_color']};">
+            <div class="memo-card" style="background: {memo.get('color', '#fff')}; border: 1px solid {memo.get('border', '#eee')}; color: {memo.get('text_color', '#000')};">
                 <div class="memo-author">
-                    <span>{memo['author']}</span>
+                    <span>{memo.get('author', '익명')}</span>
                 </div>
-                <div class="memo-content">{memo['content']}</div>
+                <div class="memo-content">{memo.get('content', '')}</div>
             </div>
         """
 
@@ -213,8 +132,6 @@ def render_memo_board(current_user_name="익명"):
 
     with st.container(height=275, border=False):
         st.html(memo_html)
-
-
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def _get_cached_news_content(job_role=None):

@@ -57,20 +57,16 @@ def search_jobs(payload: dict):
     return res.json()
 
 
-def get_latest_resume(user_id: str | None) -> dict:
-    # user_id = 'demo_user'  # 나중에 수정할것
 
+def get_latest_resume(user_id: str | None) -> dict:
+    # FastAPI 서버의 최신 이력서 조회 엔드포인트
     BASE_URL = API_BASE_URL.rstrip("/")
-    
     RESUME_LATEST_URL = f"{BASE_URL}/resumes/latest"
 
     res = requests.get(RESUME_LATEST_URL, params={"user_id": user_id}, timeout=20)
     
+    # 이력서가 없거나 오류 발생 시 None을 반환하여 모달 호출 로직으로 넘김
     if not res.ok:
-        try:
-            detail = res.json().get("detail", res.text)
-        except Exception:
-            detail = res.text
-        # raise Exception(f"resume API 호출 실패 ({res.status_code}): {detail}")
         return None
+        
     return res.json()

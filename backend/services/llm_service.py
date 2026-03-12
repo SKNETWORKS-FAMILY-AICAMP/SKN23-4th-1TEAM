@@ -491,3 +491,41 @@ def get_home_guide_response_stream(user_message: str, web_context: str):
                 
     except Exception as e:
         yield f"죄송합니다. 오류가 발생했습니다. ({e})"
+
+
+def generate_resume_feedback(document_content: str, focus_area: str = "전체") -> str:
+    # 인사담당자 관점의 전문 첨삭 프롬프트
+    prompt = f"""
+당신은 10년 차 수석 인사담당자이며, 첨삭 관련해서는 완벽주의자입니다.
+지원자가 제출한 아래 이력서/자기소개서를 검토하고, '{focus_area}' 측면을 중점적으로 피드백하세요.
+
+[지원자 텍스트]
+{document_content}
+
+[출력 형식 (반드시 마크다운 사용)]
+### **총평**
+(2~3문장으로 간략한 총평)
+
+### **잘 작성된 점 (유지할 내용)**
+- 
+
+### **보완이 필요한 점 (수정 제안)**
+- 
+
+### **실무 면접관의 팁**
+(실제 면접에서 받을 수 있는 꼬리질문 1개와 대비책)
+"""
+    try:
+        from openai import OpenAI
+        import os
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"첨삭 오류: {e}")
+        return "첨삭 서버에 일시적인 오류가 발생했습니다."

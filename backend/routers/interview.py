@@ -2,15 +2,23 @@
 File: routers/interview.py
 Author: 김지우
 Created: 2026-03-01
-Description: 면접 기록 삭제 (PyMySQL 원시 SQL 적용 + 인증 호환성 패치)
+Description: 면접 세션 CRUD 및 AI/RAG 처리 라우터 통합본
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+
 from backend.db.session import get_db
 from backend.routers.auth import get_current_user
 from backend.db.database import get_connection
 
+# 프론트엔드에서 분리해낸 AI/RAG 서비스 함수 임포트
+from backend.services.llm_service import analyze_resume_comprehensive, generate_evaluation
+from backend.services.rag_service import store_resume
+
 router = APIRouter(prefix="/api/interview", tags=["Interview"])
+
 
 @router.delete("/sessions/{session_id}")
 async def delete_interview_session(
@@ -18,13 +26,10 @@ async def delete_interview_session(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    # 1. FastAPI 의존성 해결을 위해 함수 내부에서 토큰 검증 추출
     current_user = get_current_user(request, db)
     
-    # 2. PyMySQL 컨텍스트 매니저를 통한 삭제 로직 실행
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # 본인 세션인지 확인
             cur.execute(
                 "SELECT id FROM interview_sessions WHERE id=%s AND user_id=%s",
                 (session_id, current_user.id)
@@ -34,17 +39,8 @@ async def delete_interview_session(
             if not session:
                 raise HTTPException(status_code=404, detail="세션을 찾을 수 없거나 삭제 권한이 없습니다.")
             
-            # 연관 상세 기록 삭제
-            cur.execute(
-                "DELETE FROM interview_details WHERE session_id=%s",
-                (session_id,)
-            )
-            
-            # 메인 세션 삭제
-            cur.execute(
-                "DELETE FROM interview_sessions WHERE id=%s",
-                (session_id,)
-            )
+            cur.execute("DELETE FROM interview_details WHERE session_id=%s", (session_id,))
+            cur.execute("DELETE FROM interview_sessions WHERE id=%s", (session_id,))
 
     return {"message": "삭제 완료", "session_id": session_id}
 
@@ -94,3 +90,42 @@ async def update_interview_session(
     
     db.commit()
     return {"message": "세션 업데이트 완료"}
+
+
+class AnalyzeResumeRequest(BaseModel):
+    resume_text: str
+    job_role: str
+
+class StoreResumeRequest(BaseModel):
+    resume_text: str
+    user_id: str
+
+class EvaluateInterviewRequest(BaseModel):
+    messages: List[Dict[str, Any]]
+    job_role: str
+    difficulty: str
+    resume_text: Optional[str] = None
+
+@router.post("/analyze-resume")
+async def api_analyze_resume(req: AnalyzeResumeRequest):
+    try:
+        result = analyze_resume_comprehensive(req.resume_text, req.job_role)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/store-resume")
+async def api_store_resume(req: StoreResumeRequest):
+    try:
+        chunk_count = store_resume(req.resume_text, req.user_id)
+        return {"status": "success", "chunk_count": chunk_count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/evaluate")
+async def api_evaluate_interview(req: EvaluateInterviewRequest):
+    try:
+        result = generate_evaluation(req.messages, req.job_role, req.difficulty, req.resume_text)
+        return {"status": "success", "evaluation": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
