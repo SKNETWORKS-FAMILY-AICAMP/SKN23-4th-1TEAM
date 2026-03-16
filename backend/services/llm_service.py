@@ -529,3 +529,32 @@ def generate_resume_feedback(document_content: str, focus_area: str = "전체") 
     except Exception as e:
         print(f"첨삭 오류: {e}")
         return "첨삭 서버에 일시적인 오류가 발생했습니다."
+
+
+# 이력서&자소서 구분 첨삭
+def get_proofread_result(text: str, doc_type: str) -> str:
+    from langchain_openai import ChatOpenAI
+    from langchain_core.prompts import ChatPromptTemplate
+    
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.3)
+    
+    if doc_type == "cover_letter":
+        system_prompt = """당신은 1타 취업 컨설턴트입니다. 
+주어진 자기소개서의 문법 오류를 교정하고, STAR 기법에 맞춰 논리적 흐름이 돋보이도록 문장을 다듬어주세요. 
+과장된 표현은 줄이고 구체적인 행동과 결과가 강조되도록 피드백과 교정본을 작성하세요.
+마크다운 형식으로 보기 좋게 정리해서 출력하세요."""
+    else:
+        system_prompt = """당신은 1타 취업 컨설턴트입니다. 
+주어진 이력서의 텍스트를 분석하여 문법 오류를 교정하고, 성과가 수치화되어 돋보이도록 다듬어주세요. 
+문장은 명사형으로 간결하게 끝나도록 수정하고, 피드백과 교정본을 함께 제공하세요.
+마크다운 형식으로 보기 좋게 정리해서 출력하세요."""
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("user", "{text}")
+    ])
+    
+    chain = prompt | llm
+    response = chain.invoke({"text": text})
+    
+    return response.content
