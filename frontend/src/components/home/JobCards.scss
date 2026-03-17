@@ -1,0 +1,110 @@
+.job-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  max-height: 410px;
+  overflow-y: auto;
+  /* 💡 오른쪽 스크롤바 공간을 주면서도, 전체적인 밸런스를 위해 왼쪽 패딩도 약간 추가합니다 */
+  padding: 4px 8px 4px 4px; 
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 4px;
+  }
+}
+
+.job-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  /* 💡 카드 내부 패딩을 넉넉하게 주어 여유 공간을 만듭니다 */
+  padding: 24px 20px; 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  background: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  /* 💡 사진처럼 카드 안의 모든 내용이 가운데 정렬되도록 설정합니다 */
+  text-align: center; 
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  .job-card-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 💡 로고와 텍스트를 수평 중앙에 위치시킵니다 */
+
+    .job-logo {
+      height: 28px; /* 로고 크기를 살짝 키웠습니다 */
+      margin-bottom: 16px;
+      object-fit: contain;
+    }
+
+    .job-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+
+      .job-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 12px;
+        line-height: 1.4;
+        /* 제목이 너무 길 경우 두 줄까지만 보이고 줄임표 처리되도록 합니다 */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      
+      .job-meta {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 6px;
+      }
+      
+      .job-date {
+        font-size: 14px;
+        color: #888;
+        margin-top: 10px;
+      }
+    }
+  }
+
+  .job-card-action {
+    width: 100%;
+
+    .apply-btn {
+      width: 100%;
+      padding: 12px; /* 버튼을 조금 더 도톰하게 만듭니다 */
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+      }
+    }
+  }
+}
+
+.loading-state, .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 15px;
+}

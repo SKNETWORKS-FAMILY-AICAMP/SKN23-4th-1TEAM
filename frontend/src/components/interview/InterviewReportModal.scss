@@ -1,0 +1,98 @@
+@use "sass:color";
+
+$primary-blue: #0176f7;
+$signature-purple: #bb38d0; // 기존 파이썬에 있던 보라색 포인트 컬러 살림
+
+.report-modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+
+  .report-modal-content {
+    background: #ffffff;
+    width: 90%; max-width: 800px; max-height: 90vh;
+    border-radius: 24px; padding: 40px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-thumb { background: #dcdcdc; border-radius: 4px; }
+
+    h2 {
+      text-align: center; color: #111; font-weight: 800; font-size: 28px;
+      margin-top: 0; margin-bottom: 30px;
+    }
+
+    /* 파이썬 코드의 .score-circle 완벽 이식 */
+    .score-circle-container {
+      display: flex; justify-content: center; margin-bottom: 30px;
+      
+      .score-circle {
+        width: 140px; height: 140px; border-radius: 50%;
+        background: #ffffff; display: flex; flex-direction: column; 
+        align-items: center; justify-content: center;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.07); 
+        border: 4px solid $signature-purple;
+        
+        .score-number { font-size: 40px; font-weight: 900; color: $signature-purple; line-height: 1; }
+        .score-label { font-size: 14px; color: #666; font-weight: 600; margin-top: 4px; }
+      }
+    }
+
+    .warning-banner {
+      background: #fff3cd; color: #856404; padding: 12px 20px;
+      border-radius: 12px; font-size: 14px; font-weight: 600;
+      text-align: center; margin-bottom: 24px;
+    }
+
+    .evaluation-box {
+      background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 16px;
+      padding: 24px; min-height: 200px; margin-bottom: 30px;
+      
+      .loading-state {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        height: 100%; gap: 16px; color: $primary-blue; font-weight: 600;
+      }
+      
+      .markdown-content {
+        font-size: 15px; color: #333; line-height: 1.8;
+      }
+    }
+
+    .action-buttons {
+      display: flex; flex-direction: column; gap: 12px;
+      
+      button {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700;
+        cursor: pointer; transition: all 0.2s; border: none;
+      }
+
+      .btn-download {
+        background: #f1f3f5; color: #333;
+        &:hover { background: #e9ecef; }
+      }
+
+      .bottom-row {
+        display: flex; gap: 12px;
+        
+        .btn-restart {
+          flex: 1; background: #ffffff; border: 2px solid $primary-blue; color: $primary-blue;
+          &:hover { background: #f0f7ff; }
+        }
+        
+        .btn-home {
+          flex: 1; background: $primary-blue; color: #ffffff;
+          /* 💡 darken 대신 최신 문법인 color.adjust 적용 완료 */
+          &:hover { background: color.adjust($primary-blue, $lightness: -10%); }
+        }
+      }
+    }
+  }
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }

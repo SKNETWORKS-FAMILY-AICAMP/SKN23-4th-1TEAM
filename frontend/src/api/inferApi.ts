@@ -1,0 +1,66 @@
+import { axiosClient } from './axiosClient';
+
+export interface EphemeralTokenResponse {
+  client_secret: {
+    value: string;
+  };
+}
+
+export const inferApi = {
+  getRealtimeToken: async () => {
+    const response = await axiosClient.get<EphemeralTokenResponse>('/api/infer/realtime-token');
+    return response.data;
+  },
+  
+  // 면접 준비용 RAG 데이터 저장
+  ingestResume: async (file: File, userId: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axiosClient.post(`/api/infer/ingest?session_id=${userId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  
+  storeDirectTextRAG: async (text: string, userId: string) => {
+    const response = await axiosClient.post('/api/interview/store-resume', {
+      resume_text: text,
+      user_id: userId
+    });
+    return response.data;
+  }, 
+
+  // 예상 질문 추출
+  analyzeResume: async (resumeText: string, jobRole: string) => {
+    const response = await axiosClient.post('/api/interview/analyze-resume', {
+      resume_text: resumeText,
+      job_role: jobRole
+    });
+    return response.data;
+  },
+
+
+  // 면접 평가 및 질문 풀
+  evaluateTurn: async (payload: any) => {
+    const response = await axiosClient.post('/api/infer/evaluate-turn', payload);
+    return response.data;
+  },
+  
+  getEvaluationReport: async (payload: {
+    messages: any[];
+    job_role: string;
+    difficulty: string;
+    resume_text: string | null;
+  }) => {
+    const response = await axiosClient.post('/api/interview/evaluate', payload);
+    return response.data;
+  },
+
+  getQuestionPool: async (jobRole: string, difficulty: string, limit: number) => {
+    const response = await axiosClient.get('/api/interview/questions', {
+      params: { job_role: jobRole, difficulty, limit }
+    });
+    return response.data;
+  }
+};

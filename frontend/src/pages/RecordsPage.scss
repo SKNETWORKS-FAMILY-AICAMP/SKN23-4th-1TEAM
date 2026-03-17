@@ -1,0 +1,54 @@
+.page-layout {
+  min-height: 100vh;
+  background: #f5f7f9;
+}
+
+.records-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.records-page-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+
+  h1 {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 10px;
+    color: #111;
+  }
+
+  .sub {
+    color: #888;
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+}
+
+.empty-records {
+  text-align: center;
+  padding: 60px 0;
+  border: 1px dashed #e5e7eb;
+  border-radius: 16px;
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 19px;
+    font-weight: 700;
+    color: #374151;
+    margin: 0 0 10px;
+  }
+
+  p {
+    color: #9ca3af;
+    font-size: 14px;
+  }
+}

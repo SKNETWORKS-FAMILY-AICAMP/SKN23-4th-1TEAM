@@ -1,0 +1,97 @@
+@use '../../styles/variables' as *;
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: $bg-primary;
+  border-bottom: 1px solid $border-color;
+  width: 100%;
+  box-sizing: border-box;
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    .logo-img {
+      width: 32px;  
+      height: 32px;
+      object-fit: contain;
+      border-radius: 6px; 
+    }
+
+    .logo-text {
+      font-weight: 800;
+      font-size: 18px;
+      color: $text-primary;
+    }
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: $text-secondary;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: color 0.15s;
+
+      &:hover {
+        color: $text-primary;
+      }
+    }
+  }
+
+  .auth-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .user-greeting {
+      font-size: 14px;
+      font-weight: 500;
+      color: $text-primary;
+      border-right: 1px solid $border-color;
+      padding-right: 16px;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid $border-color;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: $text-secondary;
+
+      &:hover {
+        background: $bg-secondary;
+        color: $text-primary;
+      }
+    }
+
+    .login-btn {
+      background: $primary-color;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background: $primary-dark;
+      }
+    }
+  }
+}

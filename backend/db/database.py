@@ -1,0 +1,417 @@
+"""
+File: db/database.py
+Author: 김지우
+Created: 2026-02-27
+Description: DB 모델들의 기본 뼈대
+
+Modification History:
+- 2026-02-24: 벡엔드 DB 모델 정의
+- 2026-02-27 (김지우) :  기존 User 모델 외에 직무 분류, 질문 풀, 면접 기록 테이블 추가
+"""
+
+import os
+import json
+import pymysql
+from pymysql.cursors import DictCursor
+from contextlib import contextmanager
+from dotenv import load_dotenv
+
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(current_file_dir)
+env_path = os.path.join(backend_dir, ".env")
+
+load_dotenv(dotenv_path=env_path, override=True)
+
+# DB 연결 설정 (.env에서 읽기)
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "db": os.getenv("DB_NAME", "ai_interview"),
+    "charset": "utf8mb4",
+    "cursorclass": DictCursor,
+}
+
+# DDL
+DDL = """
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    provider VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,          
+    provider_user_id VARCHAR(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,  
+    role VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'user',             
+    name VARCHAR(100) COLLATE utf8mb4_unicode_ci NULL,                      
+    password VARCHAR(255) COLLATE utf8mb4_unicode_ci NULL,                  
+    tier VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'normal',           
+    status VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'active',         
+    profile_image_url VARCHAR(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 프로필 이미지 URL 또는 로컬 경로',
+    payment_status VARCHAR(20) DEFAULT NULL, -- ERD 반영용
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    jti VARCHAR(64) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
+    token_hash VARCHAR(256) COLLATE utf8mb4_unicode_ci NOT NULL,
+    expires_at DATETIME NOT NULL,
+    revoked_at DATETIME DEFAULT NULL,
+    CONSTRAINT fk_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS job_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    main_category VARCHAR(50) DEFAULT NULL,
+    sub_category VARCHAR(50) DEFAULT NULL,
+    target_role VARCHAR(50) DEFAULT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS question_pool (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_id INT DEFAULT NULL,
+    question_type VARCHAR(30) DEFAULT NULL,
+    skill_tag VARCHAR(100) DEFAULT NULL,
+    difficulty VARCHAR(20) DEFAULT NULL,
+    content TEXT NOT NULL,
+    reference_answer TEXT,
+    keywords VARCHAR(255) DEFAULT NULL,
+    CONSTRAINT fk_question_category FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS user_resumes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL, 
+    title VARCHAR(255) NOT NULL,
+    job_role VARCHAR(100) DEFAULT NULL,
+    resume_text MEDIUMTEXT,
+    analysis_result JSON DEFAULT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_resumes FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS interview_sessions (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT DEFAULT NULL, 
+    job_role     VARCHAR(100) DEFAULT NULL,
+    difficulty   VARCHAR(20) DEFAULT NULL,
+    persona      VARCHAR(50) DEFAULT NULL,
+    total_score  FLOAT DEFAULT NULL,
+    status       VARCHAR(20) DEFAULT 'START', 
+    started_at   TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    ended_at     TIMESTAMP NULL DEFAULT NULL,
+    resume_used  TINYINT(1) DEFAULT '0',
+    resume_id    INT DEFAULT NULL,
+    manual_tech_stack TEXT DEFAULT NULL,
+    CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_session_resume FOREIGN KEY (resume_id) REFERENCES user_resumes(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS interview_details (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    session_id      INT NOT NULL,
+    turn_index      INT NOT NULL,
+    question        TEXT, 
+    answer          TEXT, 
+    is_followup     TINYINT(1) DEFAULT '0',
+    response_time   INT DEFAULT NULL,  
+    score           FLOAT DEFAULT NULL,
+    feedback        TEXT,
+    sentiment_score FLOAT DEFAULT NULL, 
+    created_at      TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_detail_session FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS guestbook_memos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    author VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    color VARCHAR(200) DEFAULT NULL,
+    border VARCHAR(50) DEFAULT NULL,
+    text_color VARCHAR(50) DEFAULT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+"""
+
+
+# 커넥션 컨텍스트 매니저
+@contextmanager
+def get_connection():
+    env_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"
+    )
+    load_dotenv(dotenv_path=env_path, override=True)
+
+    db_config = {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "db": os.getenv("DB_NAME", "ai_interview"),
+        "charset": "utf8mb4",
+        "cursorclass": DictCursor,
+    }
+    conn = pymysql.connect(**db_config)
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+# DB 초기화 
+def init_db():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for stmt in DDL.strip().split(";"):
+                stmt = stmt.strip()
+                if stmt:
+                    cur.execute(stmt)
+            # 기존 테이블 컬럼 크기 마이그레이션
+            migrate_stmts = [
+                "ALTER TABLE guestbook_memos MODIFY color VARCHAR(200)",
+                "ALTER TABLE guestbook_memos MODIFY border VARCHAR(50)",
+                "ALTER TABLE guestbook_memos MODIFY text_color VARCHAR(50)",
+            ]
+            for stmt in migrate_stmts:
+                try:
+                    cur.execute(stmt)
+                except Exception:
+                    pass
+
+
+# 세션 CRUD
+def create_session(
+    user_id: int,
+    job_role: str,
+    difficulty: str = "미들",
+    persona: str = "깐깐한 기술팀장",
+    resume_used: bool = False,
+    resume_id: int | None = None,
+    manual_tech_stack: str | None = None,
+) -> int:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO interview_sessions
+                   (user_id, job_role, difficulty, persona, resume_used, resume_id, manual_tech_stack)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    user_id,
+                    job_role,
+                    difficulty,
+                    persona,
+                    int(resume_used),
+                    resume_id,
+                    manual_tech_stack,
+                ),
+            )
+            return conn.insert_id()
+
+
+def end_session(session_id: int, total_score: float):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE interview_sessions SET total_score=%s, ended_at=NOW(), status='COMPLETED' WHERE id=%s",
+                (total_score, session_id),
+            )
+
+
+def save_detail(
+    session_id: int,
+    turn_index: int,
+    question: str,
+    answer: str,
+    is_followup: bool,
+    score: float | None = None,
+    feedback: str | None = None,
+    response_time: int | None = None,
+    sentiment_score: float | None = None,
+):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO interview_details
+                   (session_id, turn_index, question, answer, is_followup, score, feedback, response_time, sentiment_score)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    session_id,
+                    turn_index,
+                    question,
+                    answer,
+                    int(is_followup),
+                    score,
+                    feedback,
+                    response_time,
+                    sentiment_score,
+                ),
+            )
+
+
+def get_sessions_by_user(user_id: int) -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, job_role, difficulty, persona, total_score, status,
+                          started_at, ended_at, resume_used
+                   FROM interview_sessions
+                   WHERE user_id=%s
+                   ORDER BY started_at DESC""",
+                (user_id,),
+            )
+            return cur.fetchall()
+
+
+def get_details_by_session(session_id: int) -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT turn_index, question, answer, is_followup, response_time,
+                          score, feedback, sentiment_score, created_at
+                   FROM interview_details
+                   WHERE session_id=%s
+                   ORDER BY turn_index ASC""",
+                (session_id,),
+            )
+            return cur.fetchall()
+
+
+# question_pool 헬퍼 
+def get_questions_by_role(
+    job_role: str, difficulty: str, q_type: str = "기술", limit: int = 3
+) -> list[dict]:
+    diff_map = {"주니어": "Easy", "미들": "Medium", "시니어": "Hard"}
+    db_difficulty = diff_map.get(difficulty, difficulty)
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT qp.id, qp.content AS question, qp.question_type, qp.difficulty
+                   FROM question_pool qp
+                   LEFT JOIN job_categories jc ON qp.category_id = jc.id
+                   WHERE jc.target_role = %s AND qp.difficulty = %s AND qp.question_type = %s
+                   ORDER BY RAND() LIMIT %s""",
+                (job_role, db_difficulty, q_type, limit),
+            )
+            return cur.fetchall()
+
+
+def get_common_questions(limit: int = 1) -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, content AS question FROM question_pool
+                   WHERE question_type='인성' OR question_type='공통'
+                   ORDER BY RAND() LIMIT %s""",
+                (limit,),
+            )
+            return cur.fetchall()
+
+
+def get_questions_by_resume_keywords(
+    job_role: str, difficulty: str, keywords: list[str], limit: int = 3
+) -> list[dict]:
+    if not keywords:
+        return get_questions_by_role(job_role, difficulty, "기술", limit)
+
+    diff_map = {"주니어": "Easy", "미들": "Medium", "시니어": "Hard"}
+    db_difficulty = diff_map.get(difficulty, difficulty)
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            likes_clauses = []
+            params = [job_role, db_difficulty]
+            for k in keywords:
+                likes_clauses.append("(qp.content LIKE %s OR qp.keywords LIKE %s)")
+                params.extend([f"%{k}%", f"%{k}%"])
+
+            likes_sql = " OR ".join(likes_clauses)
+            query = f"""
+                SELECT qp.id, qp.content AS question, qp.question_type, qp.difficulty
+                FROM question_pool qp
+                LEFT JOIN job_categories jc ON qp.category_id = jc.id
+                WHERE jc.target_role = %s AND qp.difficulty = %s AND ({likes_sql})
+                ORDER BY RAND() LIMIT %s
+            """
+            params.append(limit)
+            cur.execute(query, tuple(params))
+            results = cur.fetchall()
+
+            if len(results) < limit:
+                needed = limit - len(results)
+                fallback = get_questions_by_role(
+                    job_role, difficulty, "기술", limit * 2
+                )
+                existing_ids = {r["id"] for r in results}
+                for f in fallback:
+                    if f["id"] not in existing_ids:
+                        results.append(f)
+                        existing_ids.add(f["id"])
+                        if len(results) == limit:
+                            break
+            return results
+
+
+# 이력서 보관함 CRUD
+def save_user_resume(
+    user_id: int, title: str, job_role: str, resume_text: str, analysis_result: dict
+) -> int:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            json_str = json.dumps(analysis_result, ensure_ascii=False)
+            cur.execute(
+                """INSERT INTO user_resumes (user_id, title, job_role, resume_text, analysis_result)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (user_id, title, job_role, resume_text, json_str),
+            )
+            return conn.insert_id()
+
+
+def get_user_resumes(user_id: int) -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, title, job_role, resume_text, analysis_result, created_at 
+                   FROM user_resumes 
+                   WHERE user_id=%s ORDER BY created_at DESC""",
+                (user_id,),
+            )
+            rows = cur.fetchall()
+            for r in rows:
+                if r["analysis_result"] and isinstance(r["analysis_result"], str):
+                    r["analysis_result"] = json.loads(r["analysis_result"])
+            return rows
+
+
+def delete_user_resume(resume_id: int):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM user_resumes WHERE id=%s", (resume_id,))
+
+
+# ─── 방명록(게시판) CRUD ────────────────────────────────────
+def save_memo(author: str, content: str, color: str, border: str, text_color: str):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO guestbook_memos (author, content, color, border, text_color)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (author, content, color, border, text_color),
+            )
+
+
+def get_all_memos(limit: int = 30) -> list[dict]:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT author, content, color, border, text_color, created_at
+                   FROM guestbook_memos
+                   ORDER BY created_at DESC
+                   LIMIT %s""",
+                (limit,),
+            )
+            return cur.fetchall()

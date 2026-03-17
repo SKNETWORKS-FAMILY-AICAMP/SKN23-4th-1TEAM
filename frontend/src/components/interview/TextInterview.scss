@@ -1,0 +1,105 @@
+/* components/interview/TextInterview.scss */
+$primary-blue: #0176f7;
+$gradient-blue: linear-gradient(135deg, #0176f7 0%, #0056b3 100%);
+$bg-chat: #f4f7fa; /* 카카오톡/슬랙처럼 약간 어두운 채팅방 배경 */
+
+.text-interview-wrapper {
+  display: flex; 
+  flex-direction: column; 
+  height: calc(100vh - 140px); /* 화면을 꽉 채우는 진짜 메신저 높이 */
+  max-width: 1000px; /* 너무 퍼지지 않게 너비 제한 */
+  margin: 0 auto;
+  border: 1px solid #e0e5eb;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(1, 118, 247, 0.08);
+  background: #ffffff;
+
+  .guide-banner {
+    background: #ffffff; 
+    padding: 16px 24px; 
+    border-bottom: 1px solid #e0e5eb;
+    font-size: 14px; color: #444; line-height: 1.5;
+    strong { color: $primary-blue; font-size: 15px; }
+    p { margin: 4px 0 0 0; color: #666; }
+  }
+
+  /* 진짜 채팅방처럼 위아래로 꽉 차고 스크롤 생성 */
+  .chat-container {
+    flex: 1; 
+    overflow-y: auto;
+    background: $bg-chat; /* 채팅방 특유의 톤 다운된 배경 */
+    padding: 24px;
+    
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-thumb { background: #c5d4e3; border-radius: 4px; }
+
+    .message-row {
+      display: flex; margin-bottom: 24px; width: 100%;
+
+      &.assistant {
+        justify-content: flex-start; gap: 12px;
+        .ai-profile-icon { 
+          font-size: 28px; width: 44px; height: 44px; 
+          background: #ffffff; border-radius: 14px; 
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.05); flex-shrink: 0;
+        }
+        .ai-name { font-size: 13px; font-weight: 700; color: $primary-blue; margin-bottom: 6px; margin-left: 4px; }
+        .bubble.assistant {
+          background: #ffffff; border-radius: 6px 20px 20px 20px;
+          padding: 14px 20px; color: #222; font-size: 15px; max-width: 600px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+          line-height: 1.6; white-space: pre-wrap;
+        }
+      }
+
+      &.user {
+        justify-content: flex-end;
+        .message-content { display: flex; flex-direction: column; align-items: flex-end; }
+        .bubble.user {
+          background: $gradient-blue; border-radius: 20px 6px 20px 20px;
+          padding: 14px 20px; color: #ffffff; font-size: 15px; max-width: 600px;
+          box-shadow: 0 8px 20px rgba(1, 118, 247, 0.2);
+          line-height: 1.6; white-space: pre-wrap;
+        }
+        .score-badge { 
+          font-size: 12px; font-weight: 600; color: #888; 
+          margin-top: 8px; margin-right: 4px; 
+        }
+      }
+    }
+  }
+
+  /* 하단 입력 영역 (바닥에 고정됨) */
+  .chat-input-area {
+    background: #ffffff;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e5eb;
+
+    .input-wrapper {
+      display: flex; align-items: center; gap: 12px;
+      border-radius: 24px; border: 2px solid #e0e5eb; background: #f8f9fa;
+      padding: 8px 16px; transition: all 0.2s ease;
+      
+      &:focus-within { border-color: $primary-blue; background: #ffffff; }
+
+      textarea {
+        flex: 1; border: none; background: transparent; outline: none;
+        color: #111; font-size: 15px; font-weight: 500; caret-color: $primary-blue;
+        resize: none; height: 24px; padding-top: 2px;
+        &::placeholder { color: #adb5bd; }
+      }
+
+      .btn-submit {
+        background: $primary-blue; color: white;
+        border-radius: 50%; width: 40px; height: 40px; min-width: 40px;
+        display: flex; align-items: center; justify-content: center;
+        border: none; cursor: pointer; transition: all 0.2s ease;
+
+        &:hover:not(:disabled) { transform: translateY(-2px); background: #0056b3; }
+        &:disabled { background: #e0e5eb; color: #adb5bd; cursor: not-allowed; }
+      }
+    }
+  }
+}
