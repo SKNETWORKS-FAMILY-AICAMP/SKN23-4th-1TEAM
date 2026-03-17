@@ -13,6 +13,10 @@ from backend.db.database import (
 from backend.db.session import get_db
 from backend.routers.auth import get_current_user
 from backend.services import auth_service
+from backend.services.personality_vector_service import save_board_answer_to_vector_db
+from backend.services.personality_feedback_service import generate_board_answer_feedback
+from backend.services.personality_vector_service import debug_get_vector_document
+
 
 # from backend.services.personality_vector_service import save_board_answer_to_vector_db
 # from backend.services.personality_feedback_service import generate_board_answer_feedback
@@ -142,6 +146,17 @@ def create_answer(
         print(" -> [처리 실패] AI 평가 및 벡터 DB 관련 에러 발생:", e)
 
     print("--- [게시판 답변 등록 API 완료] ---\n")
+
+    try:
+        save_board_answer_to_vector_db(
+            answer_id=answer_id,
+            user_id=user.id,
+            question_id=question_id,
+            question_text=question["content"],
+            answer_text=content,
+        )
+    except Exception as e:
+        print("벡터DB 저장 실패:", e)
 
     return {
         "ok": True,
