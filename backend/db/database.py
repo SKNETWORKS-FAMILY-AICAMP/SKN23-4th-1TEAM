@@ -215,7 +215,7 @@ def get_connection():
         conn.close()
 
 
-# DB 초기화 
+# DB 초기화
 def init_db():
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -247,7 +247,10 @@ def seed_board_questions():
             cur.executemany(
                 """INSERT INTO board_questions (content, display_order, is_active)
                    VALUES (%s, %s, 1)""",
-                [(content, idx) for idx, content in enumerate(BOARD_QUESTIONS, start=1)],
+                [
+                    (content, idx)
+                    for idx, content in enumerate(BOARD_QUESTIONS, start=1)
+                ],
             )
 
 
@@ -348,7 +351,7 @@ def get_details_by_session(session_id: int) -> list[dict]:
             return cur.fetchall()
 
 
-# question_pool 헬퍼 
+# question_pool 헬퍼
 def get_questions_by_role(
     job_role: str, difficulty: str, q_type: str = "기술", limit: int = 3
 ) -> list[dict]:
@@ -548,7 +551,9 @@ def count_board_answers(question_id: int) -> int:
             return int(row.get("cnt", 0))
 
 
-def create_board_answer(question_id: int, user_id: int, author_name: str, content: str) -> int:
+def create_board_answer(
+    question_id: int, user_id: int, author_name: str, content: str
+) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -594,3 +599,37 @@ def get_board_answer(answer_id: int) -> dict | None:
                 (answer_id,),
             )
             return cur.fetchone()
+
+
+# -------------------- 다빈 추가 ---------------------
+def get_my_board_answer_by_question(question_id: int, user_id: int) -> dict | None:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, content FROM board_answers WHERE question_id=%s AND user_id=%s",
+                (question_id, user_id),
+            )
+            return cur.fetchone()
+
+
+def upsert_board_answer(
+    question_id: int, user_id: int, author_name: str, content: str
+) -> int:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            existing = get_my_board_answer_by_question(question_id, user_id)
+            if existing:
+                cur.execute(
+                    "UPDATE board_answers SET content=%s, updated_at=NOW() WHERE id=%s",
+                    (content, existing["id"]),
+                )
+                return existing["id"]
+            else:
+                cur.execute(
+                    "INSERT INTO board_answers (question_id, user_id, author_name, content) VALUES (%s, %s, %s, %s)",
+                    (question_id, user_id, author_name, content),
+                )
+                return conn.insert_id()
+
+
+# ----------------------------------------------------
