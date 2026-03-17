@@ -119,7 +119,7 @@ def resolve_default_csv_path() -> str:
         if os.path.exists(p):
             return p
 
-    return os.path.join(_base_dir, "backend", "data", "python_interview_questions_500.csv")
+    return os.path.join(_base_dir, "data", "python_interview_questions_500.csv")
 
 
 def get_bank() -> QuestionBank:
