@@ -6,11 +6,12 @@ Description: LangGraph 에이전트 툴 (자비스 컨트롤 타워)
 
 Modification History:
 - 2026-03-10 (김지우): 초기 생성 및 행동 지침 프롬프트 강화
-- 2026-03-11 (AI 에이전트): 4대 핵심 기능(네비게이션, 첨삭 등) 스키마 복구 및 필수 파라미터 보완
+- 2026-03-11 (김지우): 4대 핵심 기능(네비게이션, 첨삭 등) 스키마 복구 및 필수 파라미터 보완
+- 2026-03-19 (김지우): 네비게이션 보드(게시판) 추가, 헛소리 방지용 message 파라미터 강제, 웹 검색(Tavily) 툴 추가
 """
 
 AGENT_TOOLS = [
-    # 스마트 면접 세팅 및 라우팅
+    # 1. 스마트 면접 세팅 및 라우팅 (면접장 이동 툴 - 복구 완료!)
     {
         "type": "function",
         "function": {
@@ -36,20 +37,23 @@ AGENT_TOOLS = [
                     "use_resume": {
                         "type": "boolean",
                         "description": "사용자가 이력서/기술 스택을 기반으로 면접을 원하면 true, 언급이 없으면 false."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "사용자에게 보여줄 안내 메시지. (예: '네, 준비를 마쳤습니다. 면접장으로 이동합니다.')"
                     }
                 },
-                # LLM이 파라미터를 누락하지 않도록 필수값으로 강제
-                "required": ["job_role", "difficulty", "persona", "use_resume"] 
+                "required": ["job_role", "difficulty", "persona", "use_resume", "message"] 
             }
         }
     },
     
-    # 이력서 정밀 분석 및 꼬리 질문 추출
+    # 2. 이력서 정밀 분석 및 꼬리 질문 추출
     {
         "type": "function",
         "function": {
             "name": "analyze_resume_and_generate_questions",
-            "description": "[행동 지침] 사용자가 이력서/포트폴리오를 업로드하거나 경험을 추가하며 '분석해줘', '예상 질문 뽑아줘'라고 할 때 호출합니다. DB에 자동 저장(Upsert)하고 꼬리 질문을 생성합니다.",
+            "description": "[행동 지침] 사용자가 이력서/포트폴리오를 업로드하거나 경험을 추가하며 '분석해줘', '예상 질문 뽑아줘'라고 할 때 호출합니다.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -67,27 +71,50 @@ AGENT_TOOLS = [
         }
     },
 
-    # 페이지 다이렉트 이동 (Agentic OS)
+    # 3. 페이지 다이렉트 이동 (게시판 추가 및 헛소리 방지)
     {
         "type": "function",
         "function": {
             "name": "navigate_to_page",
-            "description": "[행동 지침] 사용자가 '내 정보 볼래', '이력서 관리 갈래', '홈으로 가줘' 등 특정 화면/메뉴로 이동을 원할 때 즉시 호출합니다.",
+            "description": "[행동 지침] 사용자가 '내 정보 볼래', '이력서 관리 갈래', '게시판 갈래', '홈으로 가줘' 등 특정 화면/메뉴로 이동을 원할 때 즉시 호출합니다.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "target_page": {
                         "type": "string",
-                        "enum": ["home", "mypage", "resume", "my_info"],
-                        "description": "이동할 목적지 페이지. (홈: home, 면접 기록: mypage, 이력서 저장소: resume, 내 정보: my_info)"
+                        "enum": ["home", "mypage", "resume", "my_info", "board"],
+                        "description": "이동할 목적지 페이지. (홈: home, 면접 기록: mypage, 이력서 저장소: resume, 내 정보: my_info, 커뮤니티/게시판: board)"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "사용자에게 보여줄 안내 메시지. (예: '네, 마이페이지로 이동합니다.') ⚠️ 절대 '면접장으로 이동합니다'라는 말을 쓰지 마세요."
                     }
                 },
-                "required": ["target_page"]
+                "required": ["target_page", "message"]
             }
         }
     },
 
-    # 자소서/이력서 전문 첨삭
+    # 4. 웹 검색 툴 (Tavily 연동용 신규 추가)
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "[행동 지침] 사용자가 IT 트렌드, 기업 최신 동향, 뉴스 등 최신 웹 정보가 필요한 질문을 하면 무조건 이 툴을 호출하여 검색하세요.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Tavily 검색 API에 전달할 검색 키워드 또는 문장"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+
+    # 5. 자소서/이력서 전문 첨삭
     {
         "type": "function",
         "function": {
@@ -110,7 +137,7 @@ AGENT_TOOLS = [
         }
     },
 
-    # 기업 면접 정보 검색
+    # 6. 기업 면접 정보 검색
     {
         "type": "function",
         "function": {
@@ -130,7 +157,7 @@ AGENT_TOOLS = [
         }
     },
 
-    # 면접 브리핑 및 분석
+    # 7. 면접 브리핑 및 분석
     {
         "type": "function",
         "function": {
@@ -145,6 +172,8 @@ AGENT_TOOLS = [
             }
         }
     },
+    
+    # 8. 과거 면접 누적 성적 분석
     {
         "type": "function",
         "function": {

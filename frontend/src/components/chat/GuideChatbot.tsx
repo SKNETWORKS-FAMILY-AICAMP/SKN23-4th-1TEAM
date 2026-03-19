@@ -147,10 +147,10 @@ export const GuideChatbot = () => {
         aiResponse = "Zero-click 사용법은 메인화면에서 챗봇에게\n**'나 내일 파이썬 백엔드 면접인데 빡세게 준비하게 해 줘'\n라고 치면? AI가 바로 사용자님을 맞춤형 면접장으로 이동시켜줍니다.\n(만약 원하는 세팅을 하지 않으면 기본 값으로 설정됩니다.)";
         break;
       case 'manual':
-        aiResponse = "AIWORK는 맞춤형 모의면접 플랫폼입니다.\n**내 이력서를 등록하고 직무와 난이도를 선택하면\n깐깐한 기술팀장이나 부드러운 인사담당자 등 원하는 페르소나의 AI와 실제처럼 면접을 볼 수 있습니다.";
+        aiResponse = "AIWORK는 맞춤형 모의면접 플랫폼입니다.\n**이력서, 직무, 면접관 스타일을 자유롭게 설정해 실전 같은 AI 면접을 경험해 보세요.";
         break;
       case 'resume':
-        aiResponse = "이력서 분석 기능은 업로드하신 PDF나 텍스트 이력서를 벡터 DB에 저장하여,\n**지원자님의 실제 경험을 바탕으로 한 날카로운 꼬리질문을 생성하는\nAIWORK의 핵심 기술입니다.";
+        aiResponse = "이력서 분석 기능은 업로드하신 PDF나 텍스트 이력서를 벡터 DB에 저장하여,\n**지원자님의 이력서를 바탕으로 한 날카로운 꼬리질문을 생성하는\nAIWORK의 핵심 기술입니다.";
         break;
       default: return;
     }
@@ -178,11 +178,14 @@ export const GuideChatbot = () => {
     setIsTyping(true);
 
     try {
-      const isInterviewIntent = currentInput.includes('면접') || currentInput.includes('준비') || currentInput.includes('세팅') || currentInput.includes('시작');
+      const hasInterviewKeyword = currentInput.includes('면접') || currentInput.includes('준비') || currentInput.includes('세팅') || currentInput.includes('시작');
+      const hasReportKeyword = currentInput.includes('성적') || currentInput.includes('기록') || currentInput.includes('결과') || currentInput.includes('피드백') || currentInput.includes('브리핑');
+      const isInterviewIntent = hasInterviewKeyword && !hasReportKeyword;
+      
       const wantsProofread = currentInput.includes('첨삭') || currentInput.includes('교정');
-      const wantsAnalysis = currentInput.includes('분석') || currentInput.includes('평가') || (!wantsProofread && !isInterviewIntent);
+      const wantsAnalysis = currentInput.includes('분석') || currentInput.includes('평가') || (!wantsProofread && !isInterviewIntent && (fileToUpload || dbResumeToUse));
 
-      if ((fileToUpload || dbResumeToUse) && !isInterviewIntent) {
+      if ((fileToUpload || dbResumeToUse) && wantsAnalysis && !isInterviewIntent) {
         const loadingId = Date.now().toString() + '_loading';
         let loadingText = '스마트 이력서 분석 중입니다...';
 
@@ -284,7 +287,18 @@ export const GuideChatbot = () => {
       const response = await axiosClient.post('/api/v1/agent/chat', { message: agentMessage });
       const agentData = response.data;
 
-      setMessages((prev) => [...prev, { id: Date.now().toString(), type: 'bot', content: agentData.message || '응답을 처리할 수 없습니다.' }]);
+      let finalBotMessage = agentData.message || '응답을 처리할 수 없습니다.';
+      if (agentData.action === 'navigate' && agentData.target_page !== 'interview') {
+        if (finalBotMessage.includes('면접')) {
+          if (agentData.target_page === 'mypage' || agentData.target_page === 'my_info') finalBotMessage = '네, 마이페이지로 이동합니다.';
+          else if (agentData.target_page === 'history') finalBotMessage = '네, 내 기록 페이지로 이동합니다.';
+          else if (agentData.target_page === 'board' || agentData.target_page === 'community') finalBotMessage = '네, 커뮤니티(게시판)로 이동합니다.';
+          else if (agentData.target_page === 'resume') finalBotMessage = '네, 이력서 보관함으로 이동합니다.';
+          else if (agentData.target_page === 'home') finalBotMessage = '네, 메인 화면으로 이동합니다.';
+        }
+      }
+
+      setMessages((prev) => [...prev, { id: Date.now().toString(), type: 'bot', content: finalBotMessage }]);
 
       if (agentData.action === 'navigate') {
         if (agentData.target_page === 'interview') {
@@ -295,12 +309,12 @@ export const GuideChatbot = () => {
           let rTitle: string | undefined = undefined;
           let rUsed = false;
 
-          if (finalDbResumeToUse) {
+          if (finalDbResumeToUse !== null) {
             rType = 'file';
             rId = Number(finalDbResumeToUse.id);
             rTitle = finalDbResumeToUse.title;
             rUsed = true;
-          } else if (fileToUpload) {
+          } else if (fileToUpload !== null) {
             rType = 'file';
             rTitle = fileToUpload.name;
             rUsed = true;
@@ -338,7 +352,6 @@ export const GuideChatbot = () => {
               rTitle
             );
 
-            // 🔥 수정된 부분: onOpenSetup 조건 날리고 바로 라우팅!
             setTimeout(() => { 
               setIsOpen(false); 
               navigate(ROUTES.INTERVIEW, { state: { resume: rUsed } });
@@ -348,12 +361,16 @@ export const GuideChatbot = () => {
             showToast("면접 세션을 생성하는데 실패했습니다.", "error");
           }
 
+        } else if (agentData.target_page === 'history') {
+          setTimeout(() => { setIsOpen(false); navigate('/history'); }, 1000);
         } else if (agentData.target_page === 'mypage' || agentData.target_page === 'my_info') {
           setTimeout(() => { setIsOpen(false); navigate(ROUTES.MY_INFO); }, 1000);
         } else if (agentData.target_page === 'resume') {
           setTimeout(() => { setIsOpen(false); navigate('/resume'); }, 1000);
         } else if (agentData.target_page === 'home') {
           setTimeout(() => { setIsOpen(false); navigate('/'); }, 1000);
+        } else if (agentData.target_page === 'board' || agentData.target_page === 'community') {
+          setTimeout(() => { setIsOpen(false); navigate('/board'); }, 1000);
         }
       }
 
