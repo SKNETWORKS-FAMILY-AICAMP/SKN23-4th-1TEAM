@@ -124,12 +124,15 @@ CREATE TABLE IF NOT EXISTS interview_details (
 
 CREATE TABLE IF NOT EXISTS guestbook_memos (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT DEFAULT NULL,
     author VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
     color VARCHAR(200) DEFAULT NULL,
     border VARCHAR(50) DEFAULT NULL,
     text_color VARCHAR(50) DEFAULT NULL,
-    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_guestbook_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS board_questions (
@@ -223,16 +226,20 @@ def init_db():
                 stmt = stmt.strip()
                 if stmt:
                     cur.execute(stmt)
-            # 기존 테이블 컬럼 크기 마이그레이션
+            # 기존 테이블 컬럼 크기 및 신규 컬럼 마이그레이션
             migrate_stmts = [
                 "ALTER TABLE guestbook_memos MODIFY color VARCHAR(200)",
                 "ALTER TABLE guestbook_memos MODIFY border VARCHAR(50)",
                 "ALTER TABLE guestbook_memos MODIFY text_color VARCHAR(50)",
+                "ALTER TABLE guestbook_memos ADD COLUMN user_id INT DEFAULT NULL AFTER id",
+                "ALTER TABLE guestbook_memos ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at",
+                "ALTER TABLE guestbook_memos ADD CONSTRAINT fk_guestbook_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL"
             ]
             for stmt in migrate_stmts:
                 try:
                     cur.execute(stmt)
                 except Exception:
+                    # 이미 컬럼이 있거나 제약조건이 있으면 무시
                     pass
     seed_board_questions()
 
@@ -465,21 +472,33 @@ def delete_user_resume(resume_id: int):
 
 
 # ─── 방명록(게시판) CRUD ────────────────────────────────────
-def save_memo(author: str, content: str, color: str, border: str, text_color: str):
+def save_memo(user_id: int | None, author: str, content: str, color: str, border: str, text_color: str):
     with get_connection() as conn:
         with conn.cursor() as cur:
+            if user_id:
+                cur.execute("SELECT id FROM guestbook_memos WHERE user_id=%s", (user_id,))
+                existing = cur.fetchone()
+                if existing:
+                    cur.execute(
+                        "UPDATE guestbook_memos SET content=%s, color=%s, border=%s, text_color=%s WHERE id=%s",
+                        (content, color, border, text_color, existing["id"])
+                    )
+                    return existing["id"]
+
             cur.execute(
-                """INSERT INTO guestbook_memos (author, content, color, border, text_color)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (author, content, color, border, text_color),
+                """INSERT INTO guestbook_memos (user_id, author, content, color, border, text_color)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (user_id, author, content, color, border, text_color),
             )
+            return conn.insert_id()
+
 
 
 def get_all_memos(limit: int = 30) -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """SELECT author, content, color, border, text_color, created_at
+                """SELECT id, user_id, author, content, color, border, text_color, created_at, updated_at
                    FROM guestbook_memos
                    ORDER BY created_at DESC
                    LIMIT %s""",

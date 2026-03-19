@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request, HTTPException
+from sqlalchemy.orm import Session
 
 from backend.db.database import get_all_memos, save_memo
+from backend.db.session import get_db
+from backend.routers.auth import get_current_user
 from backend.services.llm_service import (
     get_home_guide_response_stream,
     get_translated_news_summary,
@@ -17,15 +20,23 @@ def read_memos(limit: int = 30):
 
 
 @router.post("/memos")
-def create_memo(body: dict):
+def create_memo(body: dict, request: Request, db: Session = Depends(get_db)):
+    # 선택 사항: 로그인 안 한 경우도 허용하려면 get_current_user 대신 수동 추출 필요
+    # 여기서는 "계정에 맞게 연결" 요청에 따라 로그인을 필수로 처리
+    user = get_current_user(request, db)
+    author = user.name or user.email.split("@")[0]
+    
     save_memo(
-        author=body.get("author", "anonymous"),
+        user_id=user.id,
+        author=author,
         content=body.get("content", ""),
         color=body.get("color", "#FFF9C4"),
         border=body.get("border", "#FFF59D"),
         text_color=body.get("text_color", "#5D4037"),
     )
     return {"ok": True}
+
+
 
 
 @router.post("/news")

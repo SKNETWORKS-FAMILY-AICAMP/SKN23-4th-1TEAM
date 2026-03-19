@@ -20,6 +20,11 @@ export const resumeApi = {
     return response.data;
   },
 
+  getLatestResume: async (userId: number): Promise<{ user_id: number; job_role: string; analysis_result: any }> => {
+    const response = await axiosClient.get(`/api/v1/resumes/latest?user_id=${userId}`);
+    return response.data;
+  },
+
   createResume: async (payload: {
     user_id: number;
     title: string;

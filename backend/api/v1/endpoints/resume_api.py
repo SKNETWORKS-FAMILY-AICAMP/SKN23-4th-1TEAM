@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -19,13 +19,22 @@ class ResumeCreateRequest(BaseModel):
 
 @router.get("/latest")
 def read_latest_resume(
-    user_id: str = Query(..., description="user_resumes.user_id"),
+    user_id: int = Query(..., description="user_resumes.user_id"),
     db: Session = Depends(get_db),
 ):
-    job_role, analysis_result = get_latest_resume_fields(db, user_id)
+    # user_id가 0이거나 유효하지 않은 경우 early return
+    if not user_id or user_id <= 0:
+        return {"user_id": user_id, "job_role": None, "analysis_result": None}
+
+    job_role, analysis_result = get_latest_resume_fields(db, str(user_id))
 
     if job_role is None and analysis_result is None:
-        raise HTTPException(status_code=404, detail="해당 유저의 이력서가 없습니다.")
+        # 404를 내보내면 프론트엔드에서 에러로 잡히므로, 데이터가 없는 상태로 반환
+        return {
+            "user_id": user_id,
+            "job_role": None,
+            "analysis_result": None,
+        }
 
     return {
         "user_id": user_id,

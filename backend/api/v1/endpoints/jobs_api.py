@@ -16,7 +16,7 @@ from backend.services.jobs_service import (
     _join_multi,
 )
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
 @router.post("/search", response_model=JobsSearchResponse)

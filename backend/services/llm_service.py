@@ -26,7 +26,7 @@ PERSONA_MAP = {
     "깐깐한 기술팀장": "당신은 10년 경력의 깐깐한 기술팀장입니다. 의심 많고 세부사항을 완벽하게 파고드는 직설적인 스타일입니다.",
     "부드러운 인사담당자": "당신은 경험 많은 HR 매니저입니다. 부드럽고 공감하는 톤으로 대화를 이끌지만, 동기를 깊게 파고듭니다.",
     "스타트업 CTO": "당신은 성장지향적인 스타트업 CTO입니다. 실용성과 비즈니스 임팩트를 중시합니다.",
-    "ISTP 시니어 개발자" : "당신은 ISTP 성격 유형을 가진 15년차 시니어 개발자입니다. 실용성과 효율성을 중시하며, 논리적이고 간결하게 대답하고 감정적인 답변보다는 사실에 기반한 답변을 선호합니다."
+    "ISTP 시니어 개발자": "당신은 ISTP 성격 유형을 가진 15년차 시니어 개발자입니다. 실용성과 효율성을 중시하며, 논리적이고 간결하게 대답하고 감정적인 답변보다는 사실에 기반한 답변을 선호합니다.",
 }
 
 SYSTEM_PROMPT_EVAL = """
@@ -93,6 +93,7 @@ OUTPUT:
 }
 """
 
+
 def build_eval_user_prompt(
     question_list_row: dict,
     user_answer_text: str,
@@ -111,19 +112,20 @@ def build_eval_user_prompt(
     "{user_answer_text}"
     """
 
+
 # 메인 평가 : 이력서 확인
 def evaluate_and_respond(
-    question: str, 
-    answer: str, 
+    question: str,
+    answer: str,
     job_role: str,
     difficulty: str,
     persona_style: str,
-    user_id: str, 
+    user_id: str,
     resume_text: str | None,
     next_main_question: str | None,
     followup_count: int,
 ) -> dict:
-    
+
     # 1. RAG 컨텍스트 추출
     rag_context_text = None
     if resume_text:
@@ -142,9 +144,17 @@ def evaluate_and_respond(
     sys_prompt = f"{persona_desc}\n\n{SYSTEM_PROMPT_EVAL}\n\n{EVAL_JSON_SCHEMA_INSTRUCTIONS}\n\n{EVAL_FEWSHOT}\n\n{control_rules}"
 
     # 4. 유저 프롬프트 조립
-    question_row_dict = {"id": "current", "question": question, "answer": "모범 답안을 기준으로 평가하되 없으면 일반 기술 상식 활용"} 
-    rag_context_dict = {"resume_context": rag_context_text} if rag_context_text else {"note": "이력서 관련 내용 없음"}
-    
+    question_row_dict = {
+        "id": "current",
+        "question": question,
+        "answer": "모범 답안을 기준으로 평가하되 없으면 일반 기술 상식 활용",
+    }
+    rag_context_dict = (
+        {"resume_context": rag_context_text}
+        if rag_context_text
+        else {"note": "이력서 관련 내용 없음"}
+    )
+
     user_prompt = build_eval_user_prompt(
         question_row_dict,
         answer,
@@ -156,7 +166,7 @@ def evaluate_and_respond(
     print("[DEBUG][evaluate_and_respond] USER PROMPT START")
     print(user_prompt)
     print("[DEBUG][evaluate_and_respond] USER PROMPT END\n")
-    
+
     if next_main_question:
         user_prompt += f"\n\n[NEXT_MAIN_QUESTION]\n{next_main_question}\n\n[번역 절대 원칙]\n위 [NEXT_MAIN_QUESTION]이 영문일 경우, 반드시 실제 한국인 면접관이 말하듯 아주 자연스러운 '한국어 존댓말(구어체)'로 완벽하게 번역해서 next_question_translated 필드에 넣어라. 절대 영어를 그대로 출력하지 마라."
 
@@ -166,17 +176,17 @@ def evaluate_and_respond(
             model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
-            response_format={ "type": "json_object" },
+            response_format={"type": "json_object"},
             temperature=0.2,
         )
-        
+
         raw_json = response.choices[0].message.content.strip()
         data = json.loads(raw_json)
-        
+
         # 100점 만점을 우리 시스템 기준인 10점 만점으로 스케일링
-        score = float(data.get("score", 50)) / 10.0 
+        score = float(data.get("score", 50)) / 10.0
         feedback = data.get("feedback", "답변 감사합니다.")
         follow_up_needed = data.get("follow_up_needed", False)
         follow_up_question = data.get("follow_up_question", "")
@@ -184,7 +194,7 @@ def evaluate_and_respond(
 
         # 6. 최종 텍스트 조립
         reply_text = f"{feedback}\n\n"
-        
+
         if follow_up_needed and follow_up_question:
             # 꼬리질문 태그 강제 부착
             if "추가 질문:" not in follow_up_question:
@@ -196,13 +206,15 @@ def evaluate_and_respond(
                 translated = next_q_trans if next_q_trans else next_main_question
                 reply_text += f"{translated} [NEXT_MAIN]"
             else:
-                reply_text += "수고하셨습니다. 준비된 모든 질문이 끝났습니다. [INTERVIEW_END]"
+                reply_text += (
+                    "수고하셨습니다. 준비된 모든 질문이 끝났습니다. [INTERVIEW_END]"
+                )
 
         return {
             "score": score,
             "feedback": feedback,
             "reply_text": reply_text.strip(),
-            "is_followup": follow_up_needed
+            "is_followup": follow_up_needed,
         }
 
     except Exception as e:
@@ -210,13 +222,19 @@ def evaluate_and_respond(
         return {
             "score": 0.0,
             "feedback": "평가 중 오류가 발생했습니다.",
-            "reply_text": f"네, 알겠습니다. 다음 질문 드리겠습니다..\n**{next_main_question}** [NEXT_MAIN]" if next_main_question else "[INTERVIEW_END]",
-            "is_followup": False
+            "reply_text": (
+                f"네, 알겠습니다. 다음 질문 드리겠습니다..\n**{next_main_question}** [NEXT_MAIN]"
+                if next_main_question
+                else "[INTERVIEW_END]"
+            ),
+            "is_followup": False,
         }
+
 
 # ─── 레거시 호환성 유지용 (혹시 모를 에러 방지) ──────────────────────────
 def score_answer(question: str, answer: str, job_role: str) -> tuple[float, str]:
     return 5.0, "통합 평가 엔진(evaluate_and_respond)으로 대체되었습니다."
+
 
 def get_ai_response(messages: list, *args, **kwargs) -> str:
     return "통합 평가 엔진(evaluate_and_respond)으로 대체되었습니다."
@@ -226,7 +244,7 @@ def get_ai_response(messages: list, *args, **kwargs) -> str:
 def extract_keywords_from_resume(resume_text: str) -> list[str]:
     if not resume_text:
         return []
-    
+
     prompt = f"""다음 이력서 내용에서 지원자가 다룬 핵심 기술 스택, 프레임워크, 프로그래밍 언어를 딱 3개만 추출해서 쉼표(,)로 구분해 반환하세요.
     (예시: Python, FastAPI, MySQL)
     
@@ -251,7 +269,7 @@ def extract_keywords_from_text_input(text: str) -> list[str]:
     """사용자가 직접 입력한 짧은 텍스트에서 핵심 기술 키워드를 추출합니다."""
     if not text:
         return []
-    
+
     prompt = f"""
     다음은 사용자가 모의 면접을 위해 직접 입력한 '보유 기술 스택 및 경험' 텍스트입니다.
     
@@ -275,8 +293,15 @@ def extract_keywords_from_text_input(text: str) -> list[str]:
 
 
 # ─── 종합 리포트 생성 (내 기록에 저장됨.) ─────────────────────────────────────────
-def generate_evaluation(messages: list, job_role: str, difficulty: str, resume_text: str | None = None) -> str:
-    conversation_log = "\n".join([f"[{'면접관' if m['role'] == 'assistant' else '지원자'}] {m['content']}" for m in messages])
+def generate_evaluation(
+    messages: list, job_role: str, difficulty: str, resume_text: str | None = None
+) -> str:
+    conversation_log = "\n".join(
+        [
+            f"[{'면접관' if m['role'] == 'assistant' else '지원자'}] {m['content']}"
+            for m in messages
+        ]
+    )
     resume_section = f"\n지원자 이력서:\n{resume_text[:800]}\n" if resume_text else ""
 
     eval_prompt = f"""당신은 전문 컨설턴트입니다. 아래 {job_role} 대화를 분석해 마크다운 리포트를 쓰세요.
@@ -348,12 +373,13 @@ def analyze_resume_comprehensive(resume_text: str, job_role: str) -> dict:
         import os
         import json
         import re
+
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-        
+
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[{"role": "user", "content": prompt}],
-            response_format={ "type": "json_object" },
+            response_format={"type": "json_object"},
             temperature=0.3,  # 창의성 적게
         )
         raw_json = response.choices[0].message.content.strip()
@@ -365,13 +391,14 @@ def analyze_resume_comprehensive(resume_text: str, job_role: str) -> dict:
             "keywords": ["분석 실패"],
             "expected_questions": ["분석 서버에 일시적인 오류가 있습니다."],
             "match_rate": 0,
-            "match_feedback": "현재 분석을 제공할 수 없습니다."
+            "match_feedback": "현재 분석을 제공할 수 없습니다.",
         }
+
 
 # 가이드봇 응답 함수 (tavily를 사용한 웹 검색 기반용 가이드 봇에 사용)
 def get_home_guide_response(user_message: str, web_context: str) -> str:
     """홈 화면의 커리어/가이드 챗봇 응답을 생성합니다."""
- 
+
     system_prompt = f"""
 당신은 차세대 AI 모의면접 플랫폼 'AIWORK'의 수석 커리어 어드바이저입니다.
 구직자의 불안한 마음을 공감하고 응원하는 따뜻한 태도를 갖추되, 조언을 할 때는 전문가답고 명확하게 답변하세요.
@@ -397,16 +424,18 @@ def get_home_guide_response(user_message: str, web_context: str) -> str:
 - 만약 사용자의 질문이 위 두 가지(플랫폼 사용법 + 취업 조언)를 모두 포함한다면, 자연스럽게 이어서 하나의 흐름으로 설명하세요.
 - 절대로 마크다운 기호(**, # 등)나 번호 표기(1., 2.)를 쓰지 마세요. 만약 사용이 필요할때는 굵은 글씨로 표현하세요. 
 - 절대 글씨 크기를 마크다운 형식으로 조절하지 말고, 상대와 채팅을 한다는 느낌으로 자연스럽게 대답하세요.
-""".replace("{web_context}", web_context if web_context else "관련 웹 검색 정보 없음.")
+""".replace(
+        "{web_context}", web_context if web_context else "관련 웹 검색 정보 없음."
+    )
 
     try:
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": user_message},
             ],
-            temperature=0.5
+            temperature=0.5,
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -414,6 +443,7 @@ def get_home_guide_response(user_message: str, web_context: str) -> str:
 
 
 # =====  실험중 (Tavily 사용한 트렌드 뉴스 (tab2 내용))
+
 
 def get_translated_news_summary(raw_news_data: str) -> str:
     """Tavily 검색 결과(주로 영문)를 한국어로 번역하고 요약하여 뉴스 대시보드 형태로 반환합니다."""
@@ -442,10 +472,8 @@ def get_translated_news_summary(raw_news_data: str) -> str:
     try:
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.6
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.6,
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -455,7 +483,7 @@ def get_translated_news_summary(raw_news_data: str) -> str:
 
 def get_home_guide_response_stream(user_message: str, web_context: str):
     """홈 화면 가이드 챗봇 응답을 한 글자씩 실시간으로 스트리밍(Streaming)합니다."""
-    
+
     system_prompt = f"""
 당신은 차세대 AI 모의면접 플랫폼 'AIWORK'의 수석 커리어 어드바이저입니다.
 구직자의 불안한 마음을 공감하고 응원하는 따뜻한 태도를 갖추되, 조언을 할 때는 전문가답고 명확하게 답변하세요.
@@ -479,26 +507,27 @@ def get_home_guide_response_stream(user_message: str, web_context: str):
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": user_message},
             ],
             temperature=0.5,
-            stream=True  
+            stream=True,
         )
-        
+
         for chunk in response:
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
-                
+
     except Exception as e:
         yield f"죄송합니다. 오류가 발생했습니다. ({e})"
 
 
 from datetime import datetime
 
+
 def generate_resume_feedback(document_content: str, focus_area: str = "전체") -> str:
     # 동적으로 오늘 날짜 생성
     current_date = datetime.now().strftime("%Y년 %m월 %d일")
-    
+
     # 인사담당자 관점의 전문 첨삭 프롬프트
     prompt = f"""
 당신은 10년 차 수석 인사담당자이며, 첨삭 관련해서는 완벽주의자입니다.
@@ -529,8 +558,9 @@ def generate_resume_feedback(document_content: str, focus_area: str = "전체") 
     try:
         from openai import OpenAI
         import os
+
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
-        
+
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[{"role": "user", "content": prompt}],
@@ -546,9 +576,9 @@ def generate_resume_feedback(document_content: str, focus_area: str = "전체") 
 def get_proofread_result(text: str, doc_type: str) -> str:
     from langchain_openai import ChatOpenAI
     from langchain_core.prompts import ChatPromptTemplate
-    
+
     llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0.3)
-    
+
     if doc_type == "cover_letter":
         system_prompt = """당신은 1타 취업 컨설턴트입니다. 
 주어진 자기소개서의 문법 오류를 교정하고, STAR 기법에 맞춰 논리적 흐름이 돋보이도록 문장을 다듬어주세요. 
@@ -560,12 +590,11 @@ def get_proofread_result(text: str, doc_type: str) -> str:
 문장은 명사형으로 간결하게 끝나도록 수정하고, 피드백과 교정본을 함께 제공하세요.
 마크다운 형식으로 보기 좋게 정리해서 출력하세요."""
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("user", "{text}")
-    ])
-    
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{text}")]
+    )
+
     chain = prompt | llm
     response = chain.invoke({"text": text})
-    
+
     return response.content

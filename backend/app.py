@@ -1,5 +1,6 @@
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
@@ -10,12 +11,24 @@ from fastapi.responses import JSONResponse
 
 from backend.api.v1.endpoints import jobs_api, resume_api
 from backend.db.base import Base
+from backend.db.database import init_db
 from backend.db.schema_patch import patch_user_table_columns
 from backend.db.session import engine
 from backend.models import refresh_token, user
-from backend.routers import admin, auth, home, infer, social_auth, interview, attitude, agent, board
+from backend.routers import (
+    admin,
+    auth,
+    home,
+    infer,
+    social_auth,
+    interview,
+    attitude,
+    agent,
+    board,
+)
 
 app = FastAPI()
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -24,6 +37,7 @@ async def validation_exception_handler(request, exc):
         status_code=422,
         content={"detail": exc.errors(), "body": exc.body},
     )
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -40,10 +54,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    init_db()
     patch_user_table_columns()
+
 
 app.include_router(auth.router)
 app.include_router(social_auth.router)
@@ -78,7 +95,7 @@ app.include_router(home.router)
 app.include_router(board.router)
 app.include_router(infer.router)
 app.include_router(jobs_api.router)
-app.include_router(resume_api.router, prefix="/api/v1") 
+app.include_router(resume_api.router, prefix="/api/v1")
 app.include_router(interview.router)
 app.include_router(attitude.router)
 app.include_router(agent.router, prefix="/api/v1/agent", tags=["Agent"])
