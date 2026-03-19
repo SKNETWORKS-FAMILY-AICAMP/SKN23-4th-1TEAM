@@ -13,7 +13,7 @@ export const inferApi = {
   },
   
   // 면접 준비용 RAG 데이터 저장
-  ingestResume: async (file: File, userId: string) => {
+  ingestResume: async (file: File, userId: string): Promise<{ message: string; resume_text: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     
@@ -58,9 +58,13 @@ export const inferApi = {
   },
 
   getQuestionPool: async (jobRole: string, difficulty: string, limit: number) => {
-    const response = await axiosClient.get('/api/interview/questions', {
-      params: { job_role: jobRole, difficulty, limit }
-    });
+    const response = await axiosClient.get(`/api/infer/questions`, {
+      params: {
+      job_role: jobRole,
+      difficulty: difficulty,
+      limit: limit
+    }
+  });
     return response.data;
   }
 };

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist';
+import html2canvas from 'html2canvas'; // PDF 캡처용 라이브러리 추가
+import jsPDF from 'jspdf';             // PDF 생성용 라이브러리 추가
 import { Header } from '../components/common/Header';
 import { useAuthStore } from '../store/authStore';
 import { resumeApi } from '../api/resumeApi';
@@ -9,7 +11,10 @@ import { useInferStore } from '../store/inferStore';
 import { ROUTES } from '../constants/routes';
 import './ResumePage.scss';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+).toString();
 
 const JOB_ROLES = [
   'Python 백엔드 개발자',
@@ -34,7 +39,9 @@ export const ResumePage = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null); // PDF 저장을 위한 Ref 추가
 
   const fetchResumes = async () => {
     if (!user?.id) return;
@@ -133,6 +140,40 @@ export const ResumePage = () => {
     navigate(ROUTES.INTERVIEW);
   };
 
+  // PDF 다운로드 핸들러 함수
+  const handleDownloadPdf = async () => {
+    if (!dashboardRef.current || !selectedResume) return;
+
+    try {
+      const canvas = await html2canvas(dashboardRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`이력서_분석_대시보드_${selectedResume.title.replace(/\.[^/.]+$/, '')}.pdf`);
+    } catch (error) {
+      console.error('PDF 생성 실패:', error);
+      alert('PDF 다운로드 중 오류가 발생했습니다.');
+    }
+  };
+
   const formatDate = (ds: string) => ds ? ds.substring(0, 10).replace(/-/g, '.') : '';
 
   const searchKeyword = searchTerm.trim().toLowerCase();
@@ -154,72 +195,90 @@ export const ResumePage = () => {
       <div className="resume-page-layout">
         <Header />
         <main className="resume-main">
-          <div className="dashboard-nav">
+          {/* 상단 네비게이션 영역에 PDF 저장 버튼 추가 */}
+          <div className="dashboard-nav" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button className="back-btn" onClick={() => setSelectedResume(null)}>이전으로 돌아가기</button>
+            <button 
+              onClick={handleDownloadPdf}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              PDF 저장
+            </button>
           </div>
           
-          <div className="page-header">
-            <h1 className="hero-title">이력서 분석 대시보드</h1>
-            <p className="hero-subtitle">
-              <span className="highlight-text">{selectedResume.title}</span> 파일의 <span className="highlight-text">{selectedResume.job_role}</span> 직무 적합도 분석 결과입니다.
-            </p>
-          </div>
-
-          <div className="dashboard-grid">
-            <div className="dashboard-col">
-              <div className="info-panel">
-                <h3 className="panel-header">추출된 기술 스택</h3>
-                <div className="badge-container">
-                  {keywords.length > 0
-                    ? keywords.map((k, i) => <span key={i} className="tech-badge">{k}</span>)
-                    : <span className="empty-text">기술 스택 정보가 없습니다.</span>}
-                </div>
-              </div>
-
-              <div className="info-panel">
-                <h3 className="panel-header">직무 매칭 분석</h3>
-                <div className="match-header">
-                  <span className="match-label">AI 종합 스코어</span>
-                  <span className="match-score">{matchRate}%</span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-fill" style={{ width: `${matchRate}%` }} />
-                </div>
-                <div className="match-feedback">
-                  <strong>상세 코멘트</strong>
-                  <p>{matchFeedback}</p>
-                </div>
-              </div>
+          {/* PDF로 캡처할 영역을 dashboardRef로 감싸고 백그라운드 지정 */}
+          <div ref={dashboardRef} style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+            <div className="page-header">
+              <h1 className="hero-title">이력서 분석 대시보드</h1>
+              <p className="hero-subtitle">
+                <span className="highlight-text">{selectedResume.title}</span> 파일의 <span className="highlight-text">{selectedResume.job_role}</span> 직무 적합도 분석 결과입니다.
+              </p>
             </div>
 
-            <div className="dashboard-col">
-              <div className="info-panel highlight-panel">
-                <h3 className="panel-header">예상 압박 면접 질문</h3>
-                <div className="questions-list">
-                  {questions.length > 0
-                    ? questions.map((q, i) => (
-                      <div key={i} className="q-box">
-                        <span className="q-num">Q{i + 1}</span>
-                        <p className="q-text">{q}</p>
-                      </div>
-                    ))
-                    : <span className="empty-text">질문 데이터를 생성할 수 없습니다.</span>}
+            <div className="dashboard-grid">
+              <div className="dashboard-col">
+                <div className="info-panel">
+                  <h3 className="panel-header">추출된 기술 스택</h3>
+                  <div className="badge-container">
+                    {keywords.length > 0
+                      ? keywords.map((k, i) => <span key={i} className="tech-badge">{k}</span>)
+                      : <span className="empty-text">기술 스택 정보가 없습니다.</span>}
+                  </div>
+                </div>
+
+                <div className="info-panel">
+                  <h3 className="panel-header">직무 매칭 분석</h3>
+                  <div className="match-header">
+                    <span className="match-label">AI 종합 스코어</span>
+                    <span className="match-score">{matchRate}%</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${matchRate}%` }} />
+                  </div>
+                  <div className="match-feedback">
+                    <strong>상세 코멘트</strong>
+                    <p>{matchFeedback}</p>
+                  </div>
                 </div>
               </div>
 
-              <button className="primary-action-btn" onClick={handleStartInterview}>
-                해당 이력서로 모의면접 시작
-              </button>
+              <div className="dashboard-col">
+                <div className="info-panel highlight-panel">
+                  <h3 className="panel-header">예상 압박 면접 질문</h3>
+                  <div className="questions-list">
+                    {questions.length > 0
+                      ? questions.map((q, i) => (
+                        <div key={i} className="q-box">
+                          <span className="q-num">Q{i + 1}</span>
+                          <p className="q-text">{q}</p>
+                        </div>
+                      ))
+                      : <span className="empty-text">질문 데이터를 생성할 수 없습니다.</span>}
+                  </div>
+                </div>
 
-              <details className="data-expander">
-                <summary>원본 텍스트 데이터 확인</summary>
-                <textarea
-                  className="resume-text-preview"
-                  value={selectedResume.resume_text}
-                  readOnly
-                  rows={8}
-                />
-              </details>
+                <button className="primary-action-btn" onClick={handleStartInterview}>
+                  해당 이력서로 모의면접 시작
+                </button>
+
+                <details className="data-expander">
+                  <summary>원본 텍스트 데이터 확인</summary>
+                  <textarea
+                    className="resume-text-preview"
+                    value={selectedResume.resume_text}
+                    readOnly
+                    rows={8}
+                  />
+                </details>
+              </div>
             </div>
           </div>
         </main>

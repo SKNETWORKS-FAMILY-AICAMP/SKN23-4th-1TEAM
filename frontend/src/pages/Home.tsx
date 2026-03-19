@@ -193,7 +193,7 @@ export const Home = () => {
         </div>
       </main>
 
-      <GuideChatbot onOpenSetup={() => setIsSetupModalOpen(true)} />
+      <GuideChatbot />
 
       {isSetupModalOpen && (
         <InterviewSetupModal onClose={() => setIsSetupModalOpen(false)} />

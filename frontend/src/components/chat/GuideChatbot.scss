@@ -9,6 +9,31 @@
   flex-direction: column;
   align-items: flex-end;
 
+  .chatbot-toast-alert {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 12000;
+    animation: slideDownToast 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+
+    .toast-message {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    &.success { background-color: #10b981; }
+    &.warning { background-color: #f59e0b; }
+    &.error { background-color: #ef4444; }
+  }
+
   .chatbot-window {
     width: 380px;
     height: 600px;
@@ -91,7 +116,7 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      background: #f7f9fc; // Light gray/blue internal background
+      background: #f7f9fc; 
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -150,6 +175,7 @@
             border: 1px solid #eee;
             border-radius: 20px 20px 20px 4px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            width: 100%;
           }
         }
 
@@ -157,37 +183,63 @@
           display: flex;
           flex-direction: column;
           gap: 8px;
+          width: 100%;
 
           .message-bubble {
             padding: 14px 18px;
             font-size: 14px;
             line-height: 1.5;
 
-            .download-action {
+            .bubble-actions-row {
+              display: flex;
+              gap: 8px;
               margin-top: 12px;
               padding-top: 12px;
               border-top: 1px dashed rgba(0,0,0,0.1);
 
-              .download-btn {
-                background: none;
-                border: none;
-                color: $primary-color;
-                font-size: 13px;
-                font-weight: 600;
+              .bubble-action-btn {
+                flex: 1;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 6px;
+                padding: 10px 0;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
                 cursor: pointer;
-                padding: 4px 0;
-                transition: opacity 0.2s;
+                transition: all 0.2s;
+                border: 1px solid transparent;
 
-                &:hover {
-                  opacity: 0.8;
+                &.btn-txt {
+                  background: #f1f5f9;
+                  color: #475569;
+                  border-color: #cbd5e1;
+
+                  &:hover {
+                    background: #e2e8f0;
+                  }
+                }
+
+                &.btn-save {
+                  background: #eff6ff;
+                  color: #2563eb;
+                  border-color: #bfdbfe;
+
+                  &:hover:not(:disabled) {
+                    background: #dbeafe;
+                  }
+
+                  &.saved, &:disabled {
+                    background: #f1f5f9;
+                    color: #94a3b8;
+                    border-color: #e2e8f0;
+                    cursor: not-allowed;
+                  }
                 }
               }
             }
 
-            /* 💡 카카오톡/에듀윌 스타일 버튼 (말풍선 안쪽에 위치) */
             .quick-actions {
               display: flex;
               flex-direction: column;
@@ -243,15 +295,14 @@
     }
 
     .chat-input-container {
-      position: relative; // 💡 멘션 팝업의 기준점
+      position: relative; 
       background: #ffffff;
       padding: 12px 16px 16px;
       border-top: 1px solid $border-color;
 
-      /* 💡 [멘션 팝업 카카오톡 스타일 적용] */
       .mention-menu {
         position: absolute;
-        bottom: 100%; // 입력창 바로 위
+        bottom: 100%; 
         left: 0;
         right: 0;
         background: #ffffff;
@@ -292,7 +343,6 @@
             cursor: pointer;
             transition: background-color 0.2s;
 
-            /* 카카오톡 프로필처럼 둥근 아이콘 배경 */
             .icon-wrapper {
               width: 36px;
               height: 36px;
@@ -459,6 +509,101 @@
   }
 }
 
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11000;
+  animation: fadeIn 0.2s ease-out;
+
+  .confirm-modal-content {
+    background: #ffffff;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 16px;
+    padding: 40px 32px 32px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    animation: scaleUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    .confirm-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #eff6ff; 
+      color: $primary-color; 
+      margin-bottom: 24px;
+    }
+
+    h3 {
+      font-size: 20px;
+      font-weight: 800;
+      color: $primary-color;
+      margin: 0 0 12px 0;
+    }
+
+    p {
+      font-size: 15px;
+      color: #64748b;
+      line-height: 1.6;
+      margin: 0 0 28px 0;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 12px;
+
+      button {
+        flex: 1;
+        padding: 14px 0;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+
+        &:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-cancel {
+        background: #f1f5f9;
+        color: #475569;
+        &:hover:not(:disabled) { background: #e2e8f0; }
+      }
+
+      .btn-proceed {
+        background: $primary-color;
+        color: #ffffff;
+        &:hover:not(:disabled) { background: darken($primary-color, 10%); }
+      }
+    }
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideDownToast {
+  from { opacity: 0; transform: translate(-50%, -20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @keyframes bounceIn {
   from { opacity: 0; transform: scale(0.9) translateY(20px); }
   50% { transform: scale(1.02); }
@@ -478,4 +623,14 @@
 @keyframes bounce {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

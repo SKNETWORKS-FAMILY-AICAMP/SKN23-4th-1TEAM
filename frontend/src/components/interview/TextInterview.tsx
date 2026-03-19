@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useInterviewChat } from '../../hooks/useInterviewChat';
 import { InterviewReportModal } from './InterviewReportModal';
 import './TextInterview.scss';
@@ -6,17 +8,32 @@ import './TextInterview.scss';
 export const TextInterview = () => {
   const { messages, isLoading, isEnded, sendMessage } = useInterviewChat();
   const [inputText, setInputText] = useState('');
+  
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 250)}px`;
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputText.trim() && !isLoading && !isEnded) {
       sendMessage(inputText);
       setInputText('');
+      
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   };
 
@@ -40,10 +57,11 @@ export const TextInterview = () => {
               {msg.role === 'assistant' && <div className="ai-name">AI 면접관</div>}
               
               <div className={`bubble ${msg.role}`}>
-                {msg.content}
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
               </div>
               
-              {/* 유저 점수 뱃지 */}
               {msg.role === 'user' && msg.score !== undefined && (
                 <div className="score-badge">AI 평가 점수: {msg.score.toFixed(1)} / 10</div>
               )}
@@ -51,24 +69,31 @@ export const TextInterview = () => {
           </div>
         ))}
         
+        {/* ✅ 수정: 로딩 상태일 때 GIF 이미지 출력 */}
         {isLoading && (
           <div className="message-row assistant">
             <div className="ai-profile-icon">👾</div>
             <div className="message-content">
-              <div className="bubble assistant typing">답변을 분석 중입니다...</div>
+              <div className="bubble assistant typing">
+                <img 
+                  src="/loading.gif" 
+                  alt="답변 작성 중..." 
+                  className="typing-gif"
+                />
+              </div>
             </div>
           </div>
         )}
         <div ref={chatEndRef} />
       </div>
 
-      {/* 둥근 형태의 채팅 입력창 */}
       <form className="chat-input-area" onSubmit={handleSubmit}>
         <div className="input-wrapper">
           <textarea
+            ref={textareaRef}
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder={isEnded ? "면접이 종료되었습니다." : "메시지를 입력하세요"}
+            onChange={handleInput}
+            placeholder={isEnded ? "면접이 종료되었습니다." : "답변을 입력하세요"}
             disabled={isLoading || isEnded}
             rows={1}
             onKeyDown={(e) => {
@@ -86,7 +111,6 @@ export const TextInterview = () => {
         </div>
       </form>
 
-      {/* 면접 종료 시 결과 리포트 모달 출력 */}
       {isEnded && (
         <InterviewReportModal 
           messages={messages} 

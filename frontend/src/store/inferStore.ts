@@ -26,8 +26,8 @@ interface InferState {
       questions: { question: string }[];
     },
     resumeUsed: boolean,
-    resumeId?: number,
-    resumeTitle?: string
+    resumeId?: number | null,
+    resumeTitle?: string | null
   ) => void;
   setResumeUsed: (used: boolean) => void;
   clearInferSettings: () => void;
@@ -47,7 +47,9 @@ export const useInferStore = create<InferState>((set) => ({
   resumeId: null,
   resumeTitle: null,
   
-  setInferSettings: (jobRole, difficulty, extraSettings, resumeUsed, resumeId = null, resumeTitle = null) =>
+  setInferSettings: (jobRole, difficulty, extraSettings, resumeUsed, resumeId = null, resumeTitle = null) => {
+    localStorage.removeItem('current_session_id');
+    
     set({
       jobRole,
       difficulty,
@@ -60,7 +62,8 @@ export const useInferStore = create<InferState>((set) => ({
       resumeUsed,
       resumeId,
       resumeTitle
-    }),
+    });
+  },
     
   setResumeUsed: (used) => set({ resumeUsed: used }),
 

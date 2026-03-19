@@ -1,40 +1,133 @@
 import { useState, useRef, useCallback } from 'react';
 import { inferApi } from '../api/inferApi';
 import { useInferStore } from '../store/inferStore';
+import { useAuthStore } from '../store/authStore';
+
+export interface VoiceMessage {
+  sender: 'user' | 'ai';
+  text: string;
+  score?: number;
+  audioUrl?: string; 
+}
 
 export const useWebRTC = () => {
+  const { jobRole, difficulty, persona, experienceText, questions } = useInferStore.getState();
+  const { user } = useAuthStore.getState();
+
   const [isConnected, setIsConnected] = useState(false);
-  const [messages, setMessages] = useState<Array<{ sender: string; text: string }>>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [messages, setMessages] = useState<VoiceMessage[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  
-  // 비디오 태그에 연결할 Ref 추가 (화면 렌더링용)
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
-  const connect = useCallback(async () => {
+  const currentQIdxRef = useRef(0);
+  const followupCountRef = useRef(0);
+  const pendingQuestionRef = useRef(questions?.[0]?.question || "간단하게 자기소개를 부탁드립니다.");
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const evaluateAndSaveToDB = async (userText: string) => {
     try {
-      const { persona, jobRole } = useInferStore.getState();
+      setIsAnalyzing(true);
+      const nextMainQuestion = questions && questions.length > currentQIdxRef.current + 1 
+          ? questions[currentQIdxRef.current + 1].question : null;
+      const sessionId = localStorage.getItem('current_session_id');
 
+      const payload = {
+        session_id: sessionId ? parseInt(sessionId, 10) : null,
+        question: pendingQuestionRef.current,
+        answer: userText,
+        job_role: jobRole || "기본 직무",
+        difficulty: difficulty || "중",
+        persona_style: persona || "깐깐한 기술팀장",
+        user_id: user?.id ? String(user.id) : "guest",
+        resume_text: experienceText || "", 
+        next_main_question: nextMainQuestion,
+        followup_count: followupCountRef.current || 0,
+        attitude: null,
+      };
+
+      const data = await inferApi.evaluateTurn(payload);
+      let { reply_text, score, is_followup } = data;
+
+      let isEnd = false;
+      if (reply_text.includes('[NEXT_MAIN]')) {
+        currentQIdxRef.current += 1;
+        followupCountRef.current = 0;
+        reply_text = reply_text.replace('[NEXT_MAIN]', '').trim();
+      } else if (is_followup) {
+        followupCountRef.current += 1;
+      }
+      
+      if (reply_text.includes('[INTERVIEW_END]')) {
+         isEnd = true;
+         reply_text = reply_text.replace('[INTERVIEW_END]', '').trim();
+      }
+
+      pendingQuestionRef.current = reply_text;
+
+      setMessages(prev => {
+        const newMessages = [...prev];
+        let lastUserIndex = -1;
+        for (let i = newMessages.length - 1; i >= 0; i--) {
+          if (newMessages[i].sender === 'user') { lastUserIndex = i; break; }
+        }
+        if (lastUserIndex !== -1) newMessages[lastUserIndex].score = score;
+        return newMessages;
+      });
+
+      if (isEnd) {
+         alert("면접이 종료되었습니다. 면접 기록 페이지로 이동합니다.");
+         window.location.href = '/mypage'; 
+      }
+
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const connect = useCallback(async (useCamera: boolean) => {
+    try {
       const { client_secret } = await inferApi.getRealtimeToken();
-      const ephemeralToken = client_secret.value;
-
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
-      // 핵심 해결: 버튼을 누르는 순간(connect 함수 실행)에만 카메라/마이크 권한 요청
-      const ms = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStreamRef.current = ms;
+      const ms = await navigator.mediaDevices.getUserMedia({ video: useCamera, audio: true });
       
-      // 비디오 태그에 화면 연결
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = ms;
-      }
-
-      // 오디오 트랙만 WebRTC로 전송 (비디오는 화면에만 보여주고 전송하지 않음)
       const audioTrack = ms.getAudioTracks()[0];
+      audioTrack.enabled = false;
+      
+      setLocalStream(ms);
       pc.addTrack(audioTrack, ms);
+
+      const recorder = new MediaRecorder(ms);
+      mediaRecorderRef.current = recorder;
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        audioChunksRef.current = [];
+        
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          const lastIdx = newMsgs.length - 1;
+          if (lastIdx >= 0 && newMsgs[lastIdx].sender === 'user') {
+            newMsgs[lastIdx].audioUrl = url;
+          }
+          return newMsgs;
+        });
+      };
       
       pc.ontrack = (e) => {
         const audioEl = document.createElement('audio');
@@ -47,98 +140,116 @@ export const useWebRTC = () => {
 
       dc.onopen = () => {
         setIsConnected(true);
-        
-        // 시스템 설정(한국어, 음성/텍스트 모달리티) 주입
-        const sessionUpdate = {
+        dc.send(JSON.stringify({
           type: 'session.update',
           session: {
             modalities: ['audio', 'text'],
-            instructions: `당신은 ${jobRole} 직무의 ${persona}입니다. 지원자와 모의 면접을 진행합니다. 모든 질문과 답변은 반드시 '한국어(Korean)'로만 하세요. 절대 영어로 말하지 마세요.`,
-            input_audio_transcription: { model: "whisper-1" } // STT 처리를 위해 필수
+            instructions: `당신은 ${jobRole} 직무의 ${persona}입니다. 지원자와 모의 면접을 진행합니다. 한국어로만 말하세요.`,
+            input_audio_transcription: { model: "whisper-1" },
+            turn_detection: null
           }
-        };
-        dc.send(JSON.stringify(sessionUpdate));
+        }));
+
+        setTimeout(() => {
+          const initPrompt = `지금 면접을 시작합니다. 지원자에게 인사하고 다음 질문을 직접 육성으로 말해주세요: "${pendingQuestionRef.current}"`;
+          dc.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'user',
+              content: [{ type: 'input_text', text: initPrompt }]
+            }
+          }));
+          dc.send(JSON.stringify({ type: 'response.create' }));
+        }, 1000);
       };
 
-      dc.onmessage = (e) => {
+      dc.onmessage = async (e) => {
         const event = JSON.parse(e.data);
         if (event.type === 'response.audio_transcript.done') {
           setMessages(prev => [...prev, { sender: 'ai', text: event.transcript }]);
-        } else if (event.type === 'response.text.done') {
-          setMessages(prev => [...prev, { sender: 'ai', text: event.text }]);
         } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
-          // 사용자의 음성이 텍스트로 변환되었을 때
-          setMessages(prev => [...prev, { sender: 'user', text: event.transcript }]);
+          const userTranscript = event.transcript.trim();
+          if (userTranscript) {
+            setMessages(prev => [...prev, { sender: 'user', text: userTranscript }]);
+            await evaluateAndSaveToDB(userTranscript);
+          }
         }
       };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const baseUrl = 'https://api.openai.com/v1/realtime';
-      const model = 'gpt-4o-realtime-preview-2024-12-17';
-      const response = await fetch(`${baseUrl}?model=${model}`, {
+      const response = await fetch(`https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`, {
         method: 'POST',
         body: offer.sdp,
-        headers: {
-          Authorization: `Bearer ${ephemeralToken}`,
-          'Content-Type': 'application/sdp'
-        },
+        headers: { Authorization: `Bearer ${client_secret.value}`, 'Content-Type': 'application/sdp' },
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI Connection Failed: ${response.status}`);
-      }
-
       const answerSdp = await response.text();
-      const answer = new RTCSessionDescription({ type: 'answer', sdp: answerSdp });
-      await pc.setRemoteDescription(answer);
-
+      await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
     } catch (err) {
-      console.error('WebRTC Connection failed:', err);
-      setIsConnected(false);
+      console.error(err);
+      alert('마이크/카메라 권한을 허용해주세요.');
     }
-  }, []);
+  }, [jobRole, persona]);
 
   const disconnect = useCallback(() => {
-    // 연결 종료 시 브라우저가 잡고 있는 마이크/카메라 권한을 완벽하게 해제
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-    }
+    setLocalStream(prevStream => {
+      if (prevStream) {
+        prevStream.getTracks().forEach(track => track.stop());
+      }
+      return null;
+    });
     
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-    }
-    
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    if (dataChannelRef.current) {
-      dataChannelRef.current.close();
-      dataChannelRef.current = null;
-    }
+    if (pcRef.current) pcRef.current.close();
     setIsConnected(false);
-    setMessages([]);
+    setIsRecording(false);
   }, []);
 
-  // 음성 모드에서도 텍스트를 보낼 수 있는 기능은 유지 (보조 수단)
-  const sendTextMessage = useCallback((text: string) => {
-    if (dataChannelRef.current && isConnected) {
-      const event = {
-        type: 'conversation.item.create',
-        item: {
-          type: 'message',
-          role: 'user',
-          content: [{ type: 'input_text', text }]
-        }
-      };
-      dataChannelRef.current.send(JSON.stringify(event));
-      dataChannelRef.current.send(JSON.stringify({ type: 'response.create' }));
-      setMessages(prev => [...prev, { sender: 'user', text }]);
+  const startRecording = useCallback(() => {
+    if (localStream && dataChannelRef.current) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) audioTrack.enabled = true;
+      setIsRecording(true);
+      
+      if (mediaRecorderRef.current?.state === 'inactive') {
+        audioChunksRef.current = [];
+        mediaRecorderRef.current.start();
+      }
+      
+      dataChannelRef.current.send(JSON.stringify({ type: 'input_audio_buffer.clear' }));
     }
-  }, [isConnected]);
+  }, [localStream]);
 
-  return { isConnected, messages, localVideoRef, connect, disconnect, sendTextMessage };
+  const stopRecording = useCallback(() => {
+    if (localStream && dataChannelRef.current) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) audioTrack.enabled = false;
+      setIsRecording(false);
+      
+      if (mediaRecorderRef.current?.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      
+      dataChannelRef.current.send(JSON.stringify({ type: 'input_audio_buffer.commit' }));
+      dataChannelRef.current.send(JSON.stringify({ type: 'response.create' }));
+    }
+  }, [localStream]);
+
+  const downloadScript = useCallback(() => {
+    const scriptText = messages.map(m => `[${m.sender === 'user' ? '지원자' : 'AI 면접관'}]\n${m.text}\n`).join('\n');
+    const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'interview_script.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
+  return { 
+    isConnected, isRecording, isAnalyzing, messages, localVideoRef, 
+    connect, disconnect, startRecording, stopRecording, downloadScript 
+  };
 };

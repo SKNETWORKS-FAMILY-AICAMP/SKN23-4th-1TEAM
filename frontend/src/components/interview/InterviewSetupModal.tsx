@@ -1,3 +1,4 @@
+import { axiosClient } from '../../api/axiosClient';
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -91,49 +92,47 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
         }
       }
 
-      let finalQuestions: { question: string }[] = [];
       const fixedFirstQ = { question: "간단하게 자기소개를 부탁드립니다." };
       const remainCount = questionCount - 1; 
+      const techCount = Math.floor(remainCount / 2);
+      
+      let resumeQs: string[] = [];
+      let techQs: string[] = [];
 
       if (finalResumeText) {
         try {
-          const analyzeRes = await inferApi.analyzeResume(finalResumeText, jobRole);
-          const expectedQs: string[] = analyzeRes.data?.expected_questions || [];
-
-          const techCount = Math.floor(remainCount / 2);
-          let resumeCount = remainCount - techCount;
-
-          let techQs: string[] = [];
-          try {
-            const techRes = await inferApi.getQuestionPool(jobRole, difficulty, techCount);
-            techQs = techRes.items?.map((item: any) => item.question) || [];
-          } catch (e) {
-            console.error("DB 기술 질문 호출 실패:", e);
-          }
-
-          if (techQs.length < techCount) {
-            const shortfall = techCount - techQs.length;
-            resumeCount += shortfall;
-          }
-
-          const resumeQsSubset = expectedQs.slice(0, resumeCount).map(q => ({ question: q }));
-          const techQsMapped = techQs.map(q => ({ question: q }));
-
-          finalQuestions = [fixedFirstQ, ...resumeQsSubset, ...techQsMapped];
+          const [analyzeRes, poolRes] = await Promise.all([
+            inferApi.analyzeResume(finalResumeText, jobRole),
+            inferApi.getQuestionPool(jobRole, difficulty, techCount)
+          ]);
+          
+          resumeQs = analyzeRes.data?.expected_questions || [];
+          techQs = poolRes.items?.map((item: any) => item.question) || [];
         } catch (e) {
           console.error("질문 배분 및 추출 실패:", e);
         }
-      }
-
-      if (finalQuestions.length === 0) {
+      } else {
         try {
-          const fallbackTechRes = await inferApi.getQuestionPool(jobRole, difficulty, remainCount);
-          const fallbackTechQs = fallbackTechRes.items?.map((item: any) => ({ question: item.question })) || [];
-          finalQuestions = [fixedFirstQ, ...fallbackTechQs];
+          const poolRes = await inferApi.getQuestionPool(jobRole, difficulty, remainCount);
+          techQs = poolRes.items?.map((item: any) => item.question) || [];
         } catch (e) {
-          finalQuestions = [fixedFirstQ];
+          console.error("DB 기술 질문 호출 실패:", e);
         }
       }
+
+      let mixedQuestions: { question: string }[] = [];
+      const maxLength = Math.max(resumeQs.length, techQs.length);
+
+      for (let i = 0; i < maxLength; i++) {
+        if (resumeQs[i]) {
+          mixedQuestions.push({ question: resumeQs[i] });
+        }
+        if (techQs[i]) {
+          mixedQuestions.push({ question: techQs[i] });
+        }
+      }
+
+      let finalQuestions = [fixedFirstQ, ...mixedQuestions].slice(0, questionCount);
 
       if (finalQuestions.length < questionCount) {
         const shortfall = questionCount - finalQuestions.length;
@@ -142,7 +141,21 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
         }
       }
 
-      finalQuestions = finalQuestions.slice(0, questionCount);
+      try {
+        const sessionResponse = await axiosClient.post('/api/infer/start', {
+          job_role: jobRole,
+          difficulty: difficulty,
+          persona: persona,
+          resume_used: isResumeProvided,
+        });
+        
+        localStorage.setItem('current_session_id', sessionResponse.data.session_id);
+      } catch (e) {
+        console.error("면접 세션 생성 실패:", e);
+        alert("서버와 연결하여 면접을 준비하는데 실패했습니다.");
+        setIsUploading(false);
+        return; 
+      }
 
       setInferSettings(
         jobRole, 
@@ -231,7 +244,7 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
                   className={`select-btn ${persona === '부드러운 인사담당자' ? 'selected' : ''}`}
                   onClick={() => setPersona('부드러운 인사담당자')}
                 >
-                  부드러운 인사담당자
+                  부드러운 <br></br>인사담당자
                 </button>
                 <button 
                   className={`select-btn pro-btn ${persona === '스타트업 CTO' ? 'selected' : ''}`}

@@ -84,17 +84,31 @@ async def ingest_resume(file: UploadFile = File(...), session_id: str = "default
     """
     import os
     import asyncio
+    import PyPDF2
 
     contents  = await file.read()
     file_path = f"temp_{file.filename}"
     with open(file_path, "wb") as buffer:
         buffer.write(contents)
 
+    content_text = ""
+    try:
+        if file.filename.endswith(".pdf"):
+            pdf_reader = PyPDF2.PdfReader(file_path)
+            for page in pdf_reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    content_text += extracted + "\n"
+        else:
+            content_text = contents.decode("utf-8", errors="ignore")
+    except Exception as e:
+        print(f"텍스트 추출 오류: {e}")
+
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _get_ai().ingest_resume, file_path, session_id)
 
     os.remove(file_path)
-    return {"message": "이력서 분석 완료"}
+    return {"message": "이력서 분석 완료", "resume_text": content_text.strip()}
 
 @router.post("/start")
 def start_interview(req: Request, body: dict, db: Session = Depends(get_db)):

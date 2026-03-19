@@ -493,11 +493,22 @@ def get_home_guide_response_stream(user_message: str, web_context: str):
         yield f"죄송합니다. 오류가 발생했습니다. ({e})"
 
 
+from datetime import datetime
+
 def generate_resume_feedback(document_content: str, focus_area: str = "전체") -> str:
+    # 동적으로 오늘 날짜 생성
+    current_date = datetime.now().strftime("%Y년 %m월 %d일")
+    
     # 인사담당자 관점의 전문 첨삭 프롬프트
     prompt = f"""
 당신은 10년 차 수석 인사담당자이며, 첨삭 관련해서는 완벽주의자입니다.
 지원자가 제출한 아래 이력서/자기소개서를 검토하고, '{focus_area}' 측면을 중점적으로 피드백하세요.
+
+[중요 지침: 시간 흐름에 따른 상태 교정]
+- 오늘 날짜는 {current_date}입니다.
+- 지원자의 이력서 내 학력 및 경력 날짜가 오늘 날짜 기준으로 철저히 계산하고 첨삭해주세요.
+- 지원자가 원본에 '졸업' 아리고 적었으면 '졸업 예정'으로 명확히 표기 권장이라는 수정 피드백은 하지 않도록 한다.
+- 첨삭시 말투는 mz 느낌으로 사람 냄새가 나도록 한다.
 
 [지원자 텍스트]
 {document_content}

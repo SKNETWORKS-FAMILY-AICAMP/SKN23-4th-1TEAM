@@ -3,18 +3,21 @@ import { axiosClient } from './axiosClient';
 export interface LoginResponse {
   access_token: string;
   token_type: string;
-  id: string;
+  id: number;
   email: string;
   name: string;
   role: string;
-  tier: 'guest' | 'normal' | 'premium';
+  tier: 'normal' | 'premium';
   profile_image_url: string | null;
   refresh_token: string;
 }
 
 export const authApi = {
   login: async (credentials: Record<string, string>) => {
-    const response = await axiosClient.post<LoginResponse>('/api/auth/login', credentials);
+    const response = await axiosClient.post<LoginResponse>('/api/auth/login', {
+      email: credentials.email,
+      password: credentials.password,
+    });
     return response.data;
   },
 
@@ -34,6 +37,7 @@ export const authApi = {
     });
     return response.data;
   },
+
   sendResetEmail: async (data: { email: string; auth_code: string }) => {
     const response = await axiosClient.post('/api/auth/send-reset-email', data);
     return response.data;
@@ -58,5 +62,4 @@ export const authApi = {
     const response = await axiosClient.post('/api/auth/upgrade');
     return response.data;
   }
-
 };
