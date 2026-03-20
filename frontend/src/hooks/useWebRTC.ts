@@ -1,10 +1,10 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { inferApi, type AttitudeFramePayload } from '../api/inferApi';
-import { useInferStore } from '../store/inferStore';
-import { useAuthStore } from '../store/authStore';
+import { useState, useRef, useCallback, useEffect } from "react";
+import { inferApi, type AttitudeFramePayload } from "../api/inferApi";
+import { useInferStore } from "../store/inferStore";
+import { useAuthStore } from "../store/authStore";
 
 export interface VoiceMessage {
-  sender: 'user' | 'ai';
+  sender: "user" | "ai";
   text: string;
   score?: number;
   audioUrl?: string;
@@ -22,14 +22,15 @@ interface CameraResolution {
 }
 
 const getQualityLabel = (height: number) => {
-  if (height >= 1080) return '1080p+';
-  if (height >= 720) return '720p';
-  if (height >= 480) return '480p';
-  return 'SD';
+  if (height >= 1080) return "1080p+";
+  if (height >= 720) return "720p";
+  if (height >= 480) return "480p";
+  return "SD";
 };
 
 export const useWebRTC = () => {
-  const { jobRole, difficulty, persona, experienceText, questions } = useInferStore.getState();
+  const { jobRole, difficulty, persona, experienceText, questions } =
+    useInferStore.getState();
   const { user } = useAuthStore.getState();
 
   const [isConnected, setIsConnected] = useState(false);
@@ -39,16 +40,19 @@ export const useWebRTC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [cameraDevices, setCameraDevices] = useState<CameraDeviceOption[]>([]);
-  const [selectedCameraId, setSelectedCameraId] = useState('');
-  const [cameraResolution, setCameraResolution] = useState<CameraResolution | null>(null);
-  const [cameraQualityLabel, setCameraQualityLabel] = useState('camera off');
+  const [selectedCameraId, setSelectedCameraId] = useState("");
+  const [cameraResolution, setCameraResolution] =
+    useState<CameraResolution | null>(null);
+  const [cameraQualityLabel, setCameraQualityLabel] = useState("camera off");
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const currentQIdxRef = useRef(0);
   const followupCountRef = useRef(0);
-  const pendingQuestionRef = useRef(questions?.[0]?.question || '간단하게 자기소개를 부탁드립니다.');
+  const pendingQuestionRef = useRef(
+    questions?.[0]?.question || "간단하게 자기소개를 부탁드립니다.",
+  );
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const initialPromptSentRef = useRef(false);
@@ -67,7 +71,7 @@ export const useWebRTC = () => {
     const videoTrack = stream?.getVideoTracks()[0];
     if (!videoTrack) {
       setCameraResolution(null);
-      setCameraQualityLabel('camera off');
+      setCameraQualityLabel("camera off");
       return;
     }
 
@@ -77,7 +81,7 @@ export const useWebRTC = () => {
 
     if (!width || !height) {
       setCameraResolution(null);
-      setCameraQualityLabel('camera on');
+      setCameraQualityLabel("camera on");
       return;
     }
 
@@ -89,7 +93,7 @@ export const useWebRTC = () => {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices
-        .filter((device) => device.kind === 'videoinput')
+        .filter((device) => device.kind === "videoinput")
         .map((device, index) => ({
           deviceId: device.deviceId,
           label: device.label || `카메라 ${index + 1}`,
@@ -98,7 +102,7 @@ export const useWebRTC = () => {
       setCameraDevices(videoInputs);
       setSelectedCameraId((prev) => {
         if (videoInputs.some((device) => device.deviceId === prev)) return prev;
-        return videoInputs[0]?.deviceId ?? '';
+        return videoInputs[0]?.deviceId ?? "";
       });
     } catch (error) {
       console.error(error);
@@ -112,28 +116,40 @@ export const useWebRTC = () => {
       refreshCameraDevices();
     };
 
-    navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange);
+    navigator.mediaDevices?.addEventListener?.(
+      "devicechange",
+      handleDeviceChange,
+    );
 
     return () => {
-      navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange);
+      navigator.mediaDevices?.removeEventListener?.(
+        "devicechange",
+        handleDeviceChange,
+      );
     };
   }, [refreshCameraDevices]);
 
   const captureAttitudeFrame = useCallback(() => {
     const video = localVideoRef.current;
-    if (!video || video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) return;
+    if (
+      !video ||
+      video.readyState < 2 ||
+      video.videoWidth === 0 ||
+      video.videoHeight === 0
+    )
+      return;
 
-    const canvas = captureCanvasRef.current ?? document.createElement('canvas');
+    const canvas = captureCanvasRef.current ?? document.createElement("canvas");
     captureCanvasRef.current = canvas;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) return;
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-    const imageBase64 = dataUrl.split(',')[1];
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+    const imageBase64 = dataUrl.split(",")[1];
     if (!imageBase64) return;
 
     attitudeFramesRef.current.push({
@@ -192,17 +208,17 @@ export const useWebRTC = () => {
         questions && questions.length > currentQIdxRef.current + 1
           ? questions[currentQIdxRef.current + 1].question
           : null;
-      const sessionId = localStorage.getItem('current_session_id');
+      const sessionId = localStorage.getItem("current_session_id");
 
       const payload = {
         session_id: sessionId ? parseInt(sessionId, 10) : null,
         question: pendingQuestionRef.current,
         answer: userText,
-        job_role: jobRole || '기본 직무',
-        difficulty: difficulty || '중',
-        persona_style: persona || '친절한 기술 면접관',
-        user_id: user?.id ? String(user.id) : 'guest',
-        resume_text: experienceText || '',
+        job_role: jobRole || "기본 직무",
+        difficulty: difficulty || "중",
+        persona_style: persona || "친절한 기술 면접관",
+        user_id: user?.id ? String(user.id) : "guest",
+        resume_text: experienceText || "",
         next_main_question: nextMainQuestion,
         followup_count: followupCountRef.current || 0,
         attitude,
@@ -212,17 +228,17 @@ export const useWebRTC = () => {
       let { reply_text, score, is_followup } = data;
 
       let isEnd = false;
-      if (reply_text.includes('[NEXT_MAIN]')) {
+      if (reply_text.includes("[NEXT_MAIN]")) {
         currentQIdxRef.current += 1;
         followupCountRef.current = 0;
-        reply_text = reply_text.replace('[NEXT_MAIN]', '').trim();
+        reply_text = reply_text.replace("[NEXT_MAIN]", "").trim();
       } else if (is_followup) {
         followupCountRef.current += 1;
       }
 
-      if (reply_text.includes('[INTERVIEW_END]')) {
+      if (reply_text.includes("[INTERVIEW_END]")) {
         isEnd = true;
-        reply_text = reply_text.replace('[INTERVIEW_END]', '').trim();
+        reply_text = reply_text.replace("[INTERVIEW_END]", "").trim();
       }
 
       pendingQuestionRef.current = reply_text;
@@ -232,7 +248,7 @@ export const useWebRTC = () => {
         let lastUserIndex = -1;
 
         for (let i = next.length - 1; i >= 0; i -= 1) {
-          if (next[i].sender === 'user') {
+          if (next[i].sender === "user") {
             lastUserIndex = i;
             break;
           }
@@ -240,15 +256,16 @@ export const useWebRTC = () => {
 
         if (lastUserIndex !== -1) {
           next[lastUserIndex].score = score;
-          next[lastUserIndex].attitudeSummary = attitude?.summary_text || undefined;
+          next[lastUserIndex].attitudeSummary =
+            attitude?.summary_text || undefined;
         }
 
         return next;
       });
 
       if (isEnd) {
-        alert('면접이 종료되었습니다. 면접 기록 페이지로 이동합니다.');
-        window.location.href = '/mypage';
+        alert("면접이 종료되었습니다. 면접 기록 페이지로 이동합니다.");
+        window.location.href = "/mypage";
       }
     } catch (error) {
       console.error(error);
@@ -269,8 +286,10 @@ export const useWebRTC = () => {
         return navigator.mediaDevices.getUserMedia({ audio, video: false });
       }
 
-      const idealDeviceId = selectedCameraId ? { ideal: selectedCameraId } : undefined;
-      const preferredFacingMode = selectedCameraId ? undefined : 'user';
+      const idealDeviceId = selectedCameraId
+        ? { ideal: selectedCameraId }
+        : undefined;
+      const preferredFacingMode = selectedCameraId ? undefined : "user";
 
       const attempts: MediaStreamConstraints[] = [
         {
@@ -321,7 +340,10 @@ export const useWebRTC = () => {
                   frameRate: { ideal: 24 },
                 });
               } catch (fallbackConstraintError) {
-                console.warn('Unable to apply camera constraints.', fallbackConstraintError);
+                console.warn(
+                  "Unable to apply camera constraints.",
+                  fallbackConstraintError,
+                );
               }
             }
           }
@@ -369,14 +391,14 @@ export const useWebRTC = () => {
         };
 
         recorder.onstop = () => {
-          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
           const url = URL.createObjectURL(blob);
           audioChunksRef.current = [];
 
           setMessages((prev) => {
             const next = [...prev];
             const lastIndex = next.length - 1;
-            if (lastIndex >= 0 && next[lastIndex].sender === 'user') {
+            if (lastIndex >= 0 && next[lastIndex].sender === "user") {
               next[lastIndex].audioUrl = url;
             }
             return next;
@@ -384,12 +406,12 @@ export const useWebRTC = () => {
         };
 
         pc.ontrack = (event) => {
-          const audioEl = document.createElement('audio');
+          const audioEl = document.createElement("audio");
           audioEl.autoplay = true;
           audioEl.srcObject = event.streams[0];
         };
 
-        const dc = pc.createDataChannel('oai-events');
+        const dc = pc.createDataChannel("oai-events");
         dataChannelRef.current = dc;
 
         dc.onopen = () => {
@@ -398,11 +420,11 @@ export const useWebRTC = () => {
 
           dc.send(
             JSON.stringify({
-              type: 'session.update',
+              type: "session.update",
               session: {
-                modalities: ['audio', 'text'],
+                modalities: ["audio", "text"],
                 instructions: `당신은 ${jobRole} 직무의 ${persona}입니다. 지원자와 모의 면접을 진행합니다. 음성으로만 말해주세요.`,
-                input_audio_transcription: { model: 'whisper-1' },
+                input_audio_transcription: { model: "whisper-1" },
                 turn_detection: null,
               },
             }),
@@ -412,33 +434,48 @@ export const useWebRTC = () => {
           initialPromptSentRef.current = true;
 
           setTimeout(() => {
-            if (!dataChannelRef.current || dataChannelRef.current.readyState !== 'open') return;
+            if (
+              !dataChannelRef.current ||
+              dataChannelRef.current.readyState !== "open"
+            )
+              return;
 
             const initPrompt = `지금 면접을 시작합니다. 지원자에게 인사하고 다음 질문을 직접 읽어주세요: "${pendingQuestionRef.current}"`;
 
             dataChannelRef.current.send(
               JSON.stringify({
-                type: 'conversation.item.create',
+                type: "conversation.item.create",
                 item: {
-                  type: 'message',
-                  role: 'user',
-                  content: [{ type: 'input_text', text: initPrompt }],
+                  type: "message",
+                  role: "user",
+                  content: [{ type: "input_text", text: initPrompt }],
                 },
               }),
             );
-            dataChannelRef.current.send(JSON.stringify({ type: 'response.create' }));
+            dataChannelRef.current.send(
+              JSON.stringify({ type: "response.create" }),
+            );
           }, 1000);
         };
 
         dc.onmessage = async (event) => {
           const realtimeEvent = JSON.parse(event.data);
 
-          if (realtimeEvent.type === 'response.audio_transcript.done') {
-            setMessages((prev) => [...prev, { sender: 'ai', text: realtimeEvent.transcript }]);
-          } else if (realtimeEvent.type === 'conversation.item.input_audio_transcription.completed') {
+          if (realtimeEvent.type === "response.audio_transcript.done") {
+            setMessages((prev) => [
+              ...prev,
+              { sender: "ai", text: realtimeEvent.transcript },
+            ]);
+          } else if (
+            realtimeEvent.type ===
+            "conversation.item.input_audio_transcription.completed"
+          ) {
             const userTranscript = realtimeEvent.transcript.trim();
             if (userTranscript) {
-              setMessages((prev) => [...prev, { sender: 'user', text: userTranscript }]);
+              setMessages((prev) => [
+                ...prev,
+                { sender: "user", text: userTranscript },
+              ]);
               await evaluateAndSaveToDB(userTranscript);
             }
           }
@@ -447,25 +484,37 @@ export const useWebRTC = () => {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        const response = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
-          method: 'POST',
-          body: offer.sdp,
-          headers: {
-            Authorization: `Bearer ${client_secret.value}`,
-            'Content-Type': 'application/sdp',
+        const response = await fetch(
+          "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
+          {
+            method: "POST",
+            body: offer.sdp,
+            headers: {
+              Authorization: `Bearer ${client_secret.value}`,
+              "Content-Type": "application/sdp",
+            },
           },
-        });
+        );
 
         const answerSdp = await response.text();
-        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
+        await pc.setRemoteDescription(
+          new RTCSessionDescription({ type: "answer", sdp: answerSdp }),
+        );
       } catch (error) {
         console.error(error);
-        alert('마이크 또는 카메라 권한을 확인해주세요.');
+        alert("마이크 또는 카메라 권한을 확인해주세요.");
       } finally {
         setIsConnecting(false);
       }
     },
-    [createMediaStream, isConnected, isConnecting, jobRole, persona, refreshCameraDevices],
+    [
+      createMediaStream,
+      isConnected,
+      isConnecting,
+      jobRole,
+      persona,
+      refreshCameraDevices,
+    ],
   );
 
   const disconnect = useCallback(() => {
@@ -485,7 +534,7 @@ export const useWebRTC = () => {
     });
 
     setCameraResolution(null);
-    setCameraQualityLabel('camera off');
+    setCameraQualityLabel("camera off");
 
     if (pcRef.current) pcRef.current.close();
     pcRef.current = null;
@@ -502,12 +551,14 @@ export const useWebRTC = () => {
       setIsRecording(true);
       startAttitudeSampling();
 
-      if (mediaRecorderRef.current?.state === 'inactive') {
+      if (mediaRecorderRef.current?.state === "inactive") {
         audioChunksRef.current = [];
         mediaRecorderRef.current.start();
       }
 
-      dataChannelRef.current.send(JSON.stringify({ type: 'input_audio_buffer.clear' }));
+      dataChannelRef.current.send(
+        JSON.stringify({ type: "input_audio_buffer.clear" }),
+      );
     }
   }, [localStream, startAttitudeSampling]);
 
@@ -518,22 +569,29 @@ export const useWebRTC = () => {
       setIsRecording(false);
       stopAttitudeSampling();
 
-      if (mediaRecorderRef.current?.state === 'recording') {
+      if (mediaRecorderRef.current?.state === "recording") {
         mediaRecorderRef.current.stop();
       }
 
-      dataChannelRef.current.send(JSON.stringify({ type: 'input_audio_buffer.commit' }));
-      dataChannelRef.current.send(JSON.stringify({ type: 'response.create' }));
+      dataChannelRef.current.send(
+        JSON.stringify({ type: "input_audio_buffer.commit" }),
+      );
+      dataChannelRef.current.send(JSON.stringify({ type: "response.create" }));
     }
   }, [localStream, stopAttitudeSampling]);
 
   const downloadScript = useCallback(() => {
-    const scriptText = messages.map((message) => `[${message.sender === 'user' ? '지원자' : 'AI 면접관'}]\n${message.text}\n`).join('\n');
-    const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' });
+    const scriptText = messages
+      .map(
+        (message) =>
+          `[${message.sender === "user" ? "지원자" : "AI 면접관"}]\n${message.text}\n`,
+      )
+      .join("\n");
+    const blob = new Blob([scriptText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
+    const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = 'interview_script.txt';
+    anchor.download = "interview_script.txt";
     anchor.click();
     URL.revokeObjectURL(url);
   }, [messages]);

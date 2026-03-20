@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export type UserTier = 'guest' | 'normal' | 'premium';
+export type UserTier = "guest" | "normal" | "premium";
 
 interface User {
   id: string;
@@ -28,8 +28,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       accessToken: null,
-      setAuth: (user, token) => set({ user, accessToken: token, isAuthenticated: true }),
-      clearAuth: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+      setAuth: (user, token) =>
+        set({ user, accessToken: token, isAuthenticated: true }),
+      clearAuth: () =>
+        set({ user: null, accessToken: null, isAuthenticated: false }),
       updateTier: (tier) =>
         set((state) => ({
           ...state,
@@ -37,7 +39,7 @@ export const useAuthStore = create<AuthState>()(
         })),
     }),
     {
-      name: 'auth-storage', 
-    }
-  )
+      name: "auth-storage",
+    },
+  ),
 );

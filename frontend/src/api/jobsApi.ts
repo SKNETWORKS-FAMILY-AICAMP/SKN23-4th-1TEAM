@@ -1,4 +1,4 @@
-import { axiosClient } from './axiosClient';
+import { axiosClient } from "./axiosClient";
 
 export interface JobsQuery {
   startPage: number;
@@ -10,7 +10,7 @@ export interface JobsQuery {
 
 export const jobsApi = {
   searchJobs: async (query: JobsQuery) => {
-    const res = await axiosClient.post('/api/jobs/search', query);
+    const res = await axiosClient.post("/api/jobs/search", query);
     return res.data;
-  }
+  },
 };

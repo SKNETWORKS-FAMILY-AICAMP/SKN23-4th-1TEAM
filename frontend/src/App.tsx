@@ -1,8 +1,8 @@
-import { useState, useEffect, type FC } from 'react';
-import { BrowserRouter } from 'react-router-dom';
-import { AppRouter } from './router/AppRouter';
-import { SplashView } from './components/layout/SplashView';
-import { useAutoLogout } from './hooks/useAutoLogout';
+import { useState, useEffect, type FC } from "react";
+import { BrowserRouter } from "react-router-dom";
+import { AppRouter } from "./router/AppRouter";
+import { SplashView } from "./components/layout/SplashView";
+import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const AppContent: FC = () => {
   // 30분 미활동 감지 로그아웃 타이머 실행

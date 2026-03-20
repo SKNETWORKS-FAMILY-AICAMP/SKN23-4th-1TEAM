@@ -1,4 +1,4 @@
-@use '../styles/variables' as *;
+@use "../styles/variables" as *;
 
 .mypage-layout {
   min-height: 100vh;
@@ -23,7 +23,11 @@
     }
 
     .profile-hero-card {
-      background: linear-gradient(135deg, $primary-dark 0%, $primary-color 100%);
+      background: linear-gradient(
+        135deg,
+        $primary-dark 0%,
+        $primary-color 100%
+      );
       border-radius: 16px;
       padding: 24px 20px;
       box-shadow: 0 6px 24px rgba(1, 118, 247, 0.25);
@@ -32,7 +36,7 @@
       margin-bottom: 20px;
 
       &::before {
-        content: '';
+        content: "";
         position: absolute;
         top: -30px;
         right: -30px;
@@ -164,8 +168,12 @@
           cursor: pointer;
           &:hover {
             background: #f8fafc;
-            .arrow-icon { color: $primary-color; }
-            .list-label { color: $primary-color; }
+            .arrow-icon {
+              color: $primary-color;
+            }
+            .list-label {
+              color: $primary-color;
+            }
           }
         }
 
@@ -282,7 +290,9 @@
           padding: 8px;
           border-radius: 50%;
 
-          &:hover { background: #f1f5f9; }
+          &:hover {
+            background: #f1f5f9;
+          }
         }
 
         h2 {

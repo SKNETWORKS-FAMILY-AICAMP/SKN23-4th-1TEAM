@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Header } from '../components/common/Header';
-import { boardApi } from '../api/boardApi';
-import { QuestionDetailModal } from '../components/board/QuestionDetailModal';
-import { CreateQuestionModal } from '../components/board/CreateQuestionModal';
-import { Trash2, AlertCircle, CheckCircle, Info, Trash } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
-import './Board.scss';
+import { useEffect, useState } from "react";
+import { Header } from "../components/common/Header";
+import { boardApi } from "../api/boardApi";
+import { QuestionDetailModal } from "../components/board/QuestionDetailModal";
+import { CreateQuestionModal } from "../components/board/CreateQuestionModal";
+import { Trash2, AlertCircle, CheckCircle, Info, Trash } from "lucide-react";
+import { useAuthStore } from "../store/authStore";
+import "./Board.scss";
 
 interface Question {
   id: number;
@@ -13,7 +13,7 @@ interface Question {
   answer_count?: number;
 }
 
-type ToastType = 'success' | 'error' | 'warning';
+type ToastType = "success" | "error" | "warning";
 
 interface ToastState {
   message: string;
@@ -24,7 +24,9 @@ export const BoardPage = () => {
   const { user } = useAuthStore();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(
+    null,
+  );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -64,7 +66,7 @@ export const BoardPage = () => {
 
   const executeDelete = async () => {
     if (!deleteTargetId) return;
-    
+
     try {
       await boardApi.deleteQuestion(deleteTargetId);
       showToast("질문이 성공적으로 삭제되었습니다.", "success");
@@ -82,15 +84,17 @@ export const BoardPage = () => {
 
   const getToastIcon = (type: ToastType) => {
     switch (type) {
-      case 'success': return <CheckCircle size={20} />;
-      case 'warning': return <Info size={20} />;
-      case 'error': return <AlertCircle size={20} />;
+      case "success":
+        return <CheckCircle size={20} />;
+      case "warning":
+        return <Info size={20} />;
+      case "error":
+        return <AlertCircle size={20} />;
     }
   };
 
   return (
     <div className="board-page-layout">
-      
       {toast && (
         <div className={`toast-alert ${toast.type}`}>
           {getToastIcon(toast.type)}
@@ -104,7 +108,8 @@ export const BoardPage = () => {
           <div className="hero-content">
             <h1 className="hero-title">인성면접 질문 둘러보기</h1>
             <p className="hero-subtitle">
-              실제 면접에서 사용했던 표현, 고민 포인트, 답변 방식을 자유롭게 공유해보세요.
+              실제 면접에서 사용했던 표현, 고민 포인트, 답변 방식을 자유롭게
+              공유해보세요.
             </p>
           </div>
           <button
@@ -121,9 +126,8 @@ export const BoardPage = () => {
           <div className="questions-grid">
             {questions.map((q, idx) => (
               <div key={q.id} className="question-card">
-                
-                {user?.role === 'admin' && (
-                  <button 
+                {user?.role === "admin" && (
+                  <button
                     className="btn-admin-delete"
                     onClick={(e) => handleDeleteClick(e, q.id)}
                     title="관리자 권한으로 질문 삭제"
@@ -134,7 +138,9 @@ export const BoardPage = () => {
 
                 <div className="card-top">
                   <span className="q-label">질문 {idx + 1}</span>
-                  <h3 className={`q-content ${user?.role === 'admin' ? 'admin-padding' : ''}`}>
+                  <h3
+                    className={`q-content ${user?.role === "admin" ? "admin-padding" : ""}`}
+                  >
                     {q.content}
                   </h3>
                 </div>
@@ -162,10 +168,21 @@ export const BoardPage = () => {
               <Trash size={28} />
             </div>
             <h3>질문을 완전히 삭제할까요?</h3>
-            <p>삭제된 질문과 모든 답변은 복구할 수 없습니다.<br/>정말 삭제하시겠습니까?</p>
+            <p>
+              삭제된 질문과 모든 답변은 복구할 수 없습니다.
+              <br />
+              정말 삭제하시겠습니까?
+            </p>
             <div className="confirm-actions">
-              <button className="btn-cancel" onClick={() => setDeleteTargetId(null)}>취소</button>
-              <button className="btn-proceed" onClick={executeDelete}>삭제하기</button>
+              <button
+                className="btn-cancel"
+                onClick={() => setDeleteTargetId(null)}
+              >
+                취소
+              </button>
+              <button className="btn-proceed" onClick={executeDelete}>
+                삭제하기
+              </button>
             </div>
           </div>
         </div>

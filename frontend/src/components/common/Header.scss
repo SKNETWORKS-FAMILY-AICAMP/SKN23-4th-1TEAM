@@ -1,4 +1,4 @@
-@use '../../styles/variables' as *;
+@use "../../styles/variables" as *;
 
 .main-header {
   display: flex;
@@ -17,10 +17,10 @@
     cursor: pointer;
 
     .logo-img {
-      width: 32px;  
+      width: 32px;
       height: 32px;
       object-fit: contain;
-      border-radius: 6px; 
+      border-radius: 6px;
     }
 
     .logo-text {

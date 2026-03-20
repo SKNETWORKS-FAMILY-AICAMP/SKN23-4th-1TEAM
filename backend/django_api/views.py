@@ -42,7 +42,7 @@ from backend.schemas.attitude_schema import AttitudeEvent, AttitudeMetrics, Atti
 from backend.schemas.jobs_schema import JobsSearchQuery
 from backend.services import auth_service, social_service
 from backend.services.attitude_service import analyze_attitude
-from backend.services.fit_service import save_and_evaluate_answer
+from backend.services.personality_service import save_and_evaluate_answer
 from backend.services.jobs_service import ExternalJobsAPIError, _join_multi, fetch_jobs
 from backend.services.llm_service import (
     analyze_resume_comprehensive,
@@ -52,8 +52,7 @@ from backend.services.llm_service import (
     get_proofread_result,
     get_translated_news_summary,
 )
-from backend.services.personality_feedback_service import generate_board_answer_feedback
-from backend.services.personality_vector_service import save_board_answer_to_vector_db
+from backend.services.personality_service import generate_board_answer_feedback, save_board_answer_to_vector_db
 from backend.services.rag_service import get_ai_service, store_resume
 from backend.services.resume_service import get_latest_resume_fields
 from backend.services.tavily_service import get_web_context_first, get_web_context_second
@@ -601,16 +600,6 @@ def board_create_answer(request, question_id: int):
             feedback = save_and_evaluate_answer(answer_id, user.id, question_id, question["content"], content)
         except Exception:
             feedback = None
-        try:
-            save_board_answer_to_vector_db(
-                answer_id=answer_id,
-                user_id=user.id,
-                question_id=question_id,
-                question_text=question["content"],
-                answer_text=content,
-            )
-        except Exception:
-            pass
     return {"ok": True, "answer_id": answer_id, "author_name": author_name, "feedback": feedback}
 
 

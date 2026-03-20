@@ -1,5 +1,5 @@
 // src/components/layout/SplashView.tsx
-import './SplashView.scss';
+import "./SplashView.scss";
 
 export const SplashView = () => {
   return (

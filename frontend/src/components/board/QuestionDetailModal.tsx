@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { boardApi } from '../../api/boardApi';
-import { X, Heart, Send, Trash2 } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
+import { useEffect, useState } from "react";
+import { boardApi } from "../../api/boardApi";
+import { X, Heart, Send, Trash2 } from "lucide-react";
+import { useAuthStore } from "../../store/authStore";
 
 interface Answer {
   id: number;
@@ -20,9 +20,9 @@ interface Props {
 
 export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
   const { user } = useAuthStore();
-  const [questionContent, setQuestionContent] = useState('');
+  const [questionContent, setQuestionContent] = useState("");
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [myAnswer, setMyAnswer] = useState('');
+  const [myAnswer, setMyAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchDetail = async () => {
@@ -37,7 +37,7 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
 
   useEffect(() => {
     fetchDetail();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionId]);
 
   const handleLike = async (answerId: number) => {
@@ -73,8 +73,13 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
 
     setIsSubmitting(true);
     try {
-      await boardApi.submitAnswer(questionId, myAnswer, Number(user.id), user.name);
-      setMyAnswer('');
+      await boardApi.submitAnswer(
+        questionId,
+        myAnswer,
+        Number(user.id),
+        user.name,
+      );
+      setMyAnswer("");
       fetchDetail();
     } catch (error) {
       console.error("답변 등록 실패:", error);
@@ -84,22 +89,29 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
     }
   };
 
-  const topAnswer = answers.length > 0
-    ? [...answers].sort((a, b) => b.like_count - a.like_count)[0]
-    : null;
+  const topAnswer =
+    answers.length > 0
+      ? [...answers].sort((a, b) => b.like_count - a.like_count)[0]
+      : null;
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ko-KR', {
-      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    return new Date(dateStr).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   return (
     <div className="board-modal-overlay" onClick={onClose}>
-      <div className="board-modal-content" onClick={e => e.stopPropagation()}>
+      <div className="board-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Q. {questionContent}</h2>
-          <button className="btn-close" onClick={onClose}><X size={24} /></button>
+          <button className="btn-close" onClick={onClose}>
+            <X size={24} />
+          </button>
         </div>
 
         <div className="modal-body">
@@ -109,14 +121,19 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
               <div className="answer-card top-card">
                 <div className="author-info">
                   <span className="author-name">{topAnswer.author_name}</span>
-                  <span className="date">{formatDate(topAnswer.created_at)}</span>
+                  <span className="date">
+                    {formatDate(topAnswer.created_at)}
+                  </span>
                 </div>
                 <p className="content">{topAnswer.content}</p>
                 <button
-                  className={`btn-like ${topAnswer.is_liked_by_me ? 'active' : ''}`}
+                  className={`btn-like ${topAnswer.is_liked_by_me ? "active" : ""}`}
                   onClick={() => handleLike(topAnswer.id)}
                 >
-                  <Heart size={14} fill={topAnswer.is_liked_by_me ? "currentColor" : "none"} />
+                  <Heart
+                    size={14}
+                    fill={topAnswer.is_liked_by_me ? "currentColor" : "none"}
+                  />
                   좋아요 {topAnswer.like_count}
                 </button>
               </div>
@@ -125,13 +142,28 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
 
           <div className="all-answers-section">
             <span className="section-label">전체 답변 ({answers.length})</span>
-            {answers.map(ans => (
-              <div key={ans.id} className="answer-card" style={{ position: 'relative' }}>
-
+            {answers.map((ans) => (
+              <div
+                key={ans.id}
+                className="answer-card"
+                style={{ position: "relative" }}
+              >
                 {user?.id && Number(user.id) === ans.user_id && (
                   <button
                     onClick={() => handleDelete(ans.id)}
-                    style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                    style={{
+                      position: "absolute",
+                      top: "16px",
+                      right: "16px",
+                      background: "none",
+                      border: "none",
+                      color: "#ef4444",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "12px",
+                    }}
                   >
                     <Trash2 size={14} /> 삭제
                   </button>
@@ -143,10 +175,13 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
                 </div>
                 <p className="content">{ans.content}</p>
                 <button
-                  className={`btn-like ${ans.is_liked_by_me ? 'active' : ''}`}
+                  className={`btn-like ${ans.is_liked_by_me ? "active" : ""}`}
                   onClick={() => handleLike(ans.id)}
                 >
-                  <Heart size={14} fill={ans.is_liked_by_me ? "currentColor" : "none"} />
+                  <Heart
+                    size={14}
+                    fill={ans.is_liked_by_me ? "currentColor" : "none"}
+                  />
                   좋아요 {ans.like_count}
                 </button>
               </div>
@@ -159,7 +194,7 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
             <textarea
               placeholder="이 질문에 대한 경험이나 생각을 자유롭게 남겨보세요. (최소 5자)"
               value={myAnswer}
-              onChange={e => setMyAnswer(e.target.value)}
+              onChange={(e) => setMyAnswer(e.target.value)}
               disabled={isSubmitting}
             />
             <button
