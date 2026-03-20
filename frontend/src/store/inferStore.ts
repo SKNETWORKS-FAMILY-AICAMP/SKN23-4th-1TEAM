@@ -48,8 +48,7 @@ export const useInferStore = create<InferState>((set) => ({
   resumeTitle: null,
   
   setInferSettings: (jobRole, difficulty, extraSettings, resumeUsed, resumeId = null, resumeTitle = null) => {
-    localStorage.removeItem('current_session_id');
-    
+    localStorage.setItem('interview_method', extraSettings.method);
     set({
       jobRole,
       difficulty,
@@ -67,18 +66,21 @@ export const useInferStore = create<InferState>((set) => ({
     
   setResumeUsed: (used) => set({ resumeUsed: used }),
 
-  clearInferSettings: () => set({
-    jobRole: null,
-    difficulty: null,
-    method: null,
-    persona: null,
-    questionCount: null,
-    resumeType: null,
-    experienceText: null,
-    resumeData: null,
-    resumeUsed: false,
-    questions: null,
-    resumeId: null,
-    resumeTitle: null
-  }),
+  clearInferSettings: () => {
+    localStorage.removeItem('interview_method');
+    set({
+      jobRole: null,
+      difficulty: null,
+      method: null,
+      persona: null,
+      questionCount: null,
+      resumeType: null,
+      experienceText: null,
+      resumeData: null,
+      resumeUsed: false,
+      questions: null,
+      resumeId: null,
+      resumeTitle: null
+    });
+  },
 }));

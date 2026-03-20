@@ -91,7 +91,10 @@ def store_resume(resume_text: str, user_id: str = "anonymous") -> int:
     if not resume_text or len(resume_text.strip()) < 50:
         return 0
 
-    collection = _get_collection()
+    try:
+        collection = _get_collection()
+    except Exception:
+        return 0
 
     # 기존 이 유저의 청크 삭제
     try:
@@ -117,8 +120,11 @@ def store_resume(resume_text: str, user_id: str = "anonymous") -> int:
             "total_chunks": len(chunks),
         })
 
-    collection.add(ids=ids, documents=documents, metadatas=metadatas)
-    return len(chunks)
+    try:
+        collection.add(ids=ids, documents=documents, metadatas=metadatas)
+        return len(chunks)
+    except Exception:
+        return 0
 
 
 # ─── 유사 청크 검색 ───────────────────────────────────────────

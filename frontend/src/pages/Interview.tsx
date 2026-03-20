@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useInferStore } from '../store/inferStore';
 import { axiosClient } from '../api/axiosClient';
 
@@ -11,17 +11,24 @@ import './Interview.scss';
 export const Interview = () => {
   const { jobRole, difficulty, method, persona, questionCount, clearInferSettings } = useInferStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeMethod = location.state?.method as 'text' | 'voice' | undefined;
+  const persistedMethod = localStorage.getItem('interview_method') as 'text' | 'voice' | null;
+  const effectiveMethod = routeMethod || method || persistedMethod;
+  const hasPreparedSettings = Boolean(jobRole && difficulty && effectiveMethod);
 
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(true);
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(!hasPreparedSettings);
   const [showEndModal, setShowEndModal] = useState(false);
 
   useEffect(() => {
     // 페이지 진입 시 무조건 기존 세션 찌꺼기 날리고 초기화
+    if (hasPreparedSettings) {
+      setIsSetupModalOpen(false);
+      return;
+    }
     localStorage.removeItem('current_session_id');
-    clearInferSettings();
     setIsSetupModalOpen(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasPreparedSettings]);
 
   const confirmEndInterview = async () => {
     try {
@@ -60,7 +67,7 @@ export const Interview = () => {
 
       <main className="interview-main-content">
         {!isSetupModalOpen && (
-          method === 'voice' 
+          effectiveMethod === 'voice' 
             ? <VoiceInterview /> 
             : <TextInterview /> 
         )}

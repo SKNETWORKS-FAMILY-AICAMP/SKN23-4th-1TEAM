@@ -1,101 +1,11 @@
-import sys
 import os
+import sys
+
+from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
+from django.core.asgi import get_asgi_application
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_backend.settings")
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-
-from backend.api.v1.endpoints import jobs_api, resume_api
-from backend.db.base import Base
-from backend.db.database import init_db
-from backend.db.schema_patch import patch_user_table_columns
-from backend.db.session import engine
-from backend.models import refresh_token, user
-from backend.routers import (
-    admin,
-    auth,
-    home,
-    infer,
-    social_auth,
-    interview,
-    attitude,
-    agent,
-    board,
-)
-
-app = FastAPI()
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    print(f"Validation Error: {exc.errors()}")
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors(), "body": exc.body},
-    )
-
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://192.168.2.1:5173",
-        "http://localhost:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
-    init_db()
-    patch_user_table_columns()
-
-
-app.include_router(auth.router)
-app.include_router(social_auth.router)
-
-app.add_api_route(
-    "/api/v1/auth/kakao/start",
-    social_auth.kakao_start,
-    methods=["GET"],
-    tags=["social-auth"],
-)
-app.add_api_route(
-    "/api/v1/auth/kakao/callback",
-    social_auth.kakao_callback,
-    methods=["GET"],
-    tags=["social-auth"],
-)
-app.add_api_route(
-    "/api/v1/auth/google/start",
-    social_auth.google_start,
-    methods=["GET"],
-    tags=["social-auth"],
-)
-app.add_api_route(
-    "/api/v1/auth/google/callback",
-    social_auth.google_callback,
-    methods=["GET"],
-    tags=["social-auth"],
-)
-
-app.include_router(admin.router)
-app.include_router(home.router)
-app.include_router(board.router)
-app.include_router(infer.router)
-app.include_router(jobs_api.router)
-app.include_router(resume_api.router, prefix="/api/v1")
-app.include_router(interview.router)
-app.include_router(attitude.router)
-app.include_router(agent.router, prefix="/api/v1/agent", tags=["Agent"])
+app = ASGIStaticFilesHandler(get_asgi_application())
+application = app

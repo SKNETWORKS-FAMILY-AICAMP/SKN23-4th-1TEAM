@@ -171,7 +171,8 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
         false
       );
       
-      onClose(); 
+      onClose();
+      navigate('/interview', { state: { method } });
 
     } catch (error) {
       console.error("알 수 없는 에러:", error);
