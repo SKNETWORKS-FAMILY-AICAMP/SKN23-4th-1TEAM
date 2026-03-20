@@ -6,6 +6,29 @@ export interface EphemeralTokenResponse {
   };
 }
 
+export interface AttitudeFramePayload {
+  t_ms: number;
+  image_b64: string;
+}
+
+export interface AttitudeResponse {
+  metrics: {
+    head_center_ratio: number;
+    downward_ratio: number;
+    expression_variability: number;
+    eye_open_variability: number;
+  };
+  events: Array<{
+    t_start_ms: number;
+    t_end_ms: number;
+    type: string;
+    severity: string;
+    detail?: string | null;
+  }>;
+  summary_text: string;
+  debug?: Record<string, unknown>;
+}
+
 export const inferApi = {
   getRealtimeToken: async () => {
     const response = await axiosClient.get<EphemeralTokenResponse>('/api/infer/realtime-token');
@@ -44,6 +67,11 @@ export const inferApi = {
   // 면접 평가 및 질문 풀
   evaluateTurn: async (payload: any) => {
     const response = await axiosClient.post('/api/infer/evaluate-turn', payload);
+    return response.data;
+  },
+
+  analyzeAttitude: async (frames: AttitudeFramePayload[]) => {
+    const response = await axiosClient.post<AttitudeResponse>('/api/infer/attitude', { frames });
     return response.data;
   },
   
