@@ -1,4 +1,4 @@
-import { axiosClient } from './axiosClient';
+import { axiosClient } from "./axiosClient";
 
 export interface AdminUser {
   id: number;
@@ -13,12 +13,12 @@ export interface AdminUser {
 
 export const adminApi = {
   getUsers: async (): Promise<AdminUser[]> => {
-    const res = await axiosClient.get('/api/admin/query?query_type=users');
+    const res = await axiosClient.get("/api/admin/query?query_type=users");
     return res.data;
   },
 
   updateUser: async (sql: string, args: any[]) => {
-    const res = await axiosClient.post('/api/admin/sql', { sql, args });
+    const res = await axiosClient.post("/api/admin/sql", { sql, args });
     return res.data;
-  }
+  },
 };

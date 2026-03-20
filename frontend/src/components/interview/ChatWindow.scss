@@ -1,4 +1,4 @@
-@use '../../styles/variables' as *;
+@use "../../styles/variables" as *;
 
 .chat-window {
   display: flex;
@@ -173,9 +173,9 @@
         &:not(:disabled):hover {
           background: $primary-dark;
         }
-        
+
         svg {
-          margin-left: -2px; 
+          margin-left: -2px;
           margin-top: 2px;
         }
       }

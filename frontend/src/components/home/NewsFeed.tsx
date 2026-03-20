@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { homeApi } from '../../api/homeApi';
-import './NewsFeed.scss';
+import { useEffect, useState } from "react";
+import { homeApi } from "../../api/homeApi";
+import "./NewsFeed.scss";
 
 interface Props {
   jobRole?: string;
@@ -14,14 +14,19 @@ export const NewsFeed = ({ jobRole }: Props) => {
     const fetchNews = async () => {
       try {
         setLoading(true);
-        const query = jobRole ? `latest AI and ${jobRole} trends` : `latest AI and backend trends`;
+        const query = jobRole
+          ? `latest AI and ${jobRole} trends`
+          : `latest AI and backend trends`;
         const data = await homeApi.getNews(query);
         if (data && data.content) {
-          const items = data.content.split('---').map((i: string) => i.trim()).filter(Boolean);
+          const items = data.content
+            .split("---")
+            .map((i: string) => i.trim())
+            .filter(Boolean);
           setNews(items.slice(0, 10));
         }
       } catch (error) {
-        console.error('Failed to fetch news', error);
+        console.error("Failed to fetch news", error);
       } finally {
         setLoading(false);
       }
@@ -29,8 +34,14 @@ export const NewsFeed = ({ jobRole }: Props) => {
     fetchNews();
   }, [jobRole]);
 
-  if (loading) return <div className="loading-state">Tavily AI로 최신 트렌드를 검색하는 중입니다...</div>;
-  if (!news.length) return <div className="empty-state">No news is available right now.</div>;
+  if (loading)
+    return (
+      <div className="loading-state">
+        Tavily AI로 최신 트렌드를 검색하는 중입니다...
+      </div>
+    );
+  if (!news.length)
+    return <div className="empty-state">No news is available right now.</div>;
 
   return (
     <div className="news-feed-container">

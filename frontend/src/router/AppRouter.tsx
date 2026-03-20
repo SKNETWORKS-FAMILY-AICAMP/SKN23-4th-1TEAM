@@ -1,8 +1,16 @@
-
-import { Routes, Route } from 'react-router-dom';
-import { ROUTES } from '../constants/routes';
-import { Home, Auth, Interview, MyPage, ResumePage, RecordsPage, BoardPage, AdminPage } from '../pages';
-import { ProtectedRoute } from '../components/common/ProtectedRoute';
+import { Routes, Route } from "react-router-dom";
+import { ROUTES } from "../constants/routes";
+import {
+  Home,
+  Auth,
+  Interview,
+  MyPage,
+  ResumePage,
+  RecordsPage,
+  BoardPage,
+  AdminPage,
+} from "../pages";
+import { ProtectedRoute } from "../components/common/ProtectedRoute";
 
 export const AppRouter = () => {
   return (
@@ -18,11 +26,10 @@ export const AppRouter = () => {
         <Route path={ROUTES.RECORDS} element={<RecordsPage />} />
         <Route path={ROUTES.RESUME} element={<ResumePage />} />
         <Route path={ROUTES.BOARD} element={<BoardPage />} />
-        
+
         <Route path={ROUTES.ADMIN} element={<AdminPage />} />
       </Route>
 
-      
       {/* Catch-all */}
       <Route path="*" element={<Home />} />
     </Routes>

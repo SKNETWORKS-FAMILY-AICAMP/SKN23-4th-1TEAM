@@ -20,9 +20,7 @@ from backend.db.database import (
 from backend.db.session import get_db
 from backend.routers.auth import get_current_user
 from backend.services import auth_service
-from backend.services.personality_vector_service import save_board_answer_to_vector_db
-from backend.services.personality_feedback_service import generate_board_answer_feedback
-from backend.services.fit_service import save_and_evaluate_answer
+from backend.services.personality_service import save_and_evaluate_answer, generate_board_answer_feedback
 
 router = APIRouter(prefix="/api/board", tags=["board"])
 
@@ -84,18 +82,7 @@ def create_answer(question_id: int, body: dict, request: Request, db: Session = 
     feedback = None
     try:
         feedback = save_and_evaluate_answer(answer_id, user.id, question_id, question["content"], content)
-    except Exception as e:
-        pass
-
-    try:
-        save_board_answer_to_vector_db(
-            answer_id=answer_id,
-            user_id=user.id,
-            question_id=question_id,
-            question_text=question["content"],
-            answer_text=content,
-        )
-    except Exception as e:
+    except Exception:
         pass
 
     return {"ok": True, "answer_id": answer_id, "author_name": author_name, "feedback": feedback}

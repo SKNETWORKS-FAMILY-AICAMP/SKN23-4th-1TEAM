@@ -5,7 +5,7 @@
   max-height: 410px;
   overflow-y: auto;
   /* 💡 오른쪽 스크롤바 공간을 주면서도, 전체적인 밸런스를 위해 왼쪽 패딩도 약간 추가합니다 */
-  padding: 4px 8px 4px 4px; 
+  padding: 4px 8px 4px 4px;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -20,19 +20,21 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   /* 💡 카드 내부 패딩을 넉넉하게 주어 여유 공간을 만듭니다 */
-  padding: 24px 20px; 
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 20px;
   background: white;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   /* 💡 사진처럼 카드 안의 모든 내용이 가운데 정렬되도록 설정합니다 */
-  text-align: center; 
+  text-align: center;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
   .job-card-main {
@@ -64,13 +66,13 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
-      
+
       .job-meta {
         font-size: 14px;
         color: #666;
         margin-bottom: 6px;
       }
-      
+
       .job-date {
         font-size: 14px;
         color: #888;
@@ -102,7 +104,8 @@
   }
 }
 
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
   text-align: center;
   padding: 40px;
   color: #6b7280;

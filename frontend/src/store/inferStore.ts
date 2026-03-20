@@ -1,12 +1,12 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface InferState {
   jobRole: string | null;
   difficulty: string | null;
-  method: 'text' | 'voice' | null;
+  method: "text" | "voice" | null;
   persona: string | null;
   questionCount: number | null;
-  resumeType: 'file' | 'direct' | null;
+  resumeType: "file" | "direct" | null;
   experienceText: string | null;
   resumeData: Record<string, any> | null;
   resumeUsed: boolean;
@@ -18,16 +18,16 @@ interface InferState {
     jobRole: string,
     difficulty: string,
     extraSettings: {
-      method: 'text' | 'voice';
+      method: "text" | "voice";
       persona: string;
       questionCount: number;
-      resumeType: 'file' | 'direct';
+      resumeType: "file" | "direct";
       experienceText: string;
       questions: { question: string }[];
     },
     resumeUsed: boolean,
     resumeId?: number | null,
-    resumeTitle?: string | null
+    resumeTitle?: string | null,
   ) => void;
   setResumeUsed: (used: boolean) => void;
   clearInferSettings: () => void;
@@ -46,9 +46,16 @@ export const useInferStore = create<InferState>((set) => ({
   questions: null,
   resumeId: null,
   resumeTitle: null,
-  
-  setInferSettings: (jobRole, difficulty, extraSettings, resumeUsed, resumeId = null, resumeTitle = null) => {
-    localStorage.setItem('interview_method', extraSettings.method);
+
+  setInferSettings: (
+    jobRole,
+    difficulty,
+    extraSettings,
+    resumeUsed,
+    resumeId = null,
+    resumeTitle = null,
+  ) => {
+    localStorage.setItem("interview_method", extraSettings.method);
     set({
       jobRole,
       difficulty,
@@ -60,14 +67,14 @@ export const useInferStore = create<InferState>((set) => ({
       questions: extraSettings.questions,
       resumeUsed,
       resumeId,
-      resumeTitle
+      resumeTitle,
     });
   },
-    
+
   setResumeUsed: (used) => set({ resumeUsed: used }),
 
   clearInferSettings: () => {
-    localStorage.removeItem('interview_method');
+    localStorage.removeItem("interview_method");
     set({
       jobRole: null,
       difficulty: null,
@@ -80,7 +87,7 @@ export const useInferStore = create<InferState>((set) => ({
       resumeUsed: false,
       questions: null,
       resumeId: null,
-      resumeTitle: null
+      resumeTitle: null,
     });
   },
 }));
