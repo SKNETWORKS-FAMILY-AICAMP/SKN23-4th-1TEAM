@@ -248,7 +248,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
                   {/* CSS 스피너 대신 loading.gif 이미지를 출력합니다. 
                       이미지 크기 조절이 필요하면 width 값을 변경하세요. */}
                   <img
-                    src="/loading.gif"
+                    src="/images/common/loading.gif"
                     alt="로딩 애니메이션"
                     style={{ width: "80px", marginBottom: "16px" }}
                   />
