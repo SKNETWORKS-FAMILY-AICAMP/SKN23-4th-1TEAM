@@ -2,6 +2,7 @@ import { useState, useEffect, type FC } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AppRouter } from "./router/AppRouter";
 import { SplashView } from "./components/layout/SplashView";
+import { GlobalAlertHost } from "./components/common/GlobalAlertHost";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const AppContent: FC = () => {
@@ -32,6 +33,7 @@ const App: FC = () => {
 
   return (
     <BrowserRouter>
+      <GlobalAlertHost />
       <AppContent />
     </BrowserRouter>
   );

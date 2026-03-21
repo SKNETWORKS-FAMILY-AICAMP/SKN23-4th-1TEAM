@@ -92,28 +92,140 @@
 
       // Card 2
       .resume-card {
-        background: #f7f9fc; // Light blue tint
-        border: 1px solid #eef2f6;
+        background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 45%, #f7f9fc 100%);
+        border: 1px solid #d9e9fb;
+        position: relative;
+        overflow: hidden;
+        min-height: 260px;
 
-        .resume-icon {
-          margin-bottom: 16px;
+        .resume-visual-glow {
+          position: absolute;
+          inset: -20% auto auto 12%;
+          width: 280px;
+          height: 280px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle,
+            rgba(82, 163, 255, 0.18) 0%,
+            rgba(82, 163, 255, 0.08) 38%,
+            rgba(82, 163, 255, 0) 72%
+          );
+          pointer-events: none;
+        }
+
+        .resume-card-shell {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: 200px 1fr 40px;
+          gap: 20px;
+          align-items: center;
+          min-height: 190px;
+        }
+
+        .resume-card-top {
+          margin-bottom: 0;
+        }
+
+        .resume-illustration {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          img {
+            width: 100%;
+            max-width: 180px;
+            object-fit: contain;
+            filter: drop-shadow(0 16px 30px rgba(106, 140, 209, 0.16));
+          }
+        }
+
+        .resume-copy {
+          text-align: left;
+        }
+
+        .resume-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 10px;
+          border-radius: 999px;
+          margin-bottom: 12px;
+          font-size: 12px;
+          font-weight: 800;
+          color: $primary-color;
+          background: rgba(255, 255, 255, 0.86);
+          border: 1px solid rgba(1, 118, 247, 0.08);
+        }
+
+        .resume-nav-btn {
+          width: 28px;
+          height: 28px;
+          border: none;
+          border-radius: 0;
+          background: transparent;
+          color: $primary-color;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition:
+            transform 0.15s ease,
+            color 0.15s ease,
+            opacity 0.15s ease;
+          opacity: 0.78;
+
+          &.side {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+          }
+
+          &.left {
+            left: 14px;
+          }
+
+          &.right {
+            right: 14px;
+          }
+
+          &:hover {
+            color: $primary-dark;
+            opacity: 1;
+          }
+
+          &.side:hover {
+            transform: translateY(-50%) scale(1.08);
+          }
         }
 
         h3 {
           margin: 0 0 12px 0;
-          font-size: 18px;
+          font-size: 30px;
+          line-height: 1.18;
+          letter-spacing: -0.03em;
+          padding: 0;
+          color: #123b7a;
         }
 
         p {
-          color: $text-secondary;
-          font-size: 14px;
-          margin: 0 0 24px 0;
+          color: #526172;
+          font-size: 15px;
+          line-height: 1.7;
+          margin: 0;
+          padding: 0;
+        }
+
+        .resume-status-spacer {
+          width: 100%;
+          height: 100%;
         }
 
         .progress-dots {
           display: flex;
           justify-content: flex-end;
           gap: 6px;
+          margin-top: 12px;
 
           .dot {
             width: 16px;
@@ -124,6 +236,26 @@
             &.active {
               background: $primary-color;
             }
+          }
+        }
+
+        @media (max-width: 900px) {
+          .resume-card-shell {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            text-align: center;
+          }
+
+          .resume-copy {
+            text-align: center;
+          }
+
+          h3 {
+            font-size: 24px;
+          }
+
+          .resume-status-spacer {
+            display: none;
           }
         }
       }
@@ -153,8 +285,16 @@
         }
 
         .tabs-content {
-          padding: 48px 32px;
+          padding: 24px 24px 20px;
           text-align: center;
+
+          .tab-panel {
+            display: none;
+
+            &.active {
+              display: block;
+            }
+          }
 
           .empty-state {
             display: flex;
