@@ -33,6 +33,24 @@
   }
 }
 
+@media (max-width: 640px) {
+  .splash-container {
+    align-items: flex-start;
+    padding-top: 22vh;
+  }
+
+  .splash-logo {
+    img {
+      width: 220px;
+      height: 220px;
+    }
+
+    h1 {
+      font-size: 3rem;
+    }
+  }
+}
+
 @keyframes fadeInOut {
   0%,
   100% {

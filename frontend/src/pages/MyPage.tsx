@@ -229,6 +229,21 @@ export const MyPage = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!window.confirm("정말 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.")) {
+      return;
+    }
+
+    try {
+      await authApi.withdraw();
+      clearAuth();
+      navigate("/auth");
+    } catch (error) {
+      console.error(error);
+      showToast("회원 탈퇴 처리 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <div className="mypage-layout">
       {toastMessage && <div className="toast-notification">{toastMessage}</div>}
@@ -316,16 +331,7 @@ export const MyPage = () => {
           <div className="btn-group">
             <button
               className="withdraw-btn"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "정말 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.",
-                  )
-                ) {
-                  clearAuth();
-                  navigate("/auth");
-                }
-              }}
+              onClick={handleWithdraw}
             >
               회원 탈퇴
             </button>

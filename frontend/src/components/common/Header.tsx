@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useAuthStore } from "../../store/authStore";
@@ -7,21 +7,45 @@ import { authApi } from "../../api/authApi";
 import { CustomAlert } from "./CustomAlert";
 import "./Header.scss";
 
+const NAV_ITEMS = [
+  { label: "AI 면접", path: ROUTES.INTERVIEW },
+  { label: "이력서", path: "/resume" },
+  { label: "내 기록", path: "/mypage" },
+  { label: "게시판", path: ROUTES.BOARD },
+  { label: "마이페이지", path: "/my_info" },
+];
+
 export const Header = () => {
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showLoginRequiredAlert, setShowLoginRequiredAlert] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
 
   const handleNavClick = (path: string) => {
+    setIsMobileMenuOpen(false);
+
     if (!isAuthenticated) {
       setShowLoginRequiredAlert(true);
       return;
     }
+
     navigate(path);
   };
 
   const handleLogoutClick = () => {
+    setIsMobileMenuOpen(false);
     setShowLogoutModal(true);
   };
 
@@ -37,6 +61,17 @@ export const Header = () => {
     }
   };
 
+  const renderNavItems = (className?: string) =>
+    NAV_ITEMS.map((item) => (
+      <button
+        key={item.path}
+        className={className ?? "nav-btn"}
+        onClick={() => handleNavClick(item.path)}
+      >
+        {item.label}
+      </button>
+    ));
+
   return (
     <>
       <header className="main-header">
@@ -45,32 +80,7 @@ export const Header = () => {
           <span className="logo-text">WORK</span>
         </div>
 
-        <nav className="nav-links">
-          <button
-            className="nav-btn"
-            onClick={() => handleNavClick(ROUTES.INTERVIEW)}
-          >
-            AI 면접
-          </button>
-          <button className="nav-btn" onClick={() => handleNavClick("/resume")}>
-            이력서
-          </button>
-          <button className="nav-btn" onClick={() => handleNavClick("/mypage")}>
-            내 기록
-          </button>
-          <button
-            className="nav-btn"
-            onClick={() => handleNavClick(ROUTES.BOARD)}
-          >
-            게시판
-          </button>
-          <button
-            className="nav-btn"
-            onClick={() => handleNavClick("/my_info")}
-          >
-            마이페이지
-          </button>
-        </nav>
+        <nav className="nav-links">{renderNavItems()}</nav>
 
         <div className="auth-actions">
           {isAuthenticated ? (
@@ -86,12 +96,72 @@ export const Header = () => {
             </button>
           )}
         </div>
+
+        <button
+          className={`mobile-menu-toggle${isMobileMenuOpen ? " open" : ""}`}
+          type="button"
+          aria-label="메뉴 열기"
+          aria-expanded={isMobileMenuOpen}
+          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
       </header>
+
+      <div
+        className={`mobile-menu-backdrop${isMobileMenuOpen ? " visible" : ""}`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
+      <aside className={`mobile-menu-drawer${isMobileMenuOpen ? " open" : ""}`}>
+        <div className="mobile-menu-header">
+          <div>
+            <strong>AIWORK 메뉴</strong>
+            <p>모바일에서 더 편하게 둘러보세요.</p>
+          </div>
+          <button
+            type="button"
+            className="mobile-menu-close"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="메뉴 닫기"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mobile-nav-links">{renderNavItems("mobile-nav-btn")}</div>
+
+        <div className="mobile-auth-panel">
+          {isAuthenticated ? (
+            <>
+              <div className="mobile-user-summary">
+                <span className="mobile-user-label">현재 로그인</span>
+                <strong>{user?.name}님</strong>
+              </div>
+              <button className="mobile-auth-btn secondary" onClick={handleLogoutClick}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <button
+              className="mobile-auth-btn primary"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                navigate(ROUTES.AUTH);
+              }}
+            >
+              로그인 / 회원가입
+            </button>
+          )}
+        </div>
+      </aside>
 
       <CustomAlert
         open={showLoginRequiredAlert}
         title="로그인이 필요합니다"
-        message="이 메뉴는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동하시겠어요?"
+        message="해당 메뉴는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동할까요?"
         onCancel={() => setShowLoginRequiredAlert(false)}
         onConfirm={() => {
           setShowLoginRequiredAlert(false);

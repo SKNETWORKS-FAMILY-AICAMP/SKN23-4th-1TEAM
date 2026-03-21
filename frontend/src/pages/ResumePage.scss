@@ -529,3 +529,105 @@
   text-align: center;
   padding: 40px;
 }
+
+@media (max-width: 768px) {
+  .resume-main {
+    padding: 28px 16px 36px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+
+    .hero-title {
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .hero-subtitle {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+
+  .toolbar-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 24px;
+
+    .search-input {
+      max-width: none;
+      width: 100%;
+    }
+
+    .primary-action-btn {
+      width: 100%;
+    }
+  }
+
+  .list-container {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .list-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    padding: 18px 16px;
+
+    .item-info {
+      padding-right: 0;
+
+      .item-title {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.45;
+        word-break: keep-all;
+      }
+    }
+
+    .item-meta {
+      width: 100%;
+      gap: 18px;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .item-actions {
+      width: 100%;
+      justify-content: space-between;
+
+      .btn-view {
+        flex: 1;
+        min-height: 44px;
+      }
+
+      .btn-delete {
+        flex-shrink: 0;
+        min-width: 52px;
+      }
+    }
+  }
+
+  .dashboard-nav {
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .back-btn {
+      order: 1;
+    }
+  }
+
+  .modal-container {
+    width: calc(100% - 24px);
+    max-width: none;
+  }
+
+  .modal-header,
+  .modal-body {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
