@@ -545,18 +545,25 @@ def get_board_answers(
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """SELECT a.id, a.question_id, a.user_id, a.author_name, a.content, a.created_at, a.updated_at,
+                """SELECT a.id, a.question_id, a.user_id, a.author_name, a.content, a.ai_feedback,
+                          a.created_at, a.updated_at,
                           COUNT(l.id) AS like_count,
                           MAX(CASE WHEN l.user_id = %s THEN 1 ELSE 0 END) AS liked_by_me
                    FROM board_answers a
                    LEFT JOIN board_answer_likes l ON l.answer_id = a.id
                    WHERE a.question_id=%s
-                   GROUP BY a.id, a.question_id, a.user_id, a.author_name, a.content, a.created_at, a.updated_at
+                   GROUP BY a.id, a.question_id, a.user_id, a.author_name, a.content, a.ai_feedback,
+                            a.created_at, a.updated_at
                    ORDER BY like_count DESC, a.created_at DESC
                    LIMIT %s OFFSET %s""",
                 (viewer_id or 0, question_id, limit, offset),
             )
-            return cur.fetchall()
+            rows = cur.fetchall()
+            # ai_feedback는 본인 답변에만 노출
+            for row in rows:
+                if row.get("user_id") != viewer_id:
+                    row["ai_feedback"] = None
+            return rows
 
 
 def count_board_answers(question_id: int) -> int:
@@ -609,12 +616,12 @@ def get_board_answer(answer_id: int) -> dict | None:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """SELECT a.id, a.question_id, a.user_id, a.author_name, a.content,
+                """SELECT a.id, a.question_id, a.user_id, a.author_name, a.content, a.ai_feedback,
                           COUNT(l.id) AS like_count
                    FROM board_answers a
                    LEFT JOIN board_answer_likes l ON l.answer_id = a.id
                    WHERE a.id=%s
-                   GROUP BY a.id, a.question_id, a.user_id, a.author_name, a.content""",
+                   GROUP BY a.id, a.question_id, a.user_id, a.author_name, a.content, a.ai_feedback""",
                 (answer_id,),
             )
             return cur.fetchone()
@@ -649,6 +656,16 @@ def upsert_board_answer(
                     (question_id, user_id, author_name, content),
                 )
                 return conn.insert_id()
+
+
+def save_board_answer_feedback(answer_id: int, feedback: str) -> None:
+    """AI 피드백을 답변 레코드에 저장 (최대 2000자)"""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE board_answers SET ai_feedback=%s WHERE id=%s",
+                (feedback[:2000], answer_id),
+            )
 
 
 # ----------------------------------------------------

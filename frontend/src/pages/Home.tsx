@@ -198,13 +198,19 @@ export const Home = () => {
             </div>
 
             <div className="tabs-content">
-              <div className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}>
+              <div
+                className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}
+              >
                 <JobCards jobRole={user?.job_role} />
               </div>
-              <div className={`tab-panel ${activeTab === "news" ? "active" : ""}`}>
+              <div
+                className={`tab-panel ${activeTab === "news" ? "active" : ""}`}
+              >
                 <NewsFeed jobRole={user?.job_role} />
               </div>
-              <div className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}>
+              <div
+                className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}
+              >
                 <MemoBoard />
               </div>
             </div>
@@ -214,7 +220,11 @@ export const Home = () => {
         <div className="dashboard-right">
           <div
             className={`dashboard-card profile-card ${isAuthenticated ? "member-card" : "guest-card"}`}
-            style={!isAuthenticated ? { alignItems: "center", textAlign: "center" } : {}}
+            style={
+              !isAuthenticated
+                ? { alignItems: "center", textAlign: "center" }
+                : {}
+            }
           >
             {isAuthenticated ? (
               <>
@@ -240,10 +250,16 @@ export const Home = () => {
                 </div>
 
                 <div className="profile-actions">
-                  <button className="action-btn" onClick={() => navigate("/mypage")}>
+                  <button
+                    className="action-btn"
+                    onClick={() => navigate("/mypage")}
+                  >
                     내 면접 기록
                   </button>
-                  <button className="action-btn" onClick={() => navigate("/my_info")}>
+                  <button
+                    className="action-btn"
+                    onClick={() => navigate("/my_info")}
+                  >
                     계정 설정
                   </button>
                   <button
@@ -277,7 +293,10 @@ export const Home = () => {
                 </button>
               </>
             ) : (
-              <div className="auth-prompt-container" style={{ width: "100%", padding: "10px 0" }}>
+              <div
+                className="auth-prompt-container"
+                style={{ width: "100%", padding: "10px 0" }}
+              >
                 <p
                   style={{
                     fontSize: "15px",
@@ -303,8 +322,12 @@ export const Home = () => {
                     marginBottom: "16px",
                     transition: "background 0.2s",
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = "#0062d1")}
-                  onMouseOut={(e) => (e.currentTarget.style.background = "#0176f7")}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#0062d1")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#0176f7")
+                  }
                 >
                   AIWORK 로그인
                 </button>
@@ -317,11 +340,17 @@ export const Home = () => {
                     color: "#666",
                   }}
                 >
-                  <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=find")}>
+                  <span
+                    style={{ cursor: "pointer" }}
+                    onClick={() => navigate("/auth?mode=find")}
+                  >
                     아이디/비밀번호 찾기
                   </span>
                   <span style={{ color: "#ddd" }}>|</span>
-                  <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=signup")}>
+                  <span
+                    style={{ cursor: "pointer" }}
+                    onClick={() => navigate("/auth?mode=signup")}
+                  >
                     회원가입
                   </span>
                 </div>
@@ -342,7 +371,10 @@ export const Home = () => {
             <div className="card-icon">📻</div>
             <div className="card-content">
               <h4>Project Repository</h4>
-              <p>스프린트 코드와 개발 문서를 확인하세요. SKN 1조의 프로젝트입니다.</p>
+              <p>
+                스프린트 코드와 개발 문서를 확인하세요. SKN 1조의
+                프로젝트입니다.
+              </p>
             </div>
           </div>
 
@@ -361,7 +393,10 @@ export const Home = () => {
             </div>
             <div className="card-content">
               <h4>Discord 봇 추가</h4>
-              <p>디스코드 환경에서도 AI 사자개가 채용 조언을 실시간으로 제공해줍니다.</p>
+              <p>
+                디스코드 환경에서도 AI 사자개가 채용 조언을 실시간으로
+                제공해줍니다.
+              </p>
             </div>
           </div>
         </div>

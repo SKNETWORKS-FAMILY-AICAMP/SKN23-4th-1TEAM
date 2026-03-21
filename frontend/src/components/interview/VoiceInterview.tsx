@@ -74,7 +74,11 @@ export const VoiceInterview = () => {
           onClick={() => setIsMobileCameraCollapsed((prev) => !prev)}
         >
           <span>화면 {isMobileCameraCollapsed ? "펼치기" : "접기"}</span>
-          {isMobileCameraCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          {isMobileCameraCollapsed ? (
+            <ChevronDown size={18} />
+          ) : (
+            <ChevronUp size={18} />
+          )}
         </button>
 
         <div className="video-container">

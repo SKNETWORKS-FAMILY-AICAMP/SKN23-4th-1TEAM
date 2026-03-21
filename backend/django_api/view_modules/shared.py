@@ -31,6 +31,7 @@ from backend.db.database import (
     get_details_by_session,
     get_sessions_by_user,
     get_user_resumes,
+    save_board_answer_feedback,
     save_memo,
     save_user_resume,
     toggle_board_answer_like,
@@ -78,6 +79,41 @@ from ..utils import (
     require_csrf,
     run_async,
 )
+
+
+__all__ = [
+    # stdlib / third-party re-exports
+    "os", "secrets", "uuid", "datetime", "urlencode",
+    "PyPDF2", "requests", "HttpResponse", "HttpResponseRedirect",
+    "jwt", "ExpiredSignatureError", "JWTError", "OpenAI", "func",
+    # backend modules
+    "run_agent", "settings", "base",
+    # db
+    "count_board_answers", "create_board_question", "delete_board_answer",
+    "delete_board_question", "delete_user_resume", "get_all_board_questions",
+    "get_all_memos", "get_board_answer", "get_board_answers", "get_board_question",
+    "get_board_questions", "get_connection", "get_details_by_session",
+    "get_sessions_by_user", "get_user_resumes", "save_board_answer_feedback",
+    "save_memo", "save_user_resume", "toggle_board_answer_like", "upsert_board_answer",
+    # models / schemas
+    "User", "AgentChatRequest", "AttitudeEvent", "AttitudeMetrics",
+    "AttitudeRequest", "AttitudeResponse", "JobsSearchQuery",
+    # services
+    "auth_service", "social_service", "analyze_attitude",
+    "ExternalJobsAPIError", "_join_multi", "fetch_jobs",
+    "analyze_resume_comprehensive", "evaluate_and_respond", "generate_evaluation",
+    "get_home_guide_response_stream", "get_proofread_result", "get_translated_news_summary",
+    "generate_board_answer_feedback", "save_and_evaluate_answer",
+    "get_ai_service", "store_resume", "get_latest_resume_fields",
+    "get_web_context_first", "get_web_context_second",
+    # utils
+    "ApiError", "api_view", "clear_auth_cookies", "db_session", "fresh_csrf_token",
+    "get_bearer_token", "get_current_user", "issue_cookie_token_response",
+    "json_body", "json_response", "optional_current_user", "require_csrf", "run_async",
+    # private helpers — must be in __all__ to be exported by `import *`
+    "_get_ai", "_user_payload", "_ensure_active_user",
+    "_set_oauth_state_cookie", "_pop_oauth_state",
+]
 
 
 def _get_ai():

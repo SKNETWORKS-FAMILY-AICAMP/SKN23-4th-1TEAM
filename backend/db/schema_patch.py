@@ -3,6 +3,11 @@ from sqlalchemy import text
 from backend.db.session import engine
 
 
+BOARD_ANSWER_COLUMN_PATCHES = {
+    "ai_feedback": "ALTER TABLE board_answers ADD COLUMN ai_feedback TEXT NULL",
+}
+
+
 USER_COLUMN_PATCHES = {
     "name": "ALTER TABLE users ADD COLUMN name VARCHAR(100) NULL",
     "profile_image_url": "ALTER TABLE users ADD COLUMN profile_image_url VARCHAR(512) NULL",
@@ -30,6 +35,14 @@ def _column_exists(conn, table_name: str, column_name: str) -> bool:
             {"table_name": table_name, "column_name": column_name},
         ).scalar()
     )
+
+
+def patch_board_answer_columns() -> None:
+    with engine.begin() as conn:
+        for column_name, alter_sql in BOARD_ANSWER_COLUMN_PATCHES.items():
+            if _column_exists(conn, "board_answers", column_name):
+                continue
+            conn.execute(text(alter_sql))
 
 
 def patch_user_table_columns() -> None:
