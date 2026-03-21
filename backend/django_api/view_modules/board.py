@@ -120,6 +120,8 @@ def board_create_answer(request, question_id: int):
                 question["content"],
                 content,
             )
+            if feedback:
+                save_board_answer_feedback(answer_id, feedback)
         except Exception:
             feedback = None
 

@@ -131,7 +131,9 @@ export const Header = () => {
           </button>
         </div>
 
-        <div className="mobile-nav-links">{renderNavItems("mobile-nav-btn")}</div>
+        <div className="mobile-nav-links">
+          {renderNavItems("mobile-nav-btn")}
+        </div>
 
         <div className="mobile-auth-panel">
           {isAuthenticated ? (
@@ -140,7 +142,10 @@ export const Header = () => {
                 <span className="mobile-user-label">현재 로그인</span>
                 <strong>{user?.name}님</strong>
               </div>
-              <button className="mobile-auth-btn secondary" onClick={handleLogoutClick}>
+              <button
+                className="mobile-auth-btn secondary"
+                onClick={handleLogoutClick}
+              >
                 로그아웃
               </button>
             </>

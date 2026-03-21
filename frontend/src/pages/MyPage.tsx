@@ -329,10 +329,7 @@ export const MyPage = () => {
         <div className="footer-actions">
           <p className="footer-desc">더 이상 서비스를 이용하지 않으시나요?</p>
           <div className="btn-group">
-            <button
-              className="withdraw-btn"
-              onClick={handleWithdraw}
-            >
+            <button className="withdraw-btn" onClick={handleWithdraw}>
               회원 탈퇴
             </button>
           </div>
