@@ -4,17 +4,18 @@ import { createPortal } from "react-dom";
 import { useAuthStore } from "../../store/authStore";
 import { ROUTES } from "../../constants/routes";
 import { authApi } from "../../api/authApi";
+import { CustomAlert } from "./CustomAlert";
 import "./Header.scss";
 
 export const Header = () => {
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLoginRequiredAlert, setShowLoginRequiredAlert] = useState(false);
 
   const handleNavClick = (path: string) => {
     if (!isAuthenticated) {
-      alert("로그인이 필요한 서비스입니다.");
-      navigate(ROUTES.AUTH);
+      setShowLoginRequiredAlert(true);
       return;
     }
     navigate(path);
@@ -87,6 +88,17 @@ export const Header = () => {
         </div>
       </header>
 
+      <CustomAlert
+        open={showLoginRequiredAlert}
+        title="로그인이 필요합니다"
+        message="이 메뉴는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동하시겠어요?"
+        onCancel={() => setShowLoginRequiredAlert(false)}
+        onConfirm={() => {
+          setShowLoginRequiredAlert(false);
+          navigate(ROUTES.AUTH);
+        }}
+      />
+
       {showLogoutModal &&
         createPortal(
           <div
@@ -129,7 +141,7 @@ export const Header = () => {
                   color: "#64748b",
                 }}
               >
-                로그인 화면으로 이동합니다.
+                로그아웃 후 로그인 화면으로 이동합니다.
               </p>
               <div style={{ display: "flex", gap: "12px" }}>
                 <button

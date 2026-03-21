@@ -75,7 +75,7 @@ export const GuideChatbot = () => {
     type: ToastType;
   } | null>(null);
 
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const { setInferSettings, setResumeUsed } = useInferStore();
 
@@ -192,6 +192,23 @@ export const GuideChatbot = () => {
 
   const handleSend = async () => {
     if (!input.trim() && !selectedFile && !selectedDbResume) return;
+
+    if (!isAuthenticated) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: "bot",
+          content:
+            "채팅 기능은 로그인 후 이용할 수 있습니다.\n\n로그인 페이지로 이동할게요.",
+        },
+      ]);
+      setTimeout(() => {
+        setIsOpen(false);
+        navigate(ROUTES.AUTH);
+      }, 900);
+      return;
+    }
 
     let attachedText = "";
     if (selectedFile) attachedText = `\n(첨부파일: ${selectedFile.name})`;

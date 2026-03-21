@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Search, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { GuideChatbot } from "../components/chat/GuideChatbot";
 import { Header } from "../components/common/Header";
@@ -7,17 +8,64 @@ import { InterviewSetupModal } from "../components/interview/InterviewSetupModal
 import { JobCards } from "../components/home/JobCards";
 import { NewsFeed } from "../components/home/NewsFeed";
 import { MemoBoard } from "../components/home/MemoBoard";
-import { Search, FileText, MessageCircle } from "lucide-react";
 import "./Home.scss";
+
+type TabKey = "jobs" | "news" | "memos";
 
 export const Home = () => {
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
 
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [selectedPortal, setSelectedPortal] = useState("사람인");
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [activeTab, setActiveTab] = useState<"jobs" | "news" | "memos">("jobs");
+  const [activeTab, setActiveTab] = useState<TabKey>("jobs");
+  const [resumeSlideIndex, setResumeSlideIndex] = useState(0);
+
+  const resumeSlides = [
+    {
+      image: "/images/home/guide-bot.svg",
+      title: "AIWORK 가이드 봇",
+      description:
+        "채팅으로 요청하면 필요한 기능을 바로 실행해주고, 상황에 맞는 다음 작업까지 에이전트처럼 이어서 처리해줍니다.",
+      badge: "Agent Mode",
+    },
+    {
+      image: "/images/home/resume-analysis.svg",
+      title: "스마트 이력서 분석",
+      description:
+        "이력서를 업로드하면 AI가 장단점을 분석하고 맞춤형 면접을 준비해 줍니다.",
+      badge: "Resume Insight",
+    },
+    {
+      image: "/images/home/auto-flow.svg",
+      title: "맞춤 질문 자동 생성",
+      description:
+        "지원 직무와 이력서 내용을 바탕으로 실제 면접 같은 질문을 자동으로 구성합니다.",
+      badge: "Auto Flow",
+    },
+  ];
+
+  const currentSlide = resumeSlides[resumeSlideIndex];
+
+  const handleResumeSlide = (direction: "prev" | "next") => {
+    setResumeSlideIndex((prev) => {
+      if (direction === "prev") {
+        return prev === 0 ? resumeSlides.length - 1 : prev - 1;
+      }
+      return prev === resumeSlides.length - 1 ? 0 : prev + 1;
+    });
+  };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setResumeSlideIndex((prev) =>
+        prev === resumeSlides.length - 1 ? 0 : prev + 1,
+      );
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [resumeSlides.length]);
 
   const handleSearch = () => {
     if (!searchKeyword.trim()) {
@@ -83,15 +131,47 @@ export const Home = () => {
           </div>
 
           <div className="dashboard-card resume-card">
-            <FileText size={32} color="#ccc" className="resume-icon" />
-            <h3>스마트 이력서 분석</h3>
-            <p>
-              이력서를 업로드하면 AI가 장단점을 분석하고 맞춤형 면접을 준비해
-              줍니다.
-            </p>
+            <button
+              type="button"
+              className="resume-nav-btn side left"
+              onClick={() => handleResumeSlide("prev")}
+              aria-label="이전 카드"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <button
+              type="button"
+              className="resume-nav-btn side right"
+              onClick={() => handleResumeSlide("next")}
+              aria-label="다음 카드"
+            >
+              <ChevronRight size={18} />
+            </button>
+
+            <div className="resume-visual-glow"></div>
+
+            <div className="resume-card-shell">
+              <div className="resume-illustration">
+                <img src={currentSlide.image} alt={currentSlide.title} />
+              </div>
+
+              <div className="resume-copy">
+                <span className="resume-badge">{currentSlide.badge}</span>
+                <h3>{currentSlide.title}</h3>
+                <p>{currentSlide.description}</p>
+              </div>
+
+              <div className="resume-status-spacer"></div>
+            </div>
+
             <div className="progress-dots">
-              <span className="dot active"></span>
-              <span className="dot"></span>
+              {resumeSlides.map((_, index) => (
+                <span
+                  key={index}
+                  className={`dot ${resumeSlideIndex === index ? "active" : ""}`}
+                ></span>
+              ))}
             </div>
           </div>
 
@@ -116,10 +196,17 @@ export const Home = () => {
                 게시판
               </button>
             </div>
-            <div className="tabs-content" style={{ padding: "24px 0 0 0" }}>
-              {activeTab === "jobs" && <JobCards jobRole={user?.job_role} />}
-              {activeTab === "news" && <NewsFeed jobRole={user?.job_role} />}
-              {activeTab === "memos" && <MemoBoard />}
+
+            <div className="tabs-content">
+              <div className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}>
+                <JobCards jobRole={user?.job_role} />
+              </div>
+              <div className={`tab-panel ${activeTab === "news" ? "active" : ""}`}>
+                <NewsFeed jobRole={user?.job_role} />
+              </div>
+              <div className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}>
+                <MemoBoard />
+              </div>
             </div>
           </div>
         </div>
@@ -127,11 +214,7 @@ export const Home = () => {
         <div className="dashboard-right">
           <div
             className="dashboard-card profile-card"
-            style={
-              !isAuthenticated
-                ? { alignItems: "center", textAlign: "center" }
-                : {}
-            }
+            style={!isAuthenticated ? { alignItems: "center", textAlign: "center" } : {}}
           >
             {isAuthenticated ? (
               <>
@@ -140,10 +223,11 @@ export const Home = () => {
                     {user?.profile_image_url ? (
                       <img src={user.profile_image_url} alt="Profile" />
                     ) : (
-                      <div className="avatar-placeholder">🦁</div>
+                      <div className="avatar-placeholder">🙂</div>
                     )}
                     <span className="online-dot"></span>
                   </div>
+
                   <div className="profile-info">
                     <div className="name-row">
                       <span className="name">{user?.name}님</span>
@@ -156,16 +240,10 @@ export const Home = () => {
                 </div>
 
                 <div className="profile-actions">
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate("/mypage")}
-                  >
+                  <button className="action-btn" onClick={() => navigate("/mypage")}>
                     내 면접 기록
                   </button>
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate("/my_info")}
-                  >
+                  <button className="action-btn" onClick={() => navigate("/my_info")}>
                     계정 설정
                   </button>
                   <button
@@ -189,6 +267,7 @@ export const Home = () => {
                     관리자 대시보드
                   </button>
                 )}
+
                 <button
                   className="start-interview-btn"
                   onClick={handleStartInterview}
@@ -198,10 +277,7 @@ export const Home = () => {
                 </button>
               </>
             ) : (
-              <div
-                className="auth-prompt-container"
-                style={{ width: "100%", padding: "10px 0" }}
-              >
+              <div className="auth-prompt-container" style={{ width: "100%", padding: "10px 0" }}>
                 <p
                   style={{
                     fontSize: "15px",
@@ -210,7 +286,7 @@ export const Home = () => {
                     marginBottom: "20px",
                   }}
                 >
-                  AIWORK를 더 안전하고 편리하게 이용하세요
+                  AIWORK를 더 안전하고 편리하게 이용해보세요
                 </p>
                 <button
                   onClick={() => navigate("/auth")}
@@ -227,12 +303,8 @@ export const Home = () => {
                     marginBottom: "16px",
                     transition: "background 0.2s",
                   }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.background = "#0062d1")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.background = "#0176f7")
-                  }
+                  onMouseOver={(e) => (e.currentTarget.style.background = "#0062d1")}
+                  onMouseOut={(e) => (e.currentTarget.style.background = "#0176f7")}
                 >
                   AIWORK 로그인
                 </button>
@@ -245,17 +317,11 @@ export const Home = () => {
                     color: "#666",
                   }}
                 >
-                  <span
-                    style={{ cursor: "pointer" }}
-                    onClick={() => navigate("/auth?mode=find")}
-                  >
+                  <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=find")}>
                     아이디/비밀번호 찾기
                   </span>
                   <span style={{ color: "#ddd" }}>|</span>
-                  <span
-                    style={{ cursor: "pointer" }}
-                    onClick={() => navigate("/auth?mode=signup")}
-                  >
+                  <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=signup")}>
                     회원가입
                   </span>
                 </div>
@@ -267,33 +333,35 @@ export const Home = () => {
             className="dashboard-card dark-card"
             style={{ cursor: "pointer" }}
             onClick={() =>
-              window.open("https://github.com/SKN23-3rd-1TEAM", "_blank")
+              window.open(
+                "https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN23-4th-1Team",
+                "_blank",
+              )
             }
           >
-            <div className="card-icon">🐙</div>
+            <div className="card-icon">📻</div>
             <div className="card-content">
               <h4>Project Repository</h4>
-              <p>
-                오픈소스 코드와 개발 문서를 확인하세요. SKN 1조 팀
-                프로젝트입니다.
-              </p>
+              <p>스프린트 코드와 개발 문서를 확인하세요. SKN 1조의 프로젝트입니다.</p>
             </div>
           </div>
 
           <div
             className="dashboard-card blue-card"
             style={{ cursor: "pointer" }}
-            onClick={() => alert("Discord 봇 초대 링크로 이동합니다.")}
+            onClick={() =>
+              window.open(
+                "https://discord.com/oauth2/authorize?client_id=1465155158022426675&permissions=4279296&integration_type=0&scope=bot",
+                "_blank",
+              )
+            }
           >
             <div className="card-icon">
               <MessageCircle size={24} color="#fff" fill="#fff" />
             </div>
             <div className="card-content">
               <h4>Discord 봇 추가</h4>
-              <p>
-                디스코드 환경에서도 AI 사자개 챗봇의 조언을 실시간으로
-                제공받으세요.
-              </p>
+              <p>디스코드 환경에서도 AI 사자개가 채용 조언을 실시간으로 제공해줍니다.</p>
             </div>
           </div>
         </div>

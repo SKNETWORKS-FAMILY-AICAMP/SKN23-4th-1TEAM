@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { homeApi } from "../../api/homeApi";
 import type { Memo } from "../../api/homeApi";
 import { useAuthStore } from "../../store/authStore";
+import { ROUTES } from "../../constants/routes";
+import { CustomAlert } from "../common/CustomAlert";
 import "./MemoBoard.scss";
 
 export const MemoBoard = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [memos, setMemos] = useState<Memo[]>([]);
   const [newMemo, setNewMemo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showLoginRequiredAlert, setShowLoginRequiredAlert] = useState(false);
 
   const fetchMemos = async () => {
     try {
@@ -28,6 +33,11 @@ export const MemoBoard = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemo.trim()) return;
+
+    if (!user) {
+      setShowLoginRequiredAlert(true);
+      return;
+    }
 
     const colors = [
       {
@@ -55,7 +65,7 @@ export const MemoBoard = () => {
 
     try {
       await homeApi.createMemo({
-        author: user?.name || "익명",
+        author: user.name || "익명",
         content: newMemo,
         color: picked.color,
         border: picked.border,
@@ -68,11 +78,23 @@ export const MemoBoard = () => {
     }
   };
 
-  if (loading)
+  if (loading) {
     return <div className="loading-state">메모를 불러오는 중입니다...</div>;
+  }
 
   return (
     <div className="memo-board-container">
+      <CustomAlert
+        open={showLoginRequiredAlert}
+        title="로그인이 필요합니다"
+        message="응원의 한마디를 남기려면 로그인 후 이용해주세요. 로그인 페이지로 이동하시겠어요?"
+        onCancel={() => setShowLoginRequiredAlert(false)}
+        onConfirm={() => {
+          setShowLoginRequiredAlert(false);
+          navigate(ROUTES.AUTH);
+        }}
+      />
+
       <form onSubmit={handleSubmit} className="memo-form">
         <p>
           <strong>응원의 한마디 남기기</strong>
