@@ -2,7 +2,16 @@ import { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useWebRTC } from "../../hooks/useWebRTC";
-import { Mic, Loader2, Play, Square, Download, PowerOff } from "lucide-react";
+import {
+  Mic,
+  Loader2,
+  Play,
+  Square,
+  Download,
+  PowerOff,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import "./VoiceInterview.scss";
 
 export const VoiceInterview = () => {
@@ -27,6 +36,7 @@ export const VoiceInterview = () => {
   } = useWebRTC();
 
   const [useCamera, setUseCamera] = useState(true);
+  const [isMobileCameraCollapsed, setIsMobileCameraCollapsed] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,8 +66,17 @@ export const VoiceInterview = () => {
   return (
     <div className="voice-interview-wrapper">
       <div
-        className={`camera-section ${!useCamera && isConnected ? "camera-off" : ""}`}
+        className={`camera-section ${!useCamera && isConnected ? "camera-off" : ""} ${isMobileCameraCollapsed ? "mobile-collapsed" : ""}`}
       >
+        <button
+          type="button"
+          className="mobile-camera-toggle"
+          onClick={() => setIsMobileCameraCollapsed((prev) => !prev)}
+        >
+          <span>화면 {isMobileCameraCollapsed ? "펼치기" : "접기"}</span>
+          {isMobileCameraCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+        </button>
+
         <div className="video-container">
           {!isConnected ? (
             <div className="camera-placeholder">

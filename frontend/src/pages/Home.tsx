@@ -213,7 +213,7 @@ export const Home = () => {
 
         <div className="dashboard-right">
           <div
-            className="dashboard-card profile-card"
+            className={`dashboard-card profile-card ${isAuthenticated ? "member-card" : "guest-card"}`}
             style={!isAuthenticated ? { alignItems: "center", textAlign: "center" } : {}}
           >
             {isAuthenticated ? (

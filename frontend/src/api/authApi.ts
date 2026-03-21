@@ -71,4 +71,9 @@ export const authApi = {
     const response = await axiosClient.post("/api/auth/upgrade");
     return response.data;
   },
+
+  withdraw: async () => {
+    const response = await axiosClient.post("/api/auth/withdraw");
+    return response.data;
+  },
 };

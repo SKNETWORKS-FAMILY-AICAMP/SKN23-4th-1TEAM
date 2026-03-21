@@ -243,6 +243,12 @@ export const GuideChatbot = () => {
         currentInput.includes("준비") ||
         currentInput.includes("세팅") ||
         currentInput.includes("시작");
+      const wantsScoreSummary =
+        (currentInput.includes("면접") || currentInput.includes("기록")) &&
+        (currentInput.includes("점수") ||
+          currentInput.includes("평균") ||
+          currentInput.includes("누적") ||
+          currentInput.includes("총점"));
       const hasReportKeyword =
         currentInput.includes("성적") ||
         currentInput.includes("기록") ||
@@ -250,6 +256,55 @@ export const GuideChatbot = () => {
         currentInput.includes("피드백") ||
         currentInput.includes("브리핑");
       const isInterviewIntent = hasInterviewKeyword && !hasReportKeyword;
+
+      if (wantsScoreSummary && user?.id) {
+        const scoreRes = await axiosClient.get(
+          `/api/infer/sessions?user_id=${user.id}`,
+        );
+        const sessions = scoreRes.data.items || [];
+        const completedScores = sessions
+          .filter(
+            (session: any) =>
+              session.status === "COMPLETED" && session.total_score !== null,
+          )
+          .map((session: any) =>
+            session.total_score <= 10
+              ? session.total_score * 10
+              : session.total_score,
+          );
+
+        let scoreMessage = "";
+
+        if (completedScores.length === 0) {
+          scoreMessage =
+            "아직 완료된 면접 기록이 없어서 누적 점수를 계산할 수 없습니다.\n\n면접을 1회 이상 완료하면 평균 점수와 누적 기록을 바로 알려드릴게요.";
+        } else {
+          const totalScore = completedScores.reduce(
+            (sum: number, score: number) => sum + score,
+            0,
+          );
+          const averageScore = totalScore / completedScores.length;
+          const bestScore = Math.max(...completedScores);
+
+          scoreMessage =
+            `현재 완료된 면접은 총 ${completedScores.length}회입니다.\n\n` +
+            `평균 점수는 **${averageScore.toFixed(1)}점 / 100점**이고,\n` +
+            `누적 합산 점수는 **${totalScore.toFixed(1)}점**입니다.\n` +
+            `최고 점수는 **${bestScore.toFixed(1)}점 / 100점**입니다.`;
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: "bot",
+            content: scoreMessage,
+          },
+        ]);
+
+        setIsTyping(false);
+        return;
+      }
 
       const wantsProofread =
         currentInput.includes("첨삭") || currentInput.includes("교정");

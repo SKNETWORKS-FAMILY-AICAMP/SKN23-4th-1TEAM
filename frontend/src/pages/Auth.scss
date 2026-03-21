@@ -263,3 +263,18 @@
     }
   }
 }
+
+@media (max-width: 640px) {
+  .auth-container {
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 14px 28px;
+  }
+
+  .auth-box {
+    margin-top: 0;
+    padding: 2.5rem 1.5rem;
+    border-radius: 18px;
+  }
+}
