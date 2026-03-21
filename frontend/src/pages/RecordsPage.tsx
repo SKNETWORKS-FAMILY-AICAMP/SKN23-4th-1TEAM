@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Download } from "lucide-react";
 import { Header } from "../components/common/Header";
+import { CustomAlert } from "../components/common/CustomAlert";
 import { useAuthStore } from "../store/authStore";
 import { axiosClient } from "../api/axiosClient";
 import { ROUTES } from "../constants/routes";
@@ -199,6 +200,9 @@ export const RecordsPage = () => {
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
     null,
   );
+  const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<
+    number | null
+  >(null);
 
   const fetchRecords = async () => {
     if (!user?.id) return;
@@ -226,6 +230,21 @@ export const RecordsPage = () => {
       )
     )
       return;
+    try {
+      await axiosClient.delete(`/api/interview/sessions/${sessionId}`);
+      alert("면접 기록이 삭제되었습니다.");
+      fetchRecords();
+    } catch (error: any) {
+      console.error(error);
+      if (error.response?.status === 401 || error.response?.status === 405) {
+        alert("삭제 권한이 없거나 로그인이 만료되었습니다.");
+      } else {
+        alert("삭제에 실패했습니다.");
+      }
+    }
+  };
+
+  const handleConfirmedDelete = async (sessionId: number) => {
     try {
       await axiosClient.delete(`/api/interview/sessions/${sessionId}`);
       alert("면접 기록이 삭제되었습니다.");
@@ -299,7 +318,7 @@ export const RecordsPage = () => {
                   </div>
                   <button
                     className="btn-delete"
-                    onClick={() => handleDelete(record.id)}
+                    onClick={() => setPendingDeleteSessionId(record.id)}
                   >
                     삭제
                   </button>
@@ -370,6 +389,25 @@ export const RecordsPage = () => {
           onClose={() => setSelectedSessionId(null)}
         />
       )}
+
+      <CustomAlert
+        open={pendingDeleteSessionId !== null}
+        title="기록을 삭제할까요?"
+        message={
+          pendingDeleteSessionId !== null
+            ? `세션 #${pendingDeleteSessionId} 기록은 삭제 후 복구할 수 없습니다.`
+            : ""
+        }
+        confirmText="삭제하기"
+        cancelText="취소"
+        onCancel={() => setPendingDeleteSessionId(null)}
+        onConfirm={async () => {
+          if (pendingDeleteSessionId === null) return;
+          const sessionId = pendingDeleteSessionId;
+          setPendingDeleteSessionId(null);
+          await handleConfirmedDelete(sessionId);
+        }}
+      />
     </div>
   );
 };

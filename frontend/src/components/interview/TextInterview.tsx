@@ -85,7 +85,7 @@ export const TextInterview = () => {
             <div className="message-content">
               <div className="bubble assistant typing">
                 <img
-                  src="/loading.gif"
+                  src="/images/common/loading.gif"
                   alt="답변 작성 중..."
                   className="typing-gif"
                 />
