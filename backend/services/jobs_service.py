@@ -91,8 +91,6 @@ async def fetch_jobs(params: dict) -> dict:
 
             # “데이터를 실제로 받아오는지” 확인용 로그
             logger.warning(f"[WORK24] final_url={res.request.url}")
-            logger.warning(f"[WORK24] status={res.status_code} content_type={res.headers.get('content-type')}")
-            logger.warning(f"[WORK24] body_head={res.text[:200]}")
 
             res.raise_for_status()
             return parse_jobs_xml(res.text)
