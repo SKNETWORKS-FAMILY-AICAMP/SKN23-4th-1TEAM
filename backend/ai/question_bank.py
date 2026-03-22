@@ -53,7 +53,7 @@ class QuestionRow:
             "topic": self.topic,
             "subcategory": self.subcategory,
             "difficulty_score": self.difficulty_score,
-            "tags": self.tags,  # list로 고정
+            "tags": self.tags,
             "code_example": self.code_example,
             "time_complexity": self.time_complexity,
             "space_complexity": self.space_complexity,
@@ -108,18 +108,21 @@ def resolve_default_csv_path() -> str:
     if env and os.path.exists(env):
         return env
 
-    _base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    project_root = os.path.dirname(backend_dir)
+
     candidates = [
         os.path.join(os.getcwd(), "python_interview_questions_500.csv"),
         os.path.join(os.getcwd(), "data", "python_interview_questions_500.csv"),
         os.path.join(os.getcwd(), "backend", "data", "python_interview_questions_500.csv"),
-        os.path.join(_base_dir,"data", "python_interview_questions_500.csv"), # 최상위 폴더 기준 절대경로 추가
+        os.path.join(backend_dir, "data", "python_interview_questions_500.csv"),
+        os.path.join(project_root, "backend", "data", "python_interview_questions_500.csv"),
     ]
-    for p in candidates:
-        if os.path.exists(p):
-            return p
+    for path in candidates:
+        if os.path.exists(path):
+            return path
 
-    return os.path.join(_base_dir, "backend", "data", "python_interview_questions_500.csv")
+    return os.path.join(backend_dir, "data", "python_interview_questions_500.csv")
 
 
 def get_bank() -> QuestionBank:
