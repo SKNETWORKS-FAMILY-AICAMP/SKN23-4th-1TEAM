@@ -144,3 +144,107 @@ def issue_cookie_token_response(response: HttpResponse, refresh_token: str, csrf
 
 def run_async(coro):
     return asyncio.run(coro)
+
+
+JOB_ROLE_TO_OCCUPATIONS = {
+    "Python 백엔드 개발자": [
+        "133100",  # 시스템 소프트웨어 개발자
+        "133101",  # 시스템 소프트웨어 개발자(프로그래머)
+        "133200",  # 응용 소프트웨어 개발자
+        "133203",  # 범용 응용 소프트웨어 프로그래머
+        "133204",  # 산업특화 응용 소프트웨어 프로그래머
+        "133202",  # C언어 및 그 외 프로그래밍 언어 전문가
+        "133300",  # 웹 개발자
+        "133900",  # 기타 컴퓨터 시스템 및 소프트웨어 전문가
+    ],
+    "Java 백엔드 개발자": [
+        "133201",  # JAVA 프로그래밍 언어 전문가
+        "133200",  # 응용 소프트웨어 개발자
+        "133203",  # 범용 응용 소프트웨어 프로그래머
+        "133204",  # 산업특화 응용 소프트웨어 프로그래머
+        "133100",  # 시스템 소프트웨어 개발자
+        "133101",  # 시스템 소프트웨어 개발자(프로그래머)
+        "133202",  # C언어 및 그 외 프로그래밍 언어 전문가
+        "133900",  # 기타 컴퓨터 시스템 및 소프트웨어 전문가
+    ],
+    "프론트엔드 개발자": [
+        "133300",  # 웹 개발자
+        "133301",  # 웹 개발자(웹 엔지니어·웹 프로그래머)
+        "133302",  # 웹 기획자
+        "133200",  # 응용 소프트웨어 개발자
+        "133207",  # 모바일 애플리케이션 프로그래머
+        "133205",  # 네트워크 프로그래머
+        "133900",  # 기타 컴퓨터 시스템 및 소프트웨어 전문가
+    ],
+    "AI/ML 엔지니어": [
+        "133200",  # 응용 소프트웨어 개발자
+        "133202",  # C언어 및 그 외 프로그래밍 언어 전문가
+        "133203",  # 범용 응용 소프트웨어 프로그래머
+        "133204",  # 산업특화 응용 소프트웨어 프로그래머
+        "133100",  # 시스템 소프트웨어 개발자
+        "133102",  # 펌웨어 및 임베디드 소프트웨어 프로그래머
+        "133900",  # 기타 컴퓨터 시스템 및 소프트웨어 전문가
+    ],
+    "데이터 엔지니어": [
+        "133203",  # 범용 응용 소프트웨어 프로그래머
+        "133204",  # 산업특화 응용 소프트웨어 프로그래머
+        "133200",  # 응용 소프트웨어 개발자
+        "133202",  # C언어 및 그 외 프로그래밍 언어 전문가
+        "133100",  # 시스템 소프트웨어 개발자
+        "133205",  # 네트워크 프로그래머
+        "133206",  # 게임 프로그래머
+        "133900",  # 기타 컴퓨터 시스템 및 소프트웨어 전문가
+    ],
+}
+
+
+ALL_OCCUPATIONS = [
+    "133100",
+    "133101",
+    "133102",
+    "133200",
+    "133201",
+    "133202",
+    "133203",
+    "133204",
+    "133205",
+    "133206",
+    "133207",
+    "133300",
+    "133301",
+    "133302",
+    "133900",
+]
+
+
+# 채용 공고용
+def normalize_job_role(value: str | None) -> str:
+    return (value or "").strip()
+
+
+def infer_occupation_codes(job_role: str | None) -> list[str]:
+    normalized = normalize_job_role(job_role)
+    if not normalized:
+        return []
+    return JOB_ROLE_TO_OCCUPATIONS.get(normalized, [])
+
+
+def infer_jobs_cd_value(job_role: str | None) -> str | None:
+    codes = infer_occupation_codes(job_role)
+    if not codes:
+        return None
+    return "|".join(codes)
+
+
+def resolve_emp_wanted_title(
+    emp_wanted_title: str | None,
+    keywords: str | None,
+    job_role: str | None,
+) -> str | None:
+    if keywords and keywords.strip():
+        return keywords.strip()
+    if emp_wanted_title and emp_wanted_title.strip():
+        return emp_wanted_title.strip()
+    if job_role and job_role.strip():
+        return job_role.strip()
+    return None
