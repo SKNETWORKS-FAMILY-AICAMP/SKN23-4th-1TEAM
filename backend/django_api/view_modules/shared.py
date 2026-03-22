@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 import PyPDF2
 import requests
+from django.core import signing
 from django.http import HttpResponse, HttpResponseRedirect
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
@@ -113,6 +114,7 @@ __all__ = [
     # private helpers — must be in __all__ to be exported by `import *`
     "_get_ai", "_user_payload", "_ensure_active_user",
     "_set_oauth_state_cookie", "_pop_oauth_state",
+    "_create_oauth_state", "_validate_oauth_state",
 ]
 
 
@@ -161,3 +163,29 @@ def _pop_oauth_state(request, name: str) -> str:
     if not state:
         raise ApiError("invalid state", 400)
     return state
+
+
+def _create_oauth_state(provider: str) -> str:
+    payload = {
+        "provider": provider,
+        "nonce": secrets.token_urlsafe(16),
+    }
+    return signing.dumps(payload, salt="social-oauth-state")
+
+
+def _validate_oauth_state(state: str | None, provider: str) -> None:
+    if not state:
+        raise ApiError("invalid state", 400)
+    try:
+        payload = signing.loads(
+            state,
+            salt="social-oauth-state",
+            max_age=300,
+        )
+    except signing.BadSignature as exc:
+        raise ApiError("invalid state", 400) from exc
+    except signing.SignatureExpired as exc:
+        raise ApiError("invalid state", 400) from exc
+
+    if payload.get("provider") != provider:
+        raise ApiError("invalid state", 400)

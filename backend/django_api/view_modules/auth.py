@@ -227,7 +227,7 @@ def auth_upgrade(request):
 
 @api_view(["GET"])
 def social_kakao_start(request):
-    state = secrets.token_urlsafe(24)
+    state = _create_oauth_state("kakao")
     params = {
         "response_type": "code",
         "client_id": settings.KAKAO_CLIENT_ID,
@@ -235,19 +235,16 @@ def social_kakao_start(request):
         "state": state,
         "scope": "account_email profile_nickname profile_image",
     }
-    response = HttpResponseRedirect(
+    return HttpResponseRedirect(
         "https://kauth.kakao.com/oauth/authorize?" + urlencode(params)
     )
-    _set_oauth_state_cookie(response, "kakao_oauth_state", state)
-    return response
 
 
 @api_view(["GET"])
 def social_kakao_callback(request):
     code = request.GET.get("code")
     state = request.GET.get("state")
-    if state != _pop_oauth_state(request, "kakao_oauth_state"):
-        raise ApiError("invalid state", 400)
+    _validate_oauth_state(state, "kakao")
     access_token = social_service.kakao_exchange_code_for_token(code)
     provider_user_id, email, name, image_url = social_service.kakao_fetch_profile(
         access_token
@@ -275,7 +272,7 @@ def social_kakao_callback(request):
 
 @api_view(["GET"])
 def social_google_start(request):
-    state = secrets.token_urlsafe(24)
+    state = _create_oauth_state("google")
     params = {
         "response_type": "code",
         "client_id": settings.GOOGLE_CLIENT_ID,
@@ -285,19 +282,16 @@ def social_google_start(request):
         "access_type": "offline",
         "prompt": "consent",
     }
-    response = HttpResponseRedirect(
+    return HttpResponseRedirect(
         "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
     )
-    _set_oauth_state_cookie(response, "google_oauth_state", state)
-    return response
 
 
 @api_view(["GET"])
 def social_google_callback(request):
     code = request.GET.get("code")
     state = request.GET.get("state")
-    if state != _pop_oauth_state(request, "google_oauth_state"):
-        raise ApiError("invalid state", 400)
+    _validate_oauth_state(state, "google")
     access_token = social_service.google_exchange_code_for_token(code)
     provider_user_id, email, name, image_url = social_service.google_fetch_profile(
         access_token
@@ -325,26 +319,23 @@ def social_google_callback(request):
 
 @api_view(["GET"])
 def social_naver_start(request):
-    state = secrets.token_urlsafe(24)
+    state = _create_oauth_state("naver")
     params = {
         "response_type": "code",
         "client_id": settings.NAVER_CLIENT_ID,
         "redirect_uri": settings.NAVER_REDIRECT_URI,
         "state": state,
     }
-    response = HttpResponseRedirect(
+    return HttpResponseRedirect(
         "https://nid.naver.com/oauth2.0/authorize?" + urlencode(params)
     )
-    _set_oauth_state_cookie(response, "naver_oauth_state", state)
-    return response
 
 
 @api_view(["GET"])
 def social_naver_callback(request):
     code = request.GET.get("code")
     state = request.GET.get("state")
-    if state != _pop_oauth_state(request, "naver_oauth_state"):
-        raise ApiError("invalid state", 400)
+    _validate_oauth_state(state, "naver")
     access_token = social_service.naver_exchange_code_for_token(code, state=state)
     provider_user_id, email, name = social_service.naver_fetch_profile(access_token)
     with db_session() as db:
