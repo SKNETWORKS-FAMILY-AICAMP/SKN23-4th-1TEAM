@@ -1,11 +1,14 @@
 // api/interviewApi.ts
 
 import axios from "axios";
-import { EvaluationPayload, EvaluationResponse } from "../types/interview";
+import type {
+  EvaluationPayload,
+  EvaluationResponse,
+} from "../types/interview";
 
 // Axios 인스턴스 (필요시 baseURL 설정)
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || "/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
 });
 
 // 1. OpenAI WebRTC 통신용 단기(Ephemeral) 토큰 발급
