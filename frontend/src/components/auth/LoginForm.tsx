@@ -92,8 +92,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchMode }) => {
     }
   };
 
-  const GOOGLE_URI = "http://localhost:8000/api/v1/auth/google/start";
-  const KAKAO_URI = "http://localhost:8000/api/v1/auth/kakao/start";
+  const GOOGLE_URI = "/api/v1/auth/google/start";
+  const KAKAO_URI = "/api/v1/auth/kakao/start";
 
   return (
     <div className="login-form-container">
