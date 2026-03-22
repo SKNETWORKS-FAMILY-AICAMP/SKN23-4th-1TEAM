@@ -59,6 +59,15 @@ export const authApi = {
     return response.data;
   },
 
+  verify: async (accessToken: string) => {
+    const response = await axiosClient.get("/api/auth/verify", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data;
+  },
+
   sendSignupEmail: async (data: { email: string; auth_code: string }) => {
     const response = await axiosClient.post(
       "/api/auth/send-signup-email",
