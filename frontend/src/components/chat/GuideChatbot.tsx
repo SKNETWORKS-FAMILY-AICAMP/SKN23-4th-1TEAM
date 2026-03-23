@@ -171,15 +171,15 @@ export const GuideChatbot = () => {
     switch (type) {
       case "zero-click":
         aiResponse =
-          "Zero-click 사용법은 메인화면에서 챗봇에게\n**'나 내일 파이썬 백엔드 면접인데 빡세게 준비하게 해 줘'\n라고 치면? AI가 바로 사용자님을 맞춤형 면접장으로 이동시켜줍니다.\n(만약 원하는 세팅을 하지 않으면 기본 값으로 설정됩니다.)";
+          "Zero-click 사용법은 메인화면에서 챗봇에게\n**'나 내일 파이썬 백엔드 면접인데 빡세게 준비하게 해 줘'**\n라고 치면? AI가 바로 사용자님을 맞춤형 면접장으로 이동시켜줍니다.\n(만약 원하는 세팅을 하지 않으면 기본 값으로 설정됩니다.)";
         break;
       case "manual":
         aiResponse =
-          "AIWORK는 맞춤형 모의면접 플랫폼입니다.\n**이력서, 직무, 면접관 스타일을 자유롭게 설정해 실전 같은 AI 면접을 경험해 보세요.";
+          "AIWORK는 맞춤형 모의면접 플랫폼입니다.\n**이력서, 직무, 면접관 스타일**을 자유롭게 설정해 실전 같은 AI 면접을 경험해 보세요.";
         break;
       case "resume":
         aiResponse =
-          "이력서 분석 기능은 업로드하신 PDF나 텍스트 이력서를 벡터 DB에 저장하여,\n**지원자님의 이력서를 바탕으로 한 날카로운 꼬리질문을 생성하는\nAIWORK의 핵심 기술입니다.";
+          "이력서 분석 기능은 업로드하신 PDF나 텍스트 이력서를 벡터 DB에 저장하여,\n**지원자님의 이력서를 바탕으로 한 날카로운 꼬리질문**을 생성하는\nAIWORK의 핵심 기술입니다.";
         break;
       default:
         return;
@@ -738,28 +738,41 @@ export const GuideChatbot = () => {
 
                 <div className="message-content">
                   <div className="message-bubble">
-                    {msg.content.split("\n").map((line, i) => (
-                      <Fragment key={i}>
-                        {line.startsWith("**") ? (
-                          <strong>{line.replace(/\*\*/g, "")}</strong>
-                        ) : line.startsWith("###") ? (
-                          <h4 style={{ margin: "8px 0" }}>
-                            {line.replace("###", "")}
+                    {msg.content.split("\n").map((line, i) => {
+                      if (line.trim().startsWith("###")) {
+                        return (
+                          <h4 key={i} style={{ margin: "8px 0" }}>
+                            {line.replace(/^###\s*/, "")}
                           </h4>
-                        ) : line.startsWith("---") ? (
+                        );
+                      }
+                      if (line.trim().startsWith("---")) {
+                        return (
                           <hr
+                            key={i}
                             style={{
                               border: "none",
                               borderTop: "1px dashed #e2e8f0",
                               margin: "12px 0",
                             }}
                           />
-                        ) : (
-                          line
-                        )}
-                        <br />
-                      </Fragment>
-                    ))}
+                        );
+                      }
+
+                      const parts = line.split(/\*\*(.*?)\*\*/g);
+                      return (
+                        <Fragment key={i}>
+                          {parts.map((part, idx) =>
+                            idx % 2 === 1 ? (
+                              <strong key={idx}>{part}</strong>
+                            ) : (
+                              part
+                            )
+                          )}
+                          <br />
+                        </Fragment>
+                      );
+                    })}
 
                     {(msg.downloadContent || msg.saveResumePayload) && (
                       <div className="bubble-actions-row">

@@ -20,9 +20,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 const JOB_ROLES = [
   "Python 백엔드 개발자",
   "Java 백엔드 개발자",
-  "AI/ML 엔지니어",
-  "데이터 엔지니어",
   "프론트엔드 개발자",
+  "AI/ML 엔지니어",
+  "데이터 사이언티스트",
+  "데이터 분석가",
+  "데이터 엔지니어",
 ];
 
 export const ResumePage = () => {

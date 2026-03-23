@@ -32,6 +32,7 @@ def node_pick_question(st: InterviewState) -> InterviewState:
     if q.id not in asked:
         asked.append(q.id)
     st["asked_question_ids"] = asked
+    st["follow_up_count"] = 0  # 새 질문 시 꼬리질문 횟수 초기화
 
     return set_question(st, q.id, q.question, question_row=q.to_dict())
 
@@ -80,12 +81,14 @@ def node_follow_up(st: InterviewState) -> InterviewState:
         "time_complexity": "",
         "space_complexity": "",
     }
+    
+    st["follow_up_count"] = st.get("follow_up_count", 0) + 1  # 꼬리질문 횟수 증가
 
     return set_question(st, follow_id, fq, question_row=st["question_row"])
 
-# 라우터 에이전트 (매니저) : 점수가 70점 미만일 경우 꼬리질문(follow_up), 70점 이상일 경우 새로운 질문(pick_question)
+# 라우터 에이전트 (매니저) : 꼬리질문 로직에 따라 분기
 def route_after_eval(st: InterviewState):
-    return "follow_up" if need_follow_up(st, threshold=70) else "pick_question"
+    return "follow_up" if need_follow_up(st) else "pick_question"
 
 
 # 시작시 그래프 
