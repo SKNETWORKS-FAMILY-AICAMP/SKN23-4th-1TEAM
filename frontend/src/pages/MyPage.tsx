@@ -4,7 +4,7 @@ import type { PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/common/Header";
-import { ChevronRight, ArrowLeft, Plus, Upload, X } from "lucide-react";
+import { ChevronRight, ArrowLeft, Plus, Upload, X, AlertCircle } from "lucide-react";
 import { authApi } from "../api/authApi";
 import "./MyPage.scss";
 
@@ -31,7 +31,6 @@ export const MyPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // 비밀번호 변경 모달 상태
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pwStep, setPwStep] = useState(1);
   const [authCode, setAuthCode] = useState("");
@@ -40,6 +39,16 @@ export const MyPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwError, setPwError] = useState("");
   const [isPwLoading, setIsPwLoading] = useState(false);
+
+  // 공통 확인 모달 상태 관리
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    desc: React.ReactNode;
+    iconBg: string;
+    iconColor: string;
+    btnText: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const defaultAvatar =
     "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
@@ -84,7 +93,6 @@ export const MyPage = () => {
       await paymentWidget.requestPayment({
         orderId: `order_${Math.random().toString(36).substring(2, 10)}`,
         orderName: "PRO 멤버십 구독 (월간)",
-        /* 라우터가 주소를 날리지 못하도록 현재 정확한 경로를 사용합니다 */
         successUrl: `${window.location.origin}${window.location.pathname}?success=true`,
         failUrl: `${window.location.origin}${window.location.pathname}?fail=true`,
         customerEmail: user?.email,
@@ -110,7 +118,6 @@ export const MyPage = () => {
           console.error("Upgrade failed:", error);
           showToast("등급 업데이트 중 오류가 발생했습니다.");
         } finally {
-          /* 찌꺼기 파라미터를 지울 때도 현재 경로를 유지합니다 */
           window.history.replaceState({}, "", window.location.pathname);
         }
       } else if (params.get("fail") === "true") {
@@ -121,6 +128,62 @@ export const MyPage = () => {
 
     handlePaymentResult();
   }, [user, updateTier]);
+
+  // 커스텀 모달 호출 로직으로 변경
+  const openCancelSubscriptionModal = () => {
+    setConfirmModal({
+      title: "구독을 해지하시겠습니까?",
+      desc: (
+        <>
+          해지 즉시 PRO 멤버십 혜택이 종료되며<br />
+          NORMAL 등급으로 전환됩니다.
+        </>
+      ),
+      iconBg: "#fef2f2",
+      iconColor: "#ef4444",
+      btnText: "해지하기",
+      onConfirm: async () => {
+        try {
+          // 백엔드 구현 후 주석 해제 요망
+          // await authApi.downgradeTier(); 
+          updateTier("normal");
+          showToast("PRO 구독이 정상적으로 해지되었습니다.");
+        } catch (error) {
+          console.error("Cancel subscription failed:", error);
+          showToast("구독 해지 처리 중 오류가 발생했습니다.");
+        } finally {
+          setConfirmModal(null);
+        }
+      },
+    });
+  };
+
+  const openWithdrawModal = () => {
+    setConfirmModal({
+      title: "정말 탈퇴하시겠습니까?",
+      desc: (
+        <>
+          모든 면접 기록과 이력서 정보가 삭제되며<br />
+          복구할 수 없습니다.
+        </>
+      ),
+      iconBg: "#fef2f2",
+      iconColor: "#ef4444",
+      btnText: "탈퇴하기",
+      onConfirm: async () => {
+        try {
+          await authApi.withdraw();
+          clearAuth();
+          navigate("/auth");
+        } catch (error) {
+          console.error(error);
+          showToast("회원 탈퇴 처리 중 오류가 발생했습니다.");
+        } finally {
+          setConfirmModal(null);
+        }
+      },
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,7 +220,6 @@ export const MyPage = () => {
     }
   };
 
-  // --- 비밀번호 변경 로직 ---
   const resetPwModalState = () => {
     setPwStep(1);
     setAuthCode("");
@@ -229,21 +291,6 @@ export const MyPage = () => {
     }
   };
 
-  const handleWithdraw = async () => {
-    if (!window.confirm("정말 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.")) {
-      return;
-    }
-
-    try {
-      await authApi.withdraw();
-      clearAuth();
-      navigate("/auth");
-    } catch (error) {
-      console.error(error);
-      showToast("회원 탈퇴 처리 중 오류가 발생했습니다.");
-    }
-  };
-
   return (
     <div className="mypage-layout">
       {toastMessage && <div className="toast-notification">{toastMessage}</div>}
@@ -301,12 +348,37 @@ export const MyPage = () => {
                 {user?.tier === "premium" ? "PRO 회원" : "NORMAL 회원"}
               </div>
             </div>
-            {user?.tier !== "premium" && (
+            {user?.tier !== "premium" ? (
               <button
                 className="upgrade-action-btn"
                 onClick={() => setShowUpgrade(true)}
               >
                 PRO 업그레이드
+              </button>
+            ) : (
+              <button
+                onClick={openCancelSubscriptionModal}
+                style={{
+                  background: "#f1f5f9",
+                  color: "#64748b",
+                  border: "1px solid #cbd5e1",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#e2e8f0";
+                  e.currentTarget.style.color = "#475569";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                  e.currentTarget.style.color = "#64748b";
+                }}
+              >
+                구독 해지
               </button>
             )}
           </div>
@@ -329,16 +401,46 @@ export const MyPage = () => {
         <div className="footer-actions">
           <p className="footer-desc">더 이상 서비스를 이용하지 않으시나요?</p>
           <div className="btn-group">
-            <button className="withdraw-btn" onClick={handleWithdraw}>
+            <button className="withdraw-btn" onClick={openWithdrawModal}>
               회원 탈퇴
             </button>
           </div>
         </div>
       </main>
 
+      {/* 공통 커스텀 컨펌 모달 */}
+      {confirmModal && (
+        <div className="upgrade-modal-overlay">
+          <div className="confirm-modal-content">
+            <div 
+              className="confirm-icon" 
+              style={{ background: confirmModal.iconBg, color: confirmModal.iconColor }}
+            >
+              <AlertCircle size={32} />
+            </div>
+            <h3>{confirmModal.title}</h3>
+            <p>{confirmModal.desc}</p>
+            <div className="confirm-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={() => setConfirmModal(null)}
+              >
+                취소하기
+              </button>
+              <button 
+                className="btn-proceed" 
+                onClick={confirmModal.onConfirm}
+                style={{ background: confirmModal.iconColor }}
+              >
+                {confirmModal.btnText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PRO 멤버십 업그레이드 모달 */}
       {showUpgrade && (
-        // ... (기존 코드와 동일)
         <div className="upgrade-modal-overlay">
           <div className="upgrade-modal">
             <div className="modal-header">
