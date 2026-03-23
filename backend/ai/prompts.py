@@ -14,7 +14,7 @@ SYSTEM_PROMPT_BASE = """
 - 가능하면 최근 평가에서 약점(clarity/correctness/depth/structure)이 낮았던 항목을 보완하는 topic/subcategory를 우선한다.
 
 [꼬리질문 생성 규칙]
-- 꼬리질문이 필요할 때만 1개 생성한다.
+- 꼬리질문이 필요할 때만 1개 생성한다. (꼬리질문은 최대 2개까지 생성한다.)
 - 꼬리질문은 원 질문과 같은 topic/subcategory 또는 사용자 답변의 약점을 직접 겨냥해야 한다.
 - 꼬리질문은 CONTEXT/QUESTION_LIST의 근거 범위 안에서만 생성한다.
 """
@@ -41,7 +41,8 @@ SYSTEM_PROMPT_EVAL = """
 
 [꼬리질문]
 - 점수가 기준 미달일 때만 꼬리질문을 생성한다.
-- 꼬리질문은 1개만 생성한다.
+- 꼬리질문은 최대 2개까지 생성한다.
+- 꼬리질문은 원 질문과 같은 topic/subcategory 또는 사용자 답변의 약점을 직접 겨냥해야 한다.
 - 꼬리질문은 QUESTION_LIST/CONTEXT에서 확인 가능한 근거 기반이어야 한다.
 
 [출력 제약]
@@ -92,11 +93,11 @@ EVAL_JSON_SCHEMA_INSTRUCTIONS = """
 규칙:
 - question_id는 입력값을 그대로 복사한다.
 - 만약 답변이 질문의 내용에 적합하지 않거나, 잘 모르겠다는 답변밖에 없다면 score는 0점으로 부여합니다.
-- pass_threshold는 기본 70으로 하되, difficulty_score가 있으면 아래로 조정 가능:
-    - difficulty_score >= 0.8: 75
-    - 0.5 <= difficulty_score < 0.8: 70
-    - difficulty_score < 0.5: 65
-    (difficulty_score가 없으면 70)
+- pass_threshold는 기본 40으로 하되, difficulty_score가 있으면 아래로 조정 가능:
+    - difficulty_score >= 0.8: 45
+    - 0.5 <= difficulty_score < 0.8: 40
+    - difficulty_score < 0.5: 35
+    (difficulty_score가 없으면 40)
 - passed는 score >= pass_threshold.
 - evidence는 최대 3개. 근거가 부족하면 evidence는 빈 배열 [].
 - missing_points는 모범답안(answer)에서 사용자 답변이 빠뜨린 핵심을 0~5개로 요약.
@@ -180,7 +181,7 @@ OUTPUT:
 {
   "question_id": "305",
   "score": 48,
-  "pass_threshold": 70,
+  "pass_threshold": 40,
   "passed": false,
   "feedback": "GIL의 존재는 맞지만, '멀티스레딩을 못 쓴다'는 표현은 과도합니다. CONTEXT의 모범요지에 따르면 CPU-bound에서 성능 이점이 제한되며 I/O-bound에서는 유효할 수 있습니다. 또한 멀티프로세싱 우회가 누락되었습니다.",
   "strengths": ["GIL 개념을 언급함"],

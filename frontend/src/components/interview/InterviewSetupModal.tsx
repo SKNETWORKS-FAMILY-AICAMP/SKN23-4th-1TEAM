@@ -298,8 +298,12 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
                   <option value="Python 백엔드 개발자">
                     Python 백엔드 개발자
                   </option>
-                  <option value="Frontend 개발자">Frontend 개발자</option>
-                  <option value="Data Scientist">Data Scientist</option>
+                  <option value="Java 백엔드 개발자">Java 백엔드 개발자</option>
+                  <option value="AI/ML 엔지니어">AI/ML 엔지니어</option>
+                  <option value="프론트엔드 개발자">프론트엔드 개발자</option>
+                  <option value="데이터 사이언티스트">데이터 사이언티스트</option>
+                  <option value="데이터 분석가">데이터 분석가</option>
+                  <option value="데이터 엔지니어">데이터 엔지니어</option>
                 </select>
               </div>
               <div className="input-field">

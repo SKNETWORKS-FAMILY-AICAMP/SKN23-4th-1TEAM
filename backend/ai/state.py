@@ -41,6 +41,9 @@ class InterviewState(TypedDict, total=False):
     # (선택) 현재 질문 row(질문은행에서 조회한 1개 row)
     question_row: Optional[Dict[str, Any]]
 
+    # 현재 질문에 대한 꼬리질문 누적 횟수
+    follow_up_count: int
+
 
 def init_state(session_id: str) -> InterviewState:
     """
@@ -58,6 +61,7 @@ def init_state(session_id: str) -> InterviewState:
         "history": [],
         "rag_context": None,
         "question_row": None,
+        "follow_up_count": 0,
     }
 
 
@@ -104,15 +108,29 @@ def set_evaluation(st: InterviewState, eval_json: Dict[str, Any]) -> InterviewSt
     return st
 
 
-def need_follow_up(st: InterviewState, threshold: int = 70) -> bool:
+def need_follow_up(st: InterviewState, threshold: int = 40) -> bool:
     """
     Conditional Edge에서 사용할 분기 조건
-    - 기본: score < 70이면 꼬리질문 루프
+    - 첫 번째 꼬리질문: 원 질문에 대한 답변이 40점 미만일 때
+    - 두 번째 꼬리질문: 첫 번째 꼬리질문에 대한 답변이 50점 이하일 때
+    - 최대 2회까지만 꼬리질문 수행
     """
     score = st.get("last_score")
+    count = st.get("follow_up_count", 0)
+    
+    # 꼬리질문 횟수가 이미 2회 이상이면 더 이상 하지 않음
+    if count >= 2:
+        return False
+        
     if score is None:
         return True  # 점수 파싱 실패면 안전하게 follow-up로
-    return score < threshold
+        
+    if count == 0:
+        return score < 40
+    elif count == 1:
+        return score <= 50
+        
+    return False
 
 
 def get_follow_up_question(st: InterviewState) -> str:
