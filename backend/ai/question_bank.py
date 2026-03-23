@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import csv
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from backend.db.database import get_connection
 
 def _split_tags(tags: Any) -> List[str]:
     if tags is None:
@@ -61,72 +61,57 @@ class QuestionRow:
 
 
 class QuestionBank:
-    def __init__(self, csv_path: str):
-        self.csv_path = csv_path
-        self.rows: List[QuestionRow] = []
-        self.by_id: Dict[str, QuestionRow] = {}
-        self._load()
-
-    def _load(self) -> None:
-        if not os.path.exists(self.csv_path):
-            raise FileNotFoundError(f"Question CSV not found: {self.csv_path}")
-
-        with open(self.csv_path, "r", encoding="utf-8-sig", newline="") as f:
-            reader = csv.DictReader(f)
-            for r in reader:
-                q = QuestionRow(
-                    id=_as_str(r.get("id")),
-                    question=_as_str(r.get("question")),
-                    answer=_as_str(r.get("answer")),
-                    difficulty=_as_str(r.get("difficulty")),
-                    topic=_as_str(r.get("topic")),
-                    subcategory=_as_str(r.get("subcategory")),
-                    difficulty_score=_as_float(r.get("difficulty_score")),
-                    tags=_split_tags(r.get("tags")),
-                    code_example=_as_str(r.get("code_example")),
-                    time_complexity=_as_str(r.get("time_complexity")),
-                    space_complexity=_as_str(r.get("space_complexity")),
-                )
-                if not q.id:
-                    continue
-                self.rows.append(q)
-                self.by_id[q.id] = q
+    def __init__(self):
+        pass
 
     def pick_next(self, asked_ids: List[str]) -> QuestionRow:
-        asked = set(str(x) for x in (asked_ids or []))
-        for q in self.rows:
-            if q.id not in asked:
-                return q
-        raise RuntimeError("No more questions available (all asked).")
+        asked = [str(x) for x in (asked_ids or [])]
+        placeholders = ",".join(["%s"] * len(asked)) if asked else "''"
+        
+        query = """
+            SELECT id, content AS question, reference_answer AS answer, 
+                   difficulty, skill_tag AS topic, 
+                   question_type AS subcategory, keywords AS tags
+            FROM question_pool
+        """
+        
+        if asked:
+            query += f" WHERE id NOT IN ({placeholders})"
+            
+        query += " ORDER BY RAND() LIMIT 1"
+        
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                if asked:
+                    cur.execute(query, tuple(asked))
+                else:
+                    cur.execute(query)
+                    
+                row = cur.fetchone()
+                
+                if not row:
+                    raise RuntimeError("No more questions available (all asked).")
+                
+                return QuestionRow(
+                    id=str(row["id"]),
+                    question=_as_str(row.get("question")),
+                    answer=_as_str(row.get("answer")),
+                    difficulty=_as_str(row.get("difficulty")),
+                    topic=_as_str(row.get("topic")),
+                    subcategory=_as_str(row.get("subcategory")),
+                    difficulty_score=None,
+                    tags=_split_tags(row.get("tags")),
+                    code_example="",
+                    time_complexity="",
+                    space_complexity="",
+                )
 
 
 _bank: Optional[QuestionBank] = None
 
 
-def resolve_default_csv_path() -> str:
-    env = os.environ.get("QUESTION_CSV_PATH")
-    if env and os.path.exists(env):
-        return env
-
-    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    project_root = os.path.dirname(backend_dir)
-
-    candidates = [
-        os.path.join(os.getcwd(), "python_interview_questions_500.csv"),
-        os.path.join(os.getcwd(), "data", "python_interview_questions_500.csv"),
-        os.path.join(os.getcwd(), "backend", "data", "python_interview_questions_500.csv"),
-        os.path.join(backend_dir, "data", "python_interview_questions_500.csv"),
-        os.path.join(project_root, "backend", "data", "python_interview_questions_500.csv"),
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            return path
-
-    return os.path.join(backend_dir, "data", "python_interview_questions_500.csv")
-
-
 def get_bank() -> QuestionBank:
     global _bank
     if _bank is None:
-        _bank = QuestionBank(resolve_default_csv_path())
+        _bank = QuestionBank()
     return _bank
