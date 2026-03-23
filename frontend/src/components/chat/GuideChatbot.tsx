@@ -75,7 +75,8 @@ export const GuideChatbot = () => {
     type: ToastType;
   } | null>(null);
 
-  const { user, isAuthenticated } = useAuthStore();
+  // 💡 openLoginModal 가져오기
+  const { user, isAuthenticated, openLoginModal } = useAuthStore();
   const navigate = useNavigate();
   const { setInferSettings, setResumeUsed } = useInferStore();
 
@@ -194,23 +195,9 @@ export const GuideChatbot = () => {
     if (!input.trim() && !selectedFile && !selectedDbResume) return;
 
     if (!isAuthenticated) {
-      setIsTyping(true);
-      setInput("");
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          type: "bot",
-          content:
-            "채팅 기능은 로그인 후 이용할 수 있습니다.\n\n로그인 페이지로 이동할게요.",
-        },
-      ]);
-      setTimeout(() => {
-        setIsOpen(false);
-        setIsTyping(false);
-        navigate(ROUTES.AUTH);
-      }, 900);
+      // 💡 인위적인 시간 딜레이와 페이지 이동 대신, 챗봇 창을 닫고 예쁜 로그인 모달을 엽니다!
+      setIsOpen(false);
+      openLoginModal();
       return;
     }
 
@@ -616,7 +603,8 @@ export const GuideChatbot = () => {
   const executeSaveResume = async () => {
     if (!confirmModalPayload || isSaving) return;
     if (!user) {
-      showToast("로그인이 필요합니다.", "warning");
+      // 💡 여기서도 로그인 알림창 대신 예쁜 모달 띄우기
+      openLoginModal();
       return;
     }
 
