@@ -107,13 +107,19 @@ $bg-chat: #f4f7fa;
             padding: 8px 16px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            gap: 8px;
             min-height: 44px;
 
             .typing-gif {
               height: 24px; /* GIF 크기에 맞게 조절 가능 */
               object-fit: contain;
               display: block;
+            }
+            .typing-text {
+              font-size: 15px;
+              color: #64748b;
+              line-height: 1.6;
             }
           }
 

@@ -4,7 +4,6 @@ import remarkGfm from "remark-gfm";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import {
   Mic,
-  Loader2,
   Play,
   Square,
   Download,
@@ -38,6 +37,10 @@ export const VoiceInterview = () => {
   const [useCamera, setUseCamera] = useState(true);
   const [isMobileCameraCollapsed, setIsMobileCameraCollapsed] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const hasAiQuestion = messages.some((message) => message.sender === "ai");
+  const analyzingMessage = hasAiQuestion
+    ? "면접관이 답변을 평가 중입니다..."
+    : "면접관이 질문을 생성 중입니다...";
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,6 +65,8 @@ export const VoiceInterview = () => {
       return "'녹음 중'입니다. 답변이 끝나면 '녹음 중지 및 제출'을 눌러주세요.";
     return "연결 완료. 답변 준비가 끝나면 '녹음 시작'을 눌러주세요.";
   };
+
+  const statusMessage = isAnalyzing ? analyzingMessage : getStatusMessage();
 
   return (
     <div className="voice-interview-wrapper">
@@ -204,7 +209,7 @@ export const VoiceInterview = () => {
             </button>
           </div>
           <div className={`status-bar ${isRecording ? "recording" : ""}`}>
-            {getStatusMessage()}
+            {statusMessage}
           </div>
         </div>
 
@@ -215,7 +220,7 @@ export const VoiceInterview = () => {
               key={idx}
               className={`message-row ${msg.sender === "user" ? "user" : "assistant"}`}
             >
-              {msg.sender === "ai" && <div className="ai-profile-icon">AI</div>}
+              {msg.sender === "ai" && <div className="ai-profile-icon">👾</div>}
 
               <div className="message-content">
                 {msg.sender === "ai" && (
@@ -269,11 +274,17 @@ export const VoiceInterview = () => {
 
           {isAnalyzing && (
             <div className="message-row assistant">
-              <div className="ai-profile-icon">AI</div>
+              <div className="ai-profile-icon">👾</div>
               <div className="message-content">
                 <div className="bubble assistant typing">
-                  <Loader2 className="spinner" size={16} /> 면접관이 답변을 분석
-                  중입니다...
+                  <img
+                    src="/images/common/loading.gif"
+                    alt={analyzingMessage}
+                    className="typing-gif"
+                  />
+                  <span className="typing-text">
+                    {analyzingMessage}
+                  </span>
                 </div>
               </div>
             </div>

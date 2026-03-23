@@ -16,6 +16,7 @@ USER_COLUMN_PATCHES = {
     "role": "ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'",
     "tier": "ALTER TABLE users ADD COLUMN tier VARCHAR(20) NOT NULL DEFAULT 'normal'",
     "status": "ALTER TABLE users ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'",
+    "github_url": "ALTER TABLE users ADD COLUMN github_url VARCHAR(512) NULL",
 }
 
 
