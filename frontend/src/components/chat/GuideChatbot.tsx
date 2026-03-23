@@ -194,6 +194,9 @@ export const GuideChatbot = () => {
     if (!input.trim() && !selectedFile && !selectedDbResume) return;
 
     if (!isAuthenticated) {
+      setIsTyping(true);
+      setInput("");
+
       setMessages((prev) => [
         ...prev,
         {
@@ -205,6 +208,7 @@ export const GuideChatbot = () => {
       ]);
       setTimeout(() => {
         setIsOpen(false);
+        setIsTyping(false);
         navigate(ROUTES.AUTH);
       }, 900);
       return;
@@ -397,6 +401,21 @@ export const GuideChatbot = () => {
         setMessages((prev) => prev.filter((m) => m.id !== loadingId));
         setResumeUsed(true);
 
+        let generatedFilename = "AIWORK_결과.txt";
+        if (wantsAnalysis && wantsProofread) {
+          generatedFilename = "AIWORK_이력서_분석&첨삭결과.txt";
+        } else if (wantsProofread) {
+          if (currentInput.includes("이력서") && currentInput.includes("자소서")) {
+            generatedFilename = "AIWORK_이력서_자소서_첨삭결과.txt";
+          } else if (currentInput.includes("자소서")) {
+            generatedFilename = "AIWORK_자소서_첨삭결과.txt";
+          } else {
+            generatedFilename = "AIWORK_이력서_첨삭결과.txt";
+          }
+        } else if (wantsAnalysis) {
+          generatedFilename = "AIWORK_이력서_분석결과.txt";
+        }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -404,7 +423,7 @@ export const GuideChatbot = () => {
             type: "bot",
             content: finalChatMsg.trim(),
             downloadContent: finalDownloadContent.trim() || undefined,
-            downloadFilename: `AIWORK_이력서_통합리포트_${Date.now()}.txt`,
+            downloadFilename: generatedFilename,
             saveResumePayload: savePayload,
           },
         ]);
@@ -606,7 +625,7 @@ export const GuideChatbot = () => {
       await resumeApi.createResume({
         user_id: Number(user.id),
         title: confirmModalPayload.title,
-        job_role: "기본 직무",
+        job_role: user?.job_role || "IT 개발자",
         resume_text: confirmModalPayload.text,
       });
       showToast("성공적으로 저장되었습니다!", "success");
@@ -877,7 +896,11 @@ export const GuideChatbot = () => {
                 type="text"
                 value={input}
                 onChange={handleInputChange}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    handleSend();
+                  }
+                }}
                 placeholder="질문을 입력하거나 @를 눌러 이력서를 불러오세요..."
                 disabled={isTyping}
               />
