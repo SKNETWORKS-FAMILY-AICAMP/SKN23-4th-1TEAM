@@ -9,10 +9,8 @@ export const axiosClient = axios.create({
   },
 });
 
-// Request Interceptor (요청을 보내기 직전에 가로채서 데이터 추가)
 axiosClient.interceptors.request.use(
   (config) => {
-    // 1. Access Token 챙기기
     let token = useAuthStore.getState().accessToken;
 
     if (!token) {
@@ -30,14 +28,11 @@ axiosClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 2. 🔥 CSRF 토큰 챙기기 (403 에러의 완벽한 해결책!) 🔥
-    // 브라우저 쿠키 목록을 뒤져서 'csrf'라는 이름이 들어간 쿠키를 찾습니다.
     const csrfCookie = document.cookie
       .split("; ")
       .find((row) => row.toLowerCase().includes("csrf"));
 
     if (csrfCookie) {
-      // 쿠키에서 값만 쏙 빼서 백엔드가 원하는 'X-CSRF-Token' 헤더에 담아줍니다.
       const csrfToken = csrfCookie.split("=")[1];
       config.headers["X-CSRF-Token"] = csrfToken;
     }

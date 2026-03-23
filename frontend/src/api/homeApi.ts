@@ -57,4 +57,9 @@ export const homeApi = {
     );
     return response.data;
   },
+  
+  updateUserProfile: async (userId: string | number, data: { github_url: string }) => {
+    const response = await axiosClient.put(`/api/auth/user/${userId}`, data); // 백엔드 엔드포인트 확인 필요
+    return response.data;
+  },
 };

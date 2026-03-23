@@ -13,6 +13,7 @@ from .view_modules.auth import (
     auth_signup,
     auth_unlock,
     auth_upgrade,
+    auth_user_update,
     auth_verify,
     auth_withdraw,
     social_google_callback,
