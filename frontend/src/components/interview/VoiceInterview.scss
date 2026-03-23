@@ -399,12 +399,25 @@ $border-color: #e2e8f0;
               display: flex;
               align-items: center;
               gap: 8px;
-              color: #64748b;
-              font-style: italic;
+              color: transparent;
+              font-size: 0;
+              font-style: normal;
 
               .spinner {
-                animation: spin 1s linear infinite;
-                color: $primary-color;
+                display: none;
+              }
+
+              .typing-gif {
+                display: block;
+                height: 24px;
+                object-fit: contain;
+                flex-shrink: 0;
+              }
+
+              .typing-text {
+                font-size: 15px;
+                color: #64748b;
+                line-height: 1.6;
               }
             }
           }

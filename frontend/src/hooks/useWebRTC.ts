@@ -56,6 +56,8 @@ export const useWebRTC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const initialPromptSentRef = useRef(false);
+  const awaitingUserTranscriptRef = useRef(false);
+  const pendingAiMessagesRef = useRef<string[]>([]);
   const attitudeFramesRef = useRef<AttitudeFramePayload[]>([]);
   const attitudeCaptureTimerRef = useRef<number | null>(null);
   const recordingStartedAtRef = useRef(0);
@@ -462,19 +464,29 @@ export const useWebRTC = () => {
           const realtimeEvent = JSON.parse(event.data);
 
           if (realtimeEvent.type === "response.audio_transcript.done") {
-            setMessages((prev) => [
-              ...prev,
-              { sender: "ai", text: realtimeEvent.transcript },
-            ]);
+            const aiTranscript = realtimeEvent.transcript?.trim();
+            if (!aiTranscript) return;
+
+            if (awaitingUserTranscriptRef.current) {
+              pendingAiMessagesRef.current.push(aiTranscript);
+              return;
+            }
+
+            setMessages((prev) => [...prev, { sender: "ai", text: aiTranscript }]);
           } else if (
             realtimeEvent.type ===
             "conversation.item.input_audio_transcription.completed"
           ) {
             const userTranscript = realtimeEvent.transcript.trim();
             if (userTranscript) {
+              awaitingUserTranscriptRef.current = false;
+              const pendingAiMessages = [...pendingAiMessagesRef.current];
+              pendingAiMessagesRef.current = [];
+
               setMessages((prev) => [
                 ...prev,
                 { sender: "user", text: userTranscript },
+                ...pendingAiMessages.map((text) => ({ sender: "ai" as const, text })),
               ]);
               await evaluateAndSaveToDB(userTranscript);
             }
@@ -519,6 +531,8 @@ export const useWebRTC = () => {
 
   const disconnect = useCallback(() => {
     initialPromptSentRef.current = false;
+    awaitingUserTranscriptRef.current = false;
+    pendingAiMessagesRef.current = [];
     stopAttitudeSampling();
     attitudeFramesRef.current = [];
 
@@ -573,6 +587,8 @@ export const useWebRTC = () => {
         mediaRecorderRef.current.stop();
       }
 
+      awaitingUserTranscriptRef.current = true;
+      pendingAiMessagesRef.current = [];
       dataChannelRef.current.send(
         JSON.stringify({ type: "input_audio_buffer.commit" }),
       );

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import traceback
 from contextlib import contextmanager
 from functools import wraps
 from typing import Any
@@ -61,6 +62,7 @@ def api_view(allowed_methods: list[str]):
             except ApiError as exc:
                 return json_response({"detail": exc.detail}, status=exc.status_code)
             except Exception as exc:
+                traceback.print_exc()
                 status_code = getattr(exc, "status_code", 500)
                 detail = getattr(exc, "detail", str(exc))
                 if isinstance(detail, dict) and "detail" in detail:

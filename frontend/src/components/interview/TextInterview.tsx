@@ -89,6 +89,9 @@ export const TextInterview = () => {
                   alt="답변 작성 중..."
                   className="typing-gif"
                 />
+                <span className="typing-text">
+                  면접관이 답변을 분석 중입니다...
+                </span>
               </div>
             </div>
           </div>
