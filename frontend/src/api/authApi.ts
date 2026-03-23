@@ -81,6 +81,11 @@ export const authApi = {
     return response.data;
   },
 
+  downgradeTier: async () => {
+    const response = await axiosClient.post("/api/auth/downgrade");
+    return response.data;
+  },
+
   withdraw: async () => {
     const response = await axiosClient.post("/api/auth/withdraw");
     return response.data;

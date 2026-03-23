@@ -255,12 +255,79 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(15, 23, 42, 0.7);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+
+    .confirm-modal-content {
+      background: #ffffff;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 16px;
+      padding: 40px 32px 32px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      animation: scaleUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+      .confirm-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        margin-bottom: 24px;
+      }
+
+      h3 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #111;
+        margin: 0 0 12px 0;
+      }
+
+      p {
+        font-size: 15px;
+        color: #64748b;
+        line-height: 1.6;
+        margin: 0 0 28px 0;
+      }
+
+      .confirm-actions {
+        display: flex;
+        gap: 12px;
+
+        button {
+          flex: 1;
+          padding: 14px 0;
+          border-radius: 12px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+        }
+
+        .btn-cancel {
+          background: #f1f5f9;
+          color: #475569;
+          &:hover {
+            background: #e2e8f0;
+          }
+        }
+
+        .btn-proceed {
+          color: #ffffff;
+          &:hover {
+            filter: brightness(0.9);
+          }
+        }
+      }
+    }
 
     .upgrade-modal {
       background: #ffffff;
@@ -286,9 +353,12 @@
         border-bottom: 1px solid $border-color;
 
         .back-btn {
+          background: none;
+          border: none;
           color: #111;
           padding: 8px;
           border-radius: 50%;
+          cursor: pointer;
 
           &:hover {
             background: #f1f5f9;
@@ -343,6 +413,8 @@
           padding: 18px;
           border-radius: 12px;
           margin-top: 24px;
+          border: none;
+          cursor: pointer;
 
           &:disabled {
             background: #cbd5e1;
@@ -459,6 +531,7 @@
     }
   }
 }
+
 .toast-notification {
   position: fixed;
   top: 24px;
@@ -485,4 +558,14 @@
     opacity: 1;
     transform: translate(-50%, 0);
   }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
