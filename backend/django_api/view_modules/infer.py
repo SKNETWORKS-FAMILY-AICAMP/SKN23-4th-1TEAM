@@ -143,11 +143,13 @@ def infer_evaluate_turn(request):
     result = evaluate_and_respond(
         question=body.get("question", "면접 질문"),
         answer=answer,
+        input_mode=body.get("input_mode"),
         job_role=body.get("job_role", "Python 백엔드 개발자"),
         difficulty=body.get("difficulty", "중"),
         persona_style=body.get("persona_style", "꼼꼼한 기술 면접관"),
         user_id=str(body.get("user_id", "guest")),
         resume_text=body.get("resume_text"),
+        resume_type=body.get("resume_type"),
         next_main_question=body.get("next_main_question"),
         followup_count=int(body.get("followup_count", 0)),
     )
@@ -189,8 +191,14 @@ def infer_end(request):
             .filter(base.InterviewDetail.session_id == session_id)
             .first()
         )
-        if not results or results.avg_score is None:
-            raise ApiError("면접 기록을 찾을 수 없습니다.", 404)
+        final_score = (
+            round(float(results.avg_score), 2)
+            if results and results.avg_score is not None
+            else 0.0
+        )
+        avg_confidence = (
+            round(float(results.avg_sentiment or 0.0), 2) if results else 0.0
+        )
 
         session_record = (
             db.query(base.InterviewSession)
@@ -198,15 +206,15 @@ def infer_end(request):
             .first()
         )
         if session_record:
-            session_record.total_score = round(float(results.avg_score), 2)
+            session_record.total_score = final_score
             session_record.status = "COMPLETED"
             session_record.ended_at = datetime.now()
             db.commit()
 
         return {
-            "message": "면접이 종료되었습니다.",
-            "final_score": round(float(results.avg_score), 2),
-            "avg_confidence": round(float(results.avg_sentiment or 0.0), 2),
+            "message": "????????????????",
+            "final_score": final_score,
+            "avg_confidence": avg_confidence,
         }
 
 

@@ -11,7 +11,7 @@ export interface ChatMessage {
 }
 
 export const useInterviewChat = () => {
-  const { jobRole, difficulty, persona, experienceText, questions } =
+  const { jobRole, difficulty, persona, experienceText, questions, resumeType } =
     useInferStore.getState();
   const { user } = useAuthStore.getState();
 
@@ -124,11 +124,13 @@ export const useInterviewChat = () => {
           session_id: sessionId,
           question: currentQuestionForSave,
           answer: text,
+          input_mode: "text",
           job_role: jobRole || "기본 직무",
           difficulty: difficulty || "중",
           persona_style: persona || "깐깐한 기술팀장",
           user_id: user?.id ? String(user.id) : "guest",
           resume_text: experienceText || "",
+          resume_type: resumeType,
           next_main_question: nextMainQuestion,
           followup_count: followupCountRef.current || 0,
           attitude: null,
@@ -198,7 +200,7 @@ export const useInterviewChat = () => {
         setIsLoading(false);
       }
     },
-    [isLoading, jobRole, difficulty, persona, user, experienceText, questions],
+    [isLoading, jobRole, difficulty, persona, user, experienceText, questions, resumeType],
   );
 
   return { messages, isLoading, isEnded, sendMessage };

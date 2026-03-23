@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { inferApi, type AttitudeFramePayload } from "../api/inferApi";
+import { axiosClient } from "../api/axiosClient";
 import { useInferStore } from "../store/inferStore";
 import { useAuthStore } from "../store/authStore";
 
@@ -29,7 +30,7 @@ const getQualityLabel = (height: number) => {
 };
 
 export const useWebRTC = () => {
-  const { jobRole, difficulty, persona, experienceText, questions } =
+  const { jobRole, difficulty, persona, experienceText, questions, resumeType } =
     useInferStore.getState();
   const { user } = useAuthStore.getState();
 
@@ -56,8 +57,10 @@ export const useWebRTC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const initialPromptSentRef = useRef(false);
+  const initialAiMessageHandledRef = useRef(false);
   const awaitingUserTranscriptRef = useRef(false);
   const pendingAiMessagesRef = useRef<string[]>([]);
+  const pendingUserAudioUrlRef = useRef<string | null>(null);
   const attitudeFramesRef = useRef<AttitudeFramePayload[]>([]);
   const attitudeCaptureTimerRef = useRef<number | null>(null);
   const recordingStartedAtRef = useRef(0);
@@ -143,14 +146,16 @@ export const useWebRTC = () => {
 
     const canvas = captureCanvasRef.current ?? document.createElement("canvas");
     captureCanvasRef.current = canvas;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const maxWidth = 480;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
 
     const context = canvas.getContext("2d");
     if (!context) return;
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.68);
     const imageBase64 = dataUrl.split(",")[1];
     if (!imageBase64) return;
 
@@ -159,8 +164,8 @@ export const useWebRTC = () => {
       image_b64: imageBase64,
     });
 
-    if (attitudeFramesRef.current.length > 12) {
-      attitudeFramesRef.current = attitudeFramesRef.current.slice(-12);
+    if (attitudeFramesRef.current.length > 8) {
+      attitudeFramesRef.current = attitudeFramesRef.current.slice(-8);
     }
   }, []);
 
@@ -185,49 +190,126 @@ export const useWebRTC = () => {
     }, 500);
   }, [captureAttitudeFrame, localStream, stopAttitudeSampling]);
 
-  const analyzeLatestAttitude = useCallback(async () => {
+  const consumeAttitudeFrames = useCallback(() => {
     stopAttitudeSampling();
 
     const frames = [...attitudeFramesRef.current];
     attitudeFramesRef.current = [];
 
-    if (frames.length === 0) return null;
-
-    try {
-      return await inferApi.analyzeAttitude(frames);
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
+    return frames;
   }, [stopAttitudeSampling]);
+
+  const playAssistantSpeech = useCallback(
+    async (text: string, shouldAutoplay = true) => {
+      const trimmedText = text.trim();
+      if (!trimmedText) return null;
+
+      try {
+        const audioBlob = await inferApi.getTTS(trimmedText);
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        if (shouldAutoplay) {
+          const audio = new Audio(audioUrl);
+          await audio.play().catch(() => {});
+        }
+
+        return audioUrl;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    },
+    [],
+  );
+
+  const analyzeAttitudeInBackground = useCallback(
+    async (frames: AttitudeFramePayload[]) => {
+      const applyAttitudeSummary = (summaryText: string) => {
+        setMessages((prev) => {
+          const next = [...prev];
+
+          for (let i = next.length - 1; i >= 0; i -= 1) {
+            if (next[i].sender === "user") {
+              next[i].attitudeSummary = summaryText;
+              break;
+            }
+          }
+
+          return next;
+        });
+      };
+
+      if (frames.length === 0) {
+        applyAttitudeSummary(
+          "태도 분석에 필요한 영상 프레임이 부족했습니다. 카메라 연결 상태를 확인해 주세요.",
+        );
+        setIsAnalyzing(false);
+        return;
+      }
+
+      try {
+        const attitude = await inferApi.analyzeAttitude(frames);
+        const summaryText =
+          attitude?.summary_text?.trim() ||
+          "태도 분석 결과를 요약하지 못했습니다. 카메라 각도와 조명을 다시 확인해 주세요.";
+        applyAttitudeSummary(summaryText);
+      } catch (error) {
+        console.error(error);
+        applyAttitudeSummary(
+          "태도 분석 중 문제가 발생했습니다. 네트워크와 카메라 상태를 확인해 주세요.",
+        );
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [],
+  );
 
   const evaluateAndSaveToDB = async (userText: string) => {
     try {
       setIsAnalyzing(true);
-      const attitude = await analyzeLatestAttitude();
+      const capturedFrames = consumeAttitudeFrames();
 
       const nextMainQuestion =
         questions && questions.length > currentQIdxRef.current + 1
           ? questions[currentQIdxRef.current + 1].question
           : null;
       const sessionId = localStorage.getItem("current_session_id");
+      const sessionIdNumber = sessionId ? parseInt(sessionId, 10) : null;
+      const currentQuestionForSave = pendingQuestionRef.current;
 
       const payload = {
-        session_id: sessionId ? parseInt(sessionId, 10) : null,
-        question: pendingQuestionRef.current,
+        session_id: sessionIdNumber,
+        question: currentQuestionForSave,
         answer: userText,
-        job_role: jobRole || "기본 직무",
-        difficulty: difficulty || "중",
-        persona_style: persona || "친절한 기술 면접관",
+        input_mode: "voice",
+        job_role: jobRole || "?? ??",
+        difficulty: difficulty || "??",
+        persona_style: persona || "???? ?? ???",
         user_id: user?.id ? String(user.id) : "guest",
         resume_text: experienceText || "",
+        resume_type: resumeType,
         next_main_question: nextMainQuestion,
         followup_count: followupCountRef.current || 0,
-        attitude,
+        attitude: null,
       };
 
       const data = await inferApi.evaluateTurn(payload);
-      let { reply_text, score, is_followup } = data;
+      let { reply_text, score, is_followup, feedback } = data;
+
+      if (sessionIdNumber) {
+        await axiosClient
+          .post("/api/interview/details", {
+            session_id: sessionIdNumber,
+            turn_index: currentQIdxRef.current,
+            question: currentQuestionForSave,
+            answer: userText,
+            score: score || 0.0,
+            feedback: feedback || "",
+            is_followup: is_followup || false,
+          })
+          .catch((error) => console.error(error));
+      }
 
       let isEnd = false;
       if (reply_text.includes("[NEXT_MAIN]")) {
@@ -258,20 +340,35 @@ export const useWebRTC = () => {
 
         if (lastUserIndex !== -1) {
           next[lastUserIndex].score = score;
-          next[lastUserIndex].attitudeSummary =
-            attitude?.summary_text || undefined;
         }
 
-        return next;
+        return [...next, { sender: "ai", text: reply_text }];
       });
 
+      void playAssistantSpeech(reply_text).then((audioUrl) => {
+        if (!audioUrl) return;
+
+        setMessages((prev) => {
+          const next = [...prev];
+
+          for (let i = next.length - 1; i >= 0; i -= 1) {
+            if (next[i].sender === "ai" && next[i].text === reply_text) {
+              next[i].audioUrl = audioUrl;
+              break;
+            }
+          }
+
+          return next;
+        });
+      });
+      await analyzeAttitudeInBackground(capturedFrames);
+
       if (isEnd) {
-        alert("면접이 종료되었습니다. 면접 기록 페이지로 이동합니다.");
+        alert("??? ???????. ?? ?? ???? ?????.");
         window.location.href = "/mypage";
       }
     } catch (error) {
       console.error(error);
-    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -369,6 +466,7 @@ export const useWebRTC = () => {
       try {
         setIsConnecting(true);
         initialPromptSentRef.current = false;
+        initialAiMessageHandledRef.current = false;
 
         const { client_secret } = await inferApi.getRealtimeToken();
         const pc = new RTCPeerConnection();
@@ -396,15 +494,7 @@ export const useWebRTC = () => {
           const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
           const url = URL.createObjectURL(blob);
           audioChunksRef.current = [];
-
-          setMessages((prev) => {
-            const next = [...prev];
-            const lastIndex = next.length - 1;
-            if (lastIndex >= 0 && next[lastIndex].sender === "user") {
-              next[lastIndex].audioUrl = url;
-            }
-            return next;
-          });
+          pendingUserAudioUrlRef.current = url;
         };
 
         pc.ontrack = (event) => {
@@ -468,25 +558,48 @@ export const useWebRTC = () => {
             if (!aiTranscript) return;
 
             if (awaitingUserTranscriptRef.current) {
-              pendingAiMessagesRef.current.push(aiTranscript);
               return;
             }
 
+            if (initialAiMessageHandledRef.current) return;
+
+            initialAiMessageHandledRef.current = true;
             setMessages((prev) => [...prev, { sender: "ai", text: aiTranscript }]);
+
+            void playAssistantSpeech(aiTranscript, false).then((audioUrl) => {
+              if (!audioUrl) return;
+
+              setMessages((prev) => {
+                const next = [...prev];
+
+                for (let i = next.length - 1; i >= 0; i -= 1) {
+                  if (next[i].sender === "ai" && next[i].text === aiTranscript) {
+                    next[i].audioUrl = audioUrl;
+                    break;
+                  }
+                }
+
+                return next;
+              });
+            });
           } else if (
             realtimeEvent.type ===
             "conversation.item.input_audio_transcription.completed"
           ) {
             const userTranscript = realtimeEvent.transcript.trim();
+            awaitingUserTranscriptRef.current = false;
             if (userTranscript) {
-              awaitingUserTranscriptRef.current = false;
-              const pendingAiMessages = [...pendingAiMessagesRef.current];
               pendingAiMessagesRef.current = [];
+              const pendingUserAudioUrl = pendingUserAudioUrlRef.current;
+              pendingUserAudioUrlRef.current = null;
 
               setMessages((prev) => [
                 ...prev,
-                { sender: "user", text: userTranscript },
-                ...pendingAiMessages.map((text) => ({ sender: "ai" as const, text })),
+                {
+                  sender: "user",
+                  text: userTranscript,
+                  audioUrl: pendingUserAudioUrl ?? undefined,
+                },
               ]);
               await evaluateAndSaveToDB(userTranscript);
             }
@@ -531,8 +644,10 @@ export const useWebRTC = () => {
 
   const disconnect = useCallback(() => {
     initialPromptSentRef.current = false;
+    initialAiMessageHandledRef.current = false;
     awaitingUserTranscriptRef.current = false;
     pendingAiMessagesRef.current = [];
+    pendingUserAudioUrlRef.current = null;
     stopAttitudeSampling();
     attitudeFramesRef.current = [];
 
@@ -592,7 +707,6 @@ export const useWebRTC = () => {
       dataChannelRef.current.send(
         JSON.stringify({ type: "input_audio_buffer.commit" }),
       );
-      dataChannelRef.current.send(JSON.stringify({ type: "response.create" }));
     }
   }, [localStream, stopAttitudeSampling]);
 

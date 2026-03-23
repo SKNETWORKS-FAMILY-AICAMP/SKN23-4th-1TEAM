@@ -371,6 +371,7 @@ def evaluate_turn(body: dict):
         result = evaluate_and_respond(
             question=question,
             answer=answer,
+            input_mode=body.get("input_mode"),
             job_role=job_role,
             difficulty=difficulty,
             persona_style=persona_style,

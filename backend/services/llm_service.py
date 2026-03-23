@@ -122,13 +122,15 @@ def evaluate_and_respond(
     persona_style: str,
     user_id: str,
     resume_text: str | None,
+    resume_type: str | None,
     next_main_question: str | None,
     followup_count: int,
+    input_mode: str | None = None,
 ) -> dict:
 
     # 1. RAG 컨텍스트 추출
     rag_context_text = None
-    if resume_text:
+    if resume_text and resume_type == "file":
         rag_context_text = get_resume_context_for_question(answer, user_id)
 
     # 2. 긴급 통제 규칙 (4점 이하일 때만 꼬리물기, 최대 2회)
@@ -141,7 +143,17 @@ def evaluate_and_respond(
 
     # 3. 시스템 프롬프트 조립 : 페르소나 + 평가 지침 + JSON 형식 + Few-shot + 긴급 통제 규칙
     persona_desc = PERSONA_MAP.get(persona_style, PERSONA_MAP["깐깐한 기술팀장"])
-    sys_prompt = f"{persona_desc}\n\n{SYSTEM_PROMPT_EVAL}\n\n{EVAL_JSON_SCHEMA_INSTRUCTIONS}\n\n{EVAL_FEWSHOT}\n\n{control_rules}"
+    input_mode_rules = ""
+    if input_mode == "voice":
+        input_mode_rules = """
+[VOICE INTERVIEW RULES]
+- This is a voice interview based on STT transcription.
+- Do not mention typos, spelling, spacing, or written-text mistakes.
+- If wording sounds off, treat it as speech disfluency or STT mismatch, not a writing error.
+- Focus feedback on clarity, specificity, logic, credibility, delivery, and technical depth.
+"""
+
+    sys_prompt = f"{persona_desc}\n\n{SYSTEM_PROMPT_EVAL}\n\n{EVAL_JSON_SCHEMA_INSTRUCTIONS}\n\n{EVAL_FEWSHOT}\n\n{control_rules}\n\n{input_mode_rules}"
 
     # 4. 유저 프롬프트 조립
     question_row_dict = {

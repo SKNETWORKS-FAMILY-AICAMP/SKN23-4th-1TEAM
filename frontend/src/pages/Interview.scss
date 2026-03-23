@@ -61,17 +61,18 @@ $primary-blue: #0176f7;
   }
 
   .btn-end-interview {
-    background: #ffffff;
-    border: 1px solid #ddd;
-    color: #111;
+    background: $primary-blue;
+    border: 1px solid $primary-blue;
+    color: #fff;
     padding: 10px 20px;
     border-radius: 12px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
     &:hover {
-      border-color: #ff4757;
-      color: #ff4757;
+      background: #005fca;
+      border-color: #005fca;
+      color: #fff;
     } /* 종료는 위험색으로 포인트 */
   }
 }

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useWebRTC } from "../../hooks/useWebRTC";
@@ -43,6 +43,7 @@ export const VoiceInterview = ({ onMessagesChange }: VoiceInterviewProps) => {
   const [useCamera, setUseCamera] = useState(true);
   const [isMobileCameraCollapsed, setIsMobileCameraCollapsed] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const replayAudioRef = useRef<HTMLAudioElement | null>(null);
   const hasAiQuestion = messages.some((message) => message.sender === "ai");
   const analyzingMessage = hasAiQuestion
     ? "면접관이 답변을 평가 중입니다..."
@@ -72,6 +73,28 @@ export const VoiceInterview = ({ onMessagesChange }: VoiceInterviewProps) => {
   useEffect(() => {
     return () => disconnect();
   }, [disconnect]);
+
+  useEffect(() => {
+    return () => {
+      replayAudioRef.current?.pause();
+      replayAudioRef.current = null;
+    };
+  }, []);
+
+  const handleReplayAudio = useCallback((audioUrl: string) => {
+    replayAudioRef.current?.pause();
+    const audio = new Audio(audioUrl);
+    replayAudioRef.current = audio;
+    void audio.play().catch(() => {});
+  }, []);
+
+  const getAudioDownloadName = useCallback(
+    (sender: "user" | "ai", index: number) =>
+      sender === "user"
+        ? `voice_answer_${index + 1}.webm`
+        : `voice_question_${index + 1}.mp3`,
+    [],
+  );
 
   const getStatusMessage = () => {
     if (isConnecting) return "연결 중입니다. 잠시만 기다려주세요.";
@@ -249,33 +272,32 @@ export const VoiceInterview = ({ onMessagesChange }: VoiceInterviewProps) => {
                     {msg.text}
                   </ReactMarkdown>
                 </div>
-                {msg.sender === "user" && (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {msg.score !== undefined && (
+                {(msg.sender === "user" || msg.audioUrl) && (
+                  <div className="message-meta-row">
+                    {msg.sender === "user" && msg.score !== undefined && (
                       <div className="score-badge">
-                        AI 평가 점수: {msg.score.toFixed(1)} / 10
+                        {"AI 평가 점수:"} {msg.score.toFixed(1)} / 10
                       </div>
                     )}
                     {msg.audioUrl && (
-                      <a
-                        href={msg.audioUrl}
-                        download={`my_answer_${idx}.webm`}
-                        style={{
-                          fontSize: "12px",
-                          color: "#0176f7",
-                          textDecoration: "none",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        음성 다운로드
-                      </a>
+                      <div className="audio-action-group">
+                        <button
+                          type="button"
+                          className="audio-action-btn"
+                          onClick={() => handleReplayAudio(msg.audioUrl!)}
+                        >
+                          <Play size={12} />
+                          {"음성 다시듣기"}
+                        </button>
+                        <a
+                          href={msg.audioUrl}
+                          download={getAudioDownloadName(msg.sender, idx)}
+                          className="audio-action-btn download"
+                        >
+                          <Download size={12} />
+                          {"음성 다운로드"}
+                        </a>
+                      </div>
                     )}
                   </div>
                 )}

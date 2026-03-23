@@ -89,6 +89,13 @@ export const inferApi = {
     return response.data;
   },
 
+  getTTS: async (text: string) => {
+    const response = await axiosClient.post("/api/infer/tts", text ? { text } : {}, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+
   getEvaluationReport: async (payload: {
     messages: any[];
     job_role: string;
