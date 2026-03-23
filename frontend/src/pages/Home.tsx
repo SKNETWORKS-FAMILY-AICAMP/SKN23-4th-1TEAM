@@ -8,6 +8,7 @@ import { InterviewSetupModal } from "../components/interview/InterviewSetupModal
 import { JobCards } from "../components/home/JobCards";
 import { NewsFeed } from "../components/home/NewsFeed";
 import { MemoBoard } from "../components/home/MemoBoard";
+import { resumeApi } from "../api/resumeApi";
 import "./Home.scss";
 
 type TabKey = "jobs" | "news" | "memos";
@@ -22,26 +23,27 @@ export const Home = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("jobs");
   const [resumeSlideIndex, setResumeSlideIndex] = useState(0);
 
+  const [latestJobRole, setLatestJobRole] = useState<string | undefined>(undefined);
+  // 이력서 조회가 끝났는지 확인하는 상태값
+  const [isResumeChecked, setIsResumeChecked] = useState(false);
+
   const resumeSlides = [
     {
       image: "/images/home/guide-bot.svg",
       title: "AIWORK 가이드 봇",
-      description:
-        "채팅으로 요청하면 필요한 기능을 바로 실행해주고, 상황에 맞는 다음 작업까지 에이전트처럼 이어서 처리해줍니다.",
+      description: "채팅으로 요청하면 필요한 기능을 바로 실행해주고, 상황에 맞는 다음 작업까지 에이전트처럼 이어서 처리해줍니다.",
       badge: "Agent Mode",
     },
     {
       image: "/images/home/resume-analysis.svg",
       title: "스마트 이력서 분석",
-      description:
-        "이력서를 업로드하면 AI가 장단점을 분석하고 맞춤형 면접을 준비해 줍니다.",
+      description: "이력서를 업로드하면 AI가 장단점을 분석하고 맞춤형 면접을 준비해 줍니다.",
       badge: "Resume Insight",
     },
     {
       image: "/images/home/auto-flow.svg",
       title: "맞춤 질문 자동 생성",
-      description:
-        "지원 직무와 이력서 내용을 바탕으로 실제 면접 같은 질문을 자동으로 구성합니다.",
+      description: "지원 직무와 이력서 내용을 바탕으로 실제 면접 같은 질문을 자동으로 구성합니다.",
       badge: "Auto Flow",
     },
   ];
@@ -66,6 +68,35 @@ export const Home = () => {
 
     return () => window.clearInterval(timer);
   }, [resumeSlides.length]);
+
+  useEffect(() => {
+    const fetchLatestResumeRole = async () => {
+      if (!user?.id) {
+        setIsResumeChecked(true);
+        return;
+      }
+      try {
+        const data = await resumeApi.listResumes(Number(user.id));
+        if (data && data.items && data.items.length > 0) {
+          // ID 값이 가장 큰(제일 마지막에 등록된) 이력서를 정확히 추출
+          const latestResume = data.items.reduce((prev: any, current: any) => 
+            prev.id > current.id ? prev : current
+          );
+          
+          if (latestResume.job_role) {
+            setLatestJobRole(latestResume.job_role);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch latest resume", error);
+      } finally {
+        // 성공하든 실패하든 조회 과정이 끝났음을 알림
+        setIsResumeChecked(true);
+      }
+    };
+
+    fetchLatestResumeRole();
+  }, [user?.id]);
 
   const handleSearch = () => {
     if (!searchKeyword.trim()) {
@@ -101,9 +132,7 @@ export const Home = () => {
       <main className="dashboard-container">
         <div className="dashboard-left">
           <div className="dashboard-card search-card">
-            <h2>
-              당신의 커리어를 <span className="highlight">가속화</span>할 기회
-            </h2>
+            <h2>당신의 커리어를 <span className="highlight">가속화</span>할 기회</h2>
             <div className="search-bar">
               <select
                 className="search-select"
@@ -124,9 +153,7 @@ export const Home = () => {
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
-              <button className="search-btn" onClick={handleSearch}>
-                검색
-              </button>
+              <button className="search-btn" onClick={handleSearch}>검색</button>
             </div>
           </div>
 
@@ -187,7 +214,7 @@ export const Home = () => {
                 className={`tab-btn ${activeTab === "news" ? "active" : ""}`}
                 onClick={() => setActiveTab("news")}
               >
-                {user?.job_role ? `${user.job_role} 트렌드` : "인사이트"}
+                {latestJobRole ? `${latestJobRole} 트렌드` : "인사이트"}
               </button>
               <button
                 className={`tab-btn ${activeTab === "memos" ? "active" : ""}`}
@@ -198,19 +225,20 @@ export const Home = () => {
             </div>
 
             <div className="tabs-content">
-              <div
-                className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}
-              >
-                <JobCards jobRole={user?.job_role} />
+              <div className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}>
+                <JobCards jobRole={latestJobRole} />
               </div>
-              <div
-                className={`tab-panel ${activeTab === "news" ? "active" : ""}`}
-              >
-                <NewsFeed jobRole={user?.job_role} />
+              <div className={`tab-panel ${activeTab === "news" ? "active" : ""}`}>
+                {/* 조회가 완전히 끝난 후에만 NewsFeed를 렌더링하도록 차단벽 설정 */}
+                {isResumeChecked ? (
+                  <NewsFeed jobRole={latestJobRole} />
+                ) : (
+                  <div style={{ textAlign: "center", padding: "40px 0", color: "#666" }}>
+                    이력서 기반 맞춤 트렌드를 준비 중입니다...
+                  </div>
+                )}
               </div>
-              <div
-                className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}
-              >
+              <div className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}>
                 <MemoBoard />
               </div>
             </div>
@@ -220,11 +248,7 @@ export const Home = () => {
         <div className="dashboard-right">
           <div
             className={`dashboard-card profile-card ${isAuthenticated ? "member-card" : "guest-card"}`}
-            style={
-              !isAuthenticated
-                ? { alignItems: "center", textAlign: "center" }
-                : {}
-            }
+            style={!isAuthenticated ? { alignItems: "center", textAlign: "center" } : {}}
           >
             {isAuthenticated ? (
               <>
@@ -233,7 +257,7 @@ export const Home = () => {
                     {user?.profile_image_url ? (
                       <img src={user.profile_image_url} alt="Profile" />
                     ) : (
-                      <div className="avatar-placeholder">🙂</div>
+                      <div className="avatar-placeholder"></div>
                     )}
                     <span className="online-dot"></span>
                   </div>
@@ -250,18 +274,8 @@ export const Home = () => {
                 </div>
 
                 <div className="profile-actions">
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate("/mypage")}
-                  >
-                    내 면접 기록
-                  </button>
-                  <button
-                    className="action-btn"
-                    onClick={() => navigate("/my_info")}
-                  >
-                    계정 설정
-                  </button>
+                  <button className="action-btn" onClick={() => navigate("/mypage")}>내 면접 기록</button>
+                  <button className="action-btn" onClick={() => navigate("/my_info")}>계정 설정</button>
                   <button
                     className="action-btn logout-btn"
                     onClick={() => {
@@ -293,18 +307,8 @@ export const Home = () => {
                 </button>
               </>
             ) : (
-              <div
-                className="auth-prompt-container"
-                style={{ width: "100%", padding: "10px 0" }}
-              >
-                <p
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color: "#222",
-                    marginBottom: "20px",
-                  }}
-                >
+              <div className="auth-prompt-container" style={{ width: "100%", padding: "10px 0" }}>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: "#222", marginBottom: "20px" }}>
                   AIWORK를 더 안전하고 편리하게 이용해보세요
                 </p>
                 <button
@@ -322,37 +326,15 @@ export const Home = () => {
                     marginBottom: "16px",
                     transition: "background 0.2s",
                   }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.background = "#0062d1")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.background = "#0176f7")
-                  }
+                  onMouseOver={(e) => (e.currentTarget.style.background = "#0062d1")}
+                  onMouseOut={(e) => (e.currentTarget.style.background = "#0176f7")}
                 >
                   AIWORK 로그인
                 </button>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "12px",
-                    fontSize: "13px",
-                    color: "#666",
-                  }}
-                >
-                  <span
-                    style={{ cursor: "pointer" }}
-                    onClick={() => navigate("/auth?mode=find")}
-                  >
-                    아이디/비밀번호 찾기
-                  </span>
+                <div style={{ display: "flex", justifyContent: "center", gap: "12px", fontSize: "13px", color: "#666" }}>
+                  <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=find")}>아이디/비밀번호 찾기</span>
                   <span style={{ color: "#ddd" }}>|</span>
-                  <span
-                    style={{ cursor: "pointer" }}
-                    onClick={() => navigate("/auth?mode=signup")}
-                  >
-                    회원가입
-                  </span>
+                  <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=signup")}>회원가입</span>
                 </div>
               </div>
             )}
@@ -361,42 +343,26 @@ export const Home = () => {
           <div
             className="dashboard-card dark-card"
             style={{ cursor: "pointer" }}
-            onClick={() =>
-              window.open(
-                "https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN23-4th-1Team",
-                "_blank",
-              )
-            }
+            onClick={() => window.open("https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN23-4th-1Team", "_blank")}
           >
-            <div className="card-icon">📻</div>
+            <div className="card-icon"></div>
             <div className="card-content">
               <h4>Project Repository</h4>
-              <p>
-                스프린트 코드와 개발 문서를 확인하세요. SKN 1조의
-                프로젝트입니다.
-              </p>
+              <p>스프린트 코드와 개발 문서를 확인하세요. SKN 1조의 프로젝트입니다.</p>
             </div>
           </div>
 
           <div
             className="dashboard-card blue-card"
             style={{ cursor: "pointer" }}
-            onClick={() =>
-              window.open(
-                "https://discord.com/oauth2/authorize?client_id=1465155158022426675&permissions=4279296&integration_type=0&scope=bot",
-                "_blank",
-              )
-            }
+            onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1465155158022426675&permissions=4279296&integration_type=0&scope=bot", "_blank")}
           >
             <div className="card-icon">
               <MessageCircle size={24} color="#fff" fill="#fff" />
             </div>
             <div className="card-content">
               <h4>Discord 봇 추가</h4>
-              <p>
-                디스코드 환경에서도 AI 사자개가 채용 조언을 실시간으로
-                제공해줍니다.
-              </p>
+              <p>디스코드 환경에서도 AI 사자개가 채용 조언을 실시간으로 제공해줍니다.</p>
             </div>
           </div>
         </div>

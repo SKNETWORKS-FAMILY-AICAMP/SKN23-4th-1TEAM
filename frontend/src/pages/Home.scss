@@ -92,16 +92,17 @@
 
       // Card 2
       .resume-card {
-        background: linear-gradient(
-          135deg,
-          #f8fbff 0%,
-          #eef5ff 45%,
-          #f7f9fc 100%
-        );
+        background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 45%, #f7f9fc 100%);
         border: 1px solid #d9e9fb;
         position: relative;
         overflow: hidden;
-        min-height: 260px;
+        
+        /* 1. 전체 높이 및 패딩 다이어트 */
+        padding: 20px 24px;      /* 기존 32px에서 패딩 축소 */
+        height: 180px;           /* 원하는 높이로 고정 */
+        min-height: 180px;
+        max-height: 180px;
+        box-sizing: border-box;
 
         .resume-visual-glow {
           position: absolute;
@@ -109,12 +110,7 @@
           width: 280px;
           height: 280px;
           border-radius: 50%;
-          background: radial-gradient(
-            circle,
-            rgba(82, 163, 255, 0.18) 0%,
-            rgba(82, 163, 255, 0.08) 38%,
-            rgba(82, 163, 255, 0) 72%
-          );
+          background: radial-gradient(circle, rgba(82, 163, 255, 0.18) 0%, rgba(82, 163, 255, 0.08) 38%, rgba(82, 163, 255, 0) 72%);
           pointer-events: none;
         }
 
@@ -122,14 +118,10 @@
           position: relative;
           z-index: 1;
           display: grid;
-          grid-template-columns: 200px 1fr 40px;
+          grid-template-columns: 140px 1fr 40px; 
           gap: 20px;
           align-items: center;
-          min-height: 190px;
-        }
-
-        .resume-card-top {
-          margin-bottom: 0;
+          height: 100%; 
         }
 
         .resume-illustration {
@@ -139,7 +131,8 @@
 
           img {
             width: 100%;
-            max-width: 164px;
+            max-width: 140px; 
+            max-height: 120px;
             object-fit: contain;
             filter: drop-shadow(0 16px 30px rgba(106, 140, 209, 0.16));
           }
@@ -152,10 +145,10 @@
         .resume-badge {
           display: inline-flex;
           align-items: center;
-          padding: 6px 10px;
+          padding: 4px 10px;
           border-radius: 999px;
-          margin-bottom: 12px;
-          font-size: 12px;
+          margin-bottom: 8px; 
+          font-size: 11px;
           font-weight: 800;
           color: $primary-color;
           background: rgba(255, 255, 255, 0.86);
@@ -166,17 +159,13 @@
           width: 28px;
           height: 28px;
           border: none;
-          border-radius: 0;
           background: transparent;
           color: $primary-color;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition:
-            transform 0.15s ease,
-            color 0.15s ease,
-            opacity 0.15s ease;
+          transition: transform 0.15s ease, color 0.15s ease, opacity 0.15s ease;
           opacity: 0.78;
 
           &.side {
@@ -186,56 +175,52 @@
             z-index: 2;
           }
 
-          &.left {
-            left: 14px;
-          }
-
-          &.right {
-            right: 14px;
-          }
+          &.left { left: 10px; }
+          &.right { right: 10px; }
 
           &:hover {
             color: $primary-dark;
             opacity: 1;
           }
-
-          &.side:hover {
-            transform: translateY(-50%) scale(1.08);
-          }
+          &.side:hover { transform: translateY(-50%) scale(1.08); }
         }
 
         h3 {
-          margin: 0 0 12px 0;
-          font-size: 30px;
+          margin: 0 0 6px 0; 
+          font-size: 23px; 
           line-height: 1.18;
           letter-spacing: -0.03em;
-          padding: 0;
           color: #123b7a;
         }
 
         p {
           color: #526172;
-          font-size: 15px;
-          line-height: 1.7;
+          font-size: 13px; 
+          line-height: 1.5;
           margin: 0;
-          padding: 0;
+          
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .resume-status-spacer {
-          width: 100%;
-          height: 100%;
+          display: none; /* 공간 부족으로 스페이서 숨김 */
         }
 
         .progress-dots {
+          /* 6. 점들을 공간을 차지하지 않게 절대 위치로 우측 하단에 고정 */
+          position: absolute;
+          bottom: 16px;
+          right: 24px;
           display: flex;
-          justify-content: flex-end;
           gap: 6px;
-          margin-top: 12px;
 
           .dot {
-            width: 16px;
-            height: 6px;
-            border-radius: 3px;
+            width: 14px;
+            height: 4px; 
+            border-radius: 2px;
             background: #dee2e6;
 
             &.active {
@@ -247,21 +232,19 @@
         @media (max-width: 900px) {
           .resume-card-shell {
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 12px;
             text-align: center;
+            height: auto;
           }
+          
+          height: auto;
+          min-height: 150px;
+          max-height: none;
 
-          .resume-copy {
-            text-align: center;
-          }
-
-          h3 {
-            font-size: 24px;
-          }
-
-          .resume-status-spacer {
-            display: none;
-          }
+          .resume-illustration img { max-width: 100px; }
+          .resume-copy { text-align: center; }
+          h3 { font-size: 18px; }
+          .progress-dots { position: static; justify-content: center; margin-top: 12px; }
         }
       }
 

@@ -14,9 +14,11 @@ export const NewsFeed = ({ jobRole }: Props) => {
     const fetchNews = async () => {
       try {
         setLoading(true);
-        const query = jobRole
-          ? `latest AI and ${jobRole} trends`
-          : `latest AI and backend trends`;
+        
+        // 이력서 직무값이 전달되었다면 그 값을 사용, 이력서가 하나도 없다면 기본 범용 키워드 사용
+        const targetRole = jobRole ? jobRole : "소프트웨어 엔지니어링";
+        const query = `2026 latest core technology and ecosystem trends for ${targetRole}`;
+          
         const data = await homeApi.getNews(query);
         if (data && data.content) {
           const items = data.content
@@ -31,6 +33,8 @@ export const NewsFeed = ({ jobRole }: Props) => {
         setLoading(false);
       }
     };
+    
+    // 이력서 데이터가 확실하게 준비된 상태에서만 검색 실행
     fetchNews();
   }, [jobRole]);
 
