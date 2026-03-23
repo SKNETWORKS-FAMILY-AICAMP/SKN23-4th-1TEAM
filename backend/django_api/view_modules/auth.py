@@ -1,5 +1,6 @@
-from .shared import *  # noqa: F401,F403
-
+from .shared import * 
+from datetime import datetime, timedelta
+from backend.db.database import schedule_cancel_pro, downgrade_expired_users, cancel_schedule_cancel_pro
 
 @api_view(["POST"])
 def auth_signup(request):
@@ -105,6 +106,9 @@ def auth_verify(request):
     token = get_bearer_token(request)
     if not token:
         raise ApiError("토큰이 없습니다.", 401)
+        
+    downgrade_expired_users()
+    
     try:
         payload = jwt.decode(
             token,
@@ -127,6 +131,8 @@ def auth_verify(request):
                 "profile_image_url": getattr(user, "profile_image_url", None),
                 "email": user.email,
                 "tier": getattr(user, "tier", "normal"),
+                "is_cancel_scheduled": getattr(user, "is_cancel_scheduled", 0), 
+                "pro_expire_date": user.pro_expire_date.strftime("%Y-%m-%d") if user.pro_expire_date else None,
                 "github_url": getattr(user, "github_url", None),
             }
     except ExpiredSignatureError as exc:
@@ -220,11 +226,58 @@ def auth_upgrade(request):
         if getattr(user, "tier", "normal") == "premium":
             return {"detail": "이미 프리미엄 등급입니다.", "tier": "premium"}
         user.tier = "premium"
+        user.pro_start_date = datetime.now()
         db.add(user)
         db.commit()
         db.refresh(user)
         return {"detail": "등급 업그레이드가 완료되었습니다.", "tier": user.tier}
 
+# 💡 [추가됨] 구독 해지 예약 API
+@api_view(["POST"])
+def auth_downgrade(request):
+    with db_session() as db:
+        user = get_current_user(request, db)
+        
+        if getattr(user, "tier", "normal") != "premium":
+            raise ApiError("PRO 회원이 아닙니다.", 400)
+            
+        now = datetime.now()
+        if getattr(user, "pro_start_date", None):
+            expire_datetime = user.pro_start_date
+            while expire_datetime <= now:
+                expire_datetime += timedelta(days=30)
+        else:
+            expire_datetime = now + timedelta(days=30)
+            
+        expire_date_str = expire_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # database.py에 만들어둔 예약 함수 호출 (DB 업데이트 처리)
+        schedule_cancel_pro(user.id, expire_date_str)
+        
+        # 클라이언트(프론트엔드)에서 보기 좋게 포맷팅 (예: "2026년 4월 23일")
+        formatted_expire_date = f"{expire_datetime.year}년 {expire_datetime.month}월 {expire_datetime.day}일"
+        
+        return {
+            "ok": True, 
+            "message": "해지 예약 성공", 
+            "expire_date": formatted_expire_date
+        }
+
+# 💡 [추가됨] 구독 유지 API
+@api_view(["POST"])
+def auth_reactivate(request):
+    with db_session() as db:
+        user = get_current_user(request, db)
+        
+        if getattr(user, "tier", "normal") != "premium":
+            raise ApiError("PRO 회원이 아닙니다.", 400)
+            
+        cancel_schedule_cancel_pro(user.id)
+        
+        return {
+            "ok": True, 
+            "message": "구독 유지 성공"
+        }
 
 @api_view(["PUT"])
 def auth_user_update(request, user_id):

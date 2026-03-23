@@ -29,3 +29,6 @@ class User(Base):
     tier: Mapped[str] = mapped_column(String(20), default="normal")
     status: Mapped[str] = mapped_column(String(20), default="active")
     github_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    is_cancel_scheduled: Mapped[int] = mapped_column(Integer, default=0)
+    pro_expire_date: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
+    pro_start_date: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)

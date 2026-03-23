@@ -6,7 +6,8 @@ Description: DB 모델들의 기본 뼈대
 
 Modification History:
 - 2026-02-24: 벡엔드 DB 모델 정의
-- 2026-02-27 (김지우) :  기존 User 모델 외에 직무 분류, 질문 풀, 면접 기록 테이블 추가
+- 2026-02-27 (김지우): 기존 User 모델 외에 직무 분류, 질문 풀, 면접 기록 테이블 추가
+- 2026-03-23 (김지우): users 테이블 구독 해지 예약 관련 컬럼 및 함수 추가
 """
 
 import os
@@ -46,8 +47,10 @@ CREATE TABLE IF NOT EXISTS users (
     tier VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'normal',           
     status VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'active',         
     profile_image_url VARCHAR(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 프로필 이미지 URL 또는 로컬 경로',
-    payment_status VARCHAR(20) DEFAULT NULL, -- ERD 반영용
+    payment_status VARCHAR(20) DEFAULT NULL,
     github_url VARCHAR(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '깃허브 URL',
+    pro_expire_date DATETIME DEFAULT NULL COMMENT 'PRO 멤버십 만료일',
+    is_cancel_scheduled TINYINT(1) DEFAULT '0' COMMENT '해지 예약 여부',
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -234,13 +237,15 @@ def init_db():
                 "ALTER TABLE guestbook_memos MODIFY text_color VARCHAR(50)",
                 "ALTER TABLE guestbook_memos ADD COLUMN user_id INT DEFAULT NULL AFTER id",
                 "ALTER TABLE guestbook_memos ADD COLUMN updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at",
-                "ALTER TABLE guestbook_memos ADD CONSTRAINT fk_guestbook_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL"
+                "ALTER TABLE guestbook_memos ADD CONSTRAINT fk_guestbook_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
+                "ALTER TABLE users ADD COLUMN pro_expire_date DATETIME DEFAULT NULL COMMENT 'PRO 멤버십 만료일'",
+                "ALTER TABLE users ADD COLUMN is_cancel_scheduled TINYINT(1) DEFAULT '0' COMMENT '해지 예약 여부'",
+                "ALTER TABLE users ADD COLUMN pro_start_date DATETIME DEFAULT NULL COMMENT 'PRO 구독 시작일'"
             ]
             for stmt in migrate_stmts:
                 try:
                     cur.execute(stmt)
                 except Exception:
-                    # 이미 컬럼이 있거나 제약조건이 있으면 무시
                     pass
     seed_board_questions()
 
@@ -476,7 +481,6 @@ def delete_user_resume(resume_id: int):
 def save_memo(user_id: int | None, author: str, content: str, color: str, border: str, text_color: str):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # 무조건 새로운 메모를 추가하도록 기존 SELECT 및 UPDATE 로직 제거
             cur.execute(
                 """INSERT INTO guestbook_memos (user_id, author, content, color, border, text_color)
                    VALUES (%s, %s, %s, %s, %s, %s)""",
@@ -550,7 +554,6 @@ def get_board_answers(
                 (viewer_id or 0, question_id, limit, offset),
             )
             rows = cur.fetchall()
-            # ai_feedback는 본인 답변에만 노출
             for row in rows:
                 if row.get("user_id") != viewer_id:
                     row["ai_feedback"] = None
@@ -618,7 +621,6 @@ def get_board_answer(answer_id: int) -> dict | None:
             return cur.fetchone()
 
 
-# -------------------- 다빈 추가 ---------------------
 def get_my_board_answer_by_question(question_id: int, user_id: int) -> dict | None:
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -659,9 +661,6 @@ def save_board_answer_feedback(answer_id: int, feedback: str) -> None:
             )
 
 
-# ----------------------------------------------------
-# --- [새로 추가할 게시판 DB 함수들] ---
-
 def delete_board_answer(answer_id: int):
     """답변 삭제"""
     with get_connection() as conn:
@@ -669,12 +668,14 @@ def delete_board_answer(answer_id: int):
             cur.execute("DELETE FROM board_answers WHERE id = %s", (answer_id,))
         conn.commit()
 
+
 def get_all_board_questions():
     """AI 중복 검사를 위한 기존 질문 전체 조회"""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT content FROM board_questions WHERE is_active = 1")
             return [row["content"] for row in cur.fetchall()]
+
 
 def create_board_question(content: str) -> int:
     """새 질문 등록 (display_order 자동 증가)"""
@@ -691,9 +692,52 @@ def create_board_question(content: str) -> int:
         conn.commit()
         return new_id
 
+
 def delete_board_question(question_id: int):
     """질문 삭제 (Cascade에 의해 관련 답변도 자동 삭제됨)"""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM board_questions WHERE id = %s", (question_id,))
         conn.commit()
+
+
+# 구독 해지 및 강등 처리
+def schedule_cancel_pro(user_id: int, expire_date: str) -> None:
+    """구독 해지 예약 처리"""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE users 
+                   SET is_cancel_scheduled = 1, pro_expire_date = %s 
+                   WHERE id = %s""",
+                (expire_date, user_id)
+            )
+        conn.commit()
+
+
+def cancel_schedule_cancel_pro(user_id: int) -> None:
+    """구독 해지 예약 취소 처리"""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE users 
+                   SET is_cancel_scheduled = 0, pro_expire_date = NULL 
+                   WHERE id = %s""",
+                (user_id,)
+            )
+        conn.commit()
+
+
+def downgrade_expired_users() -> int:
+    """만료일이 지난 유저 강등 처리"""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE users 
+                   SET tier = 'normal', is_cancel_scheduled = 0, pro_expire_date = NULL 
+                   WHERE is_cancel_scheduled = 1 AND pro_expire_date < NOW()"""
+            )
+            affected_rows = cur.rowcount
+            
+        conn.commit()
+        return affected_rows

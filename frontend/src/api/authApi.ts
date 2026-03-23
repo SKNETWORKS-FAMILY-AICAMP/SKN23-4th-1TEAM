@@ -86,6 +86,11 @@ export const authApi = {
     return response.data;
   },
 
+  reactivateSubscription: async () => {
+    const response = await axiosClient.post("/api/auth/reactivate");
+    return response.data;
+  },
+
   withdraw: async () => {
     const response = await axiosClient.post("/api/auth/withdraw");
     return response.data;

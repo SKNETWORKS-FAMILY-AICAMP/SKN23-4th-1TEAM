@@ -49,11 +49,11 @@ const SECTION_CONFIG: Record<
   string,
   { color: string; bg: string; icon: string }
 > = {
-  "한줄 총평": { color: "#0176f7", bg: "#eff6ff", icon: "💬" },
-  "잘한 점": { color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
-  "아쉬운 점": { color: "#dc2626", bg: "#fff1f2", icon: "⚠️" },
-  "모범 답변": { color: "#7c3aed", bg: "#faf5ff", icon: "💡" },
-  "종합 점수": { color: "#d97706", bg: "#fffbeb", icon: "🏆" },
+  "한줄 총평": { color: "#0176f7", bg: "#eff6ff", icon: "✓" },
+  "잘한 점": { color: "#16a34a", bg: "#f0fdf4", icon: "✓" },
+  "아쉬운 점": { color: "#dc2626", bg: "#fff1f2", icon: "✓" },
+  "모범 답변": { color: "#7c3aed", bg: "#faf5ff", icon: "✓" },
+  "종합 점수": { color: "#d97706", bg: "#fffbeb", icon: "✓" },
 };
 
 const getSectionConfig = (title: string) => {
@@ -136,6 +136,9 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
     FeedbackSection[] | null
   >(null);
 
+  // 삭제 확인 모달 상태 관리
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+
   const fetchDetail = async () => {
     try {
       const data = await boardApi.getQuestionDetail(questionId);
@@ -160,15 +163,22 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
     }
   };
 
-  const handleDelete = async (answerId: number) => {
-    if (!window.confirm("내가 작성한 답변을 정말 삭제하시겠습니까?")) return;
+  // 삭제 버튼 클릭 시 모달만 띄우기
+  const promptDelete = (answerId: number) => {
+    setDeleteConfirmId(answerId);
+  };
+
+  // 실제 삭제 실행 함수
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
     try {
-      await boardApi.deleteAnswer(answerId);
-      alert("삭제되었습니다.");
+      await boardApi.deleteAnswer(deleteConfirmId);
       fetchDetail();
     } catch (error) {
       console.error("삭제 실패:", error);
       alert("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleteConfirmId(null); // 모달 닫기
     }
   };
 
@@ -291,7 +301,7 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
                       {isMyAnswer && (
                         <button
                           className="btn-delete-answer"
-                          onClick={() => handleDelete(ans.id)}
+                          onClick={() => promptDelete(ans.id)} // 기존 handleDelete 대신 promptDelete 호출
                         >
                           <Trash2 size={14} /> 삭제
                         </button>
@@ -350,6 +360,31 @@ export const QuestionDetailModal = ({ questionId, onClose }: Props) => {
         </div>
       </div>
 
+      {/* 커스텀 삭제 확인 모달 추가 */}
+      {deleteConfirmId && (
+        <div className="confirm-modal-overlay">
+          <div className="confirm-modal-content">
+            <div className="confirm-icon">
+              <Trash2 size={28} />
+            </div>
+            <h3>답변을 삭제하시겠습니까?</h3>
+            <p>삭제된 답변과 AI 평가 기록은 다시 복구할 수 없습니다.</p>
+            <div className="confirm-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setDeleteConfirmId(null)}
+              >
+                취소
+              </button>
+              <button className="btn-danger-proceed" onClick={confirmDelete}>
+                삭제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 피드백 모달 */}
       {feedbackSections && (
         <FeedbackModal
           sections={feedbackSections}
