@@ -223,27 +223,6 @@ export const RecordsPage = () => {
     fetchRecords();
   }, [user]);
 
-  const handleDelete = async (sessionId: number) => {
-    if (
-      !window.confirm(
-        `세션 #${sessionId} 기록을 정말 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`,
-      )
-    )
-      return;
-    try {
-      await axiosClient.delete(`/api/interview/sessions/${sessionId}`);
-      alert("면접 기록이 삭제되었습니다.");
-      fetchRecords();
-    } catch (error: any) {
-      console.error(error);
-      if (error.response?.status === 401 || error.response?.status === 405) {
-        alert("삭제 권한이 없거나 로그인이 만료되었습니다.");
-      } else {
-        alert("삭제에 실패했습니다.");
-      }
-    }
-  };
-
   const handleConfirmedDelete = async (sessionId: number) => {
     try {
       await axiosClient.delete(`/api/interview/sessions/${sessionId}`);

@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import html2canvas from "html2canvas"; // PDF 캡처용 라이브러리 추가
 import jsPDF from "jspdf"; // PDF 생성용 라이브러리 추가
 import { Header } from "../components/common/Header";
+import { CustomAlert } from "../components/common/CustomAlert";
 import { useAuthStore } from "../store/authStore";
 import { resumeApi } from "../api/resumeApi";
 import type { ResumeItem } from "../api/resumeApi";
@@ -34,6 +35,9 @@ export const ResumePage = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingDeleteResumeId, setPendingDeleteResumeId] = useState<
+    number | null
+  >(null);
 
   const [selectedRole, setSelectedRole] = useState(JOB_ROLES[0]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -62,7 +66,6 @@ export const ResumePage = () => {
 
   const handleDelete = async (resumeId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("이력서를 삭제하시겠습니까?")) return;
     await resumeApi.deleteResume(resumeId);
     fetchResumes();
   };
@@ -415,7 +418,10 @@ export const ResumePage = () => {
                     </button>
                     <button
                       className="btn-delete"
-                      onClick={(e) => handleDelete(r.id, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPendingDeleteResumeId(r.id);
+                      }}
                     >
                       삭제
                     </button>
@@ -493,6 +499,24 @@ export const ResumePage = () => {
           </div>
         </div>
       )}
+
+      <CustomAlert
+        open={pendingDeleteResumeId !== null}
+        title="?대젰???곸쓣 ??젣?좉퉴??"
+        message="?대젰?쒕? ??젣?섎㈃ 蹂듦뎄???섏? ?딆뒿?덈떎."
+        confirmText="??젣?섍린"
+        cancelText="痍⑥냼"
+        onCancel={() => setPendingDeleteResumeId(null)}
+        onConfirm={async () => {
+          if (pendingDeleteResumeId === null) return;
+          const resumeId = pendingDeleteResumeId;
+          setPendingDeleteResumeId(null);
+          await handleDelete(
+            resumeId,
+            { stopPropagation: () => undefined } as React.MouseEvent,
+          );
+        }}
+      />
     </div>
   );
 };
