@@ -12,6 +12,8 @@ interface User {
   job_role?: string;
   tier: UserTier;
   github_url?: string;
+  is_cancel_scheduled?: number | boolean;
+  pro_expire_date?: string | null;
 }
 
 interface AuthState {
