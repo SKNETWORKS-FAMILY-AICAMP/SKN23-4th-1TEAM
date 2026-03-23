@@ -51,7 +51,7 @@ class InterviewSession(Base):
     job_role = Column(String(100), nullable=True)
     difficulty = Column(String(20), nullable=True)
     persona = Column(String(50), nullable=True)
-    total_score = Column(Float, default=0.0)
+    total_score = Column(Float, nullable=True)
     status = Column(String(20), default="START")
     started_at = Column(DateTime, server_default=func.now())
     ended_at = Column(DateTime, nullable=True)

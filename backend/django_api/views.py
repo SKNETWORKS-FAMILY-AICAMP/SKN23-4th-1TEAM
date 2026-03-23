@@ -36,6 +36,7 @@ from .view_modules.board import (
 from .view_modules.home import home_guide, home_memos, home_news, home_proofread_file
 from .view_modules.infer import (
     attitude_infer,
+    infer_end,
     infer_evaluate_turn,
     infer_ingest,
     infer_proofread,

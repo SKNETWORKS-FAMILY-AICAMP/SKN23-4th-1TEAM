@@ -340,11 +340,32 @@ def get_sessions_by_user(user_id: int) -> list[dict]:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """SELECT id, job_role, difficulty, persona, total_score, status,
-                          started_at, ended_at, resume_used
-                   FROM interview_sessions
+                """SELECT s.id,
+                          s.job_role,
+                          s.difficulty,
+                          s.persona,
+                          CASE
+                              WHEN s.status = 'COMPLETED' AND EXISTS (
+                                  SELECT 1
+                                  FROM interview_details d_exist
+                                  WHERE d_exist.session_id = s.id
+                                    AND d_exist.score IS NOT NULL
+                              )
+                              THEN ROUND((
+                                  SELECT AVG(d.score)
+                                  FROM interview_details d
+                                  WHERE d.session_id = s.id
+                                    AND d.score IS NOT NULL
+                              ), 2)
+                              ELSE s.total_score
+                          END AS total_score,
+                          s.status,
+                          s.started_at,
+                          s.ended_at,
+                          s.resume_used
+                   FROM interview_sessions s
                    WHERE user_id=%s
-                   ORDER BY started_at DESC""",
+                   ORDER BY s.started_at DESC""",
                 (user_id,),
             )
             return cur.fetchall()

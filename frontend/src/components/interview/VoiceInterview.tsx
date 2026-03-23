@@ -13,7 +13,13 @@ import {
 } from "lucide-react";
 import "./VoiceInterview.scss";
 
-export const VoiceInterview = () => {
+interface VoiceInterviewProps {
+  onMessagesChange?: (
+    messages: { role: "user" | "assistant"; content: string; score?: number }[],
+  ) => void;
+}
+
+export const VoiceInterview = ({ onMessagesChange }: VoiceInterviewProps) => {
   const {
     isConnected,
     isConnecting,
@@ -45,6 +51,16 @@ export const VoiceInterview = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isAnalyzing]);
+
+  useEffect(() => {
+    onMessagesChange?.(
+      messages.map((message) => ({
+        role: message.sender === "ai" ? "assistant" : "user",
+        content: message.text,
+        score: message.score,
+      })),
+    );
+  }, [messages, onMessagesChange]);
 
   useEffect(() => {
     if (!isConnected || !useCamera || !localVideoRef.current || !localStream)

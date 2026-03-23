@@ -236,8 +236,6 @@ $border-color: #e2e8f0;
             .accordion-body {
               padding: 24px 20px;
               background: #ffffff;
-              animation: slideDown 0.3s ease-out forwards;
-              transform-origin: top;
               text-align: left;
 
               /* 💡 추가: 열리는 본문 영역도 100% 꽉 채우기 */
@@ -259,6 +257,19 @@ $border-color: #e2e8f0;
           width: 100%;
           box-sizing: border-box;
           text-align: left;
+          min-width: 0;
+
+          > * {
+            max-width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            box-sizing: border-box;
+          }
+
+          * {
+            max-width: 100%;
+            box-sizing: border-box;
+          }
 
           h1,
           h2,
@@ -275,6 +286,7 @@ $border-color: #e2e8f0;
           }
 
           p {
+            margin-top: 0;
             margin-bottom: 16px;
             width: 100%; /* 💡 문단 꽉 채우기 */
             box-sizing: border-box;
@@ -283,13 +295,23 @@ $border-color: #e2e8f0;
 
           ul,
           ol {
+            margin-top: 0;
             margin-bottom: 16px;
-            padding-left: 24px;
+            margin-left: 0;
+            padding-left: 0;
             width: 100%; /* 💡 리스트 꽉 채우기 */
             box-sizing: border-box;
             display: block;
+            list-style: none;
           }
           li {
+            margin-left: 0;
+            padding-left: 0;
+            margin-bottom: 6px;
+          }
+
+          li > p {
+            margin-top: 0;
             margin-bottom: 6px;
           }
 
@@ -430,13 +452,3 @@ $border-color: #e2e8f0;
   }
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: scaleY(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}

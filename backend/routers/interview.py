@@ -75,7 +75,7 @@ async def update_interview_session(
     body: dict,
     db: Session = Depends(get_db)
 ):
-    from backend.db.base import InterviewSession
+    from backend.db.base import InterviewDetail, InterviewSession
     session_record = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
     if not session_record:
         raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다.")
@@ -85,6 +85,19 @@ async def update_interview_session(
     if "status" in body:
         session_record.status = body["status"]
         if body["status"] == "COMPLETED":
+            if "total_score" not in body:
+                from sqlalchemy import func
+
+                avg_score = (
+                    db.query(func.avg(InterviewDetail.score))
+                    .filter(
+                        InterviewDetail.session_id == session_id,
+                        InterviewDetail.score.isnot(None),
+                    )
+                    .scalar()
+                )
+                if avg_score is not None:
+                    session_record.total_score = round(float(avg_score), 2)
             from sqlalchemy.sql import func
             session_record.ended_at = func.now()
     

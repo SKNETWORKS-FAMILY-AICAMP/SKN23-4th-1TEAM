@@ -5,7 +5,13 @@ import { useInterviewChat } from "../../hooks/useInterviewChat";
 import { InterviewReportModal } from "./InterviewReportModal";
 import "./TextInterview.scss";
 
-export const TextInterview = () => {
+interface TextInterviewProps {
+  onMessagesChange?: (
+    messages: { role: "user" | "assistant"; content: string; score?: number }[],
+  ) => void;
+}
+
+export const TextInterview = ({ onMessagesChange }: TextInterviewProps) => {
   const { messages, isLoading, isEnded, sendMessage } = useInterviewChat();
   const [inputText, setInputText] = useState("");
 
@@ -15,6 +21,10 @@ export const TextInterview = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);

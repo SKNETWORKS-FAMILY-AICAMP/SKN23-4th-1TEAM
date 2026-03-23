@@ -173,6 +173,43 @@ def infer_evaluate_turn(request):
     return result
 
 
+@api_view(["POST"])
+def infer_end(request):
+    body = json_body(request)
+    session_id = body.get("session_id")
+    if not session_id:
+        raise ApiError("session_id is required", 400)
+
+    with db_session() as db:
+        results = (
+            db.query(
+                func.avg(base.InterviewDetail.score).label("avg_score"),
+                func.avg(base.InterviewDetail.sentiment_score).label("avg_sentiment"),
+            )
+            .filter(base.InterviewDetail.session_id == session_id)
+            .first()
+        )
+        if not results or results.avg_score is None:
+            raise ApiError("면접 기록을 찾을 수 없습니다.", 404)
+
+        session_record = (
+            db.query(base.InterviewSession)
+            .filter(base.InterviewSession.id == session_id)
+            .first()
+        )
+        if session_record:
+            session_record.total_score = round(float(results.avg_score), 2)
+            session_record.status = "COMPLETED"
+            session_record.ended_at = datetime.now()
+            db.commit()
+
+        return {
+            "message": "면접이 종료되었습니다.",
+            "final_score": round(float(results.avg_score), 2),
+            "avg_confidence": round(float(results.avg_sentiment or 0.0), 2),
+        }
+
+
 @api_view(["GET"])
 def infer_realtime_token(request):
     api_key = os.getenv("OPENAI_API_KEY")
