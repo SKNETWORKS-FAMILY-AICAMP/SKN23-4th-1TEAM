@@ -4,7 +4,7 @@
   gap: 16px;
 
   .memo-form {
-    border: 2px solid #fae8ff;
+    border: 2px solid #b6d9eb;
     border-radius: 20px;
     padding: 20px;
     background: #ffffff;
@@ -32,14 +32,14 @@
         outline: none;
 
         &:focus {
-          border-color: #bb38d0;
-          box-shadow: 0 0 0 2px rgba(187, 56, 208, 0.1);
+          border-color: #0176f7;
+          box-shadow: 0 0 0 2px #0176f7;
           background: #fff;
         }
       }
 
       button {
-        background: #bb38d0;
+        background:#0176f7;
         border: none;
         border-radius: 10px;
         color: white;
@@ -51,7 +51,7 @@
 
         &:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(187, 56, 208, 0.3);
+          box-shadow: 0 8px 25px #0176f7;
           filter: brightness(1.1);
         }
         &:active {

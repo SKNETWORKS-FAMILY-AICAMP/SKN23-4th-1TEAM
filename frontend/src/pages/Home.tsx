@@ -201,7 +201,7 @@ export const Home = () => {
             <div className="tabs-header">
               <button className={`tab-btn ${activeTab === "jobs" ? "active" : ""}`} onClick={() => setActiveTab("jobs")}>추천 채용</button>
               <button className={`tab-btn ${activeTab === "news" ? "active" : ""}`} onClick={() => setActiveTab("news")}>{latestJobRole ? `${latestJobRole} 트렌드` : "인사이트"}</button>
-              <button className={`tab-btn ${activeTab === "memos" ? "active" : ""}`} onClick={() => setActiveTab("memos")}>게시판</button>
+              <button className={`tab-btn ${activeTab === "memos" ? "active" : ""}`} onClick={() => setActiveTab("memos")}>메모장</button>
             </div>
             <div className="tabs-content">
               <div className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}><JobCards jobRole={latestJobRole} /></div>
