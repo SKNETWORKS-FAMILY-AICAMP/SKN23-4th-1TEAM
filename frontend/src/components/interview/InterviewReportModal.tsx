@@ -6,6 +6,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useInferStore } from "../../store/inferStore";
 import { inferApi } from "../../api/inferApi";
+import { ROUTES } from "../../constants/routes";
 import { Download, List, RotateCcw, ChevronDown } from "lucide-react";
 import "./InterviewReportModal.scss";
 
@@ -67,6 +68,27 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
   useEffect(() => {
     const fetchEvaluation = async () => {
+      if (userMessages.length === 0) {
+        setEvaluation(
+          [
+            "# 1. 종합 점수",
+            "",
+            "답변한 내용이 없어 아직 평가를 생성할 수 없습니다.",
+            "",
+            "# 2. BEST 답변",
+            "",
+            "아직 제출된 답변이 없습니다.",
+            "",
+            "# 3. 보완 포인트",
+            "",
+            "질문에 답변을 제출한 뒤 다시 리포트를 확인해 주세요.",
+          ].join("\n"),
+        );
+        setOpenSections({ 0: true, 1: true, 2: true });
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const res = await inferApi.getEvaluationReport({
           messages: messages,
@@ -193,7 +215,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
   const handleGoRecords = () => {
     localStorage.removeItem("current_session_id");
-    navigate("/records");
+    navigate(ROUTES.RECORDS);
   };
 
   return (
