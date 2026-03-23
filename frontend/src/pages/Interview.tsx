@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useInferStore } from "../store/inferStore";
 import { axiosClient } from "../api/axiosClient";
-
+import { InterviewReportModal } from "../components/interview/InterviewReportModal";
+import { InterviewSetupModal } from "../components/interview/InterviewSetupModal";
 import { TextInterview } from "../components/interview/TextInterview";
 import { VoiceInterview } from "../components/interview/VoiceInterview";
-import { InterviewSetupModal } from "../components/interview/InterviewSetupModal";
+import { useInferStore } from "../store/inferStore";
 import "./Interview.scss";
+
+type ReportMessage = {
+  role: "user" | "assistant";
+  content: string;
+  score?: number;
+};
 
 export const Interview = () => {
   const {
@@ -30,9 +36,10 @@ export const Interview = () => {
   const [isSetupModalOpen, setIsSetupModalOpen] =
     useState(!hasPreparedSettings);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportMessages, setReportMessages] = useState<ReportMessage[]>([]);
 
   useEffect(() => {
-    // 페이지 진입 시 무조건 기존 세션 찌꺼기 날리고 초기화
     if (hasPreparedSettings) {
       setIsSetupModalOpen(false);
       return;
@@ -44,19 +51,32 @@ export const Interview = () => {
   const confirmEndInterview = async () => {
     try {
       const sessionId = localStorage.getItem("current_session_id");
+
       if (sessionId) {
-        await axiosClient.put(`/api/interview/sessions/${sessionId}`, {
-          status: "COMPLETED",
-        });
-        localStorage.removeItem("current_session_id");
+        try {
+          await axiosClient.post("/api/infer/end", {
+            session_id: Number(sessionId),
+          });
+        } catch (endError) {
+          console.error("면접 종료 점수 저장 재시도:", endError);
+          await axiosClient.put(`/api/interview/sessions/${sessionId}`, {
+            status: "COMPLETED",
+          });
+        }
       }
+
       setShowEndModal(false);
-      clearInferSettings();
-      navigate("/records");
+      setShowReportModal(true);
     } catch (error) {
       console.error("면접 종료 처리 중 오류:", error);
       navigate("/");
     }
+  };
+
+  const handleRestart = () => {
+    localStorage.removeItem("current_session_id");
+    clearInferSettings();
+    window.location.reload();
   };
 
   return (
@@ -68,11 +88,11 @@ export const Interview = () => {
             <h1>
               AI 면접관{" "}
               <span className="badge-persona">
-                {persona || "깐깐한 기술팀장"}
+                {persona || "깐깐한 기술 면접관"}
               </span>
             </h1>
             <p className="meta-info">
-              {jobRole || "기본 직무"} · 난이도 {difficulty || "중"} · 총{" "}
+              {jobRole || "기본 직무"} · 난이도 {difficulty || "중급"} · 총{" "}
               {questionCount || 5}문항
             </p>
           </div>
@@ -88,9 +108,9 @@ export const Interview = () => {
       <main className="interview-main-content">
         {!isSetupModalOpen &&
           (effectiveMethod === "voice" ? (
-            <VoiceInterview />
+            <VoiceInterview onMessagesChange={setReportMessages} />
           ) : (
-            <TextInterview />
+            <TextInterview onMessagesChange={setReportMessages} />
           ))}
       </main>
 
@@ -113,7 +133,7 @@ export const Interview = () => {
             <p style={{ color: "#666", lineHeight: 1.5, marginBottom: "24px" }}>
               면접을 종료하시겠습니까?
               <br />
-              최종 제출 시 점수 평가가 진행됩니다.
+              최종 제출 후 결과 리포트가 표시됩니다.
             </p>
             <div
               style={{ display: "flex", flexDirection: "column", gap: "10px" }}
@@ -149,6 +169,13 @@ export const Interview = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showReportModal && (
+        <InterviewReportModal
+          messages={reportMessages}
+          onRestart={handleRestart}
+        />
       )}
     </div>
   );

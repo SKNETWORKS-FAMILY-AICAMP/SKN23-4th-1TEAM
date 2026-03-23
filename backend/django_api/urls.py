@@ -51,6 +51,7 @@ urlpatterns = [
     path("api/infer/stt", views.infer_stt),
     path("api/infer/tts", views.infer_tts),
     path("api/infer/evaluate-turn", views.infer_evaluate_turn),
+    path("api/infer/end", views.infer_end),
     path("api/infer/realtime-token", views.infer_realtime_token),
     path("api/infer/attitude", views.attitude_infer),
     path("api/interview/analyze-resume", views.interview_analyze_resume),

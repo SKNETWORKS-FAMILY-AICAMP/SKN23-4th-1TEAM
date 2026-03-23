@@ -123,6 +123,17 @@ def interview_session_resource(request, session_id: int):
         if "status" in body:
             session_record.status = body["status"]
             if body["status"] == "COMPLETED":
+                if "total_score" not in body:
+                    avg_score = (
+                        db.query(func.avg(base.InterviewDetail.score))
+                        .filter(
+                            base.InterviewDetail.session_id == session_id,
+                            base.InterviewDetail.score.isnot(None),
+                        )
+                        .scalar()
+                    )
+                    if avg_score is not None:
+                        session_record.total_score = round(float(avg_score), 2)
                 session_record.ended_at = datetime.now()
         db.commit()
     return {"message": "세션 업데이트 완료"}
