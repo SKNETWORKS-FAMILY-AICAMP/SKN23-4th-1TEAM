@@ -472,27 +472,17 @@ def delete_user_resume(resume_id: int):
             cur.execute("DELETE FROM user_resumes WHERE id=%s", (resume_id,))
 
 
-# ─── 방명록(게시판) CRUD ────────────────────────────────────
+# 방명록(게시판) CRUD
 def save_memo(user_id: int | None, author: str, content: str, color: str, border: str, text_color: str):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            if user_id:
-                cur.execute("SELECT id FROM guestbook_memos WHERE user_id=%s", (user_id,))
-                existing = cur.fetchone()
-                if existing:
-                    cur.execute(
-                        "UPDATE guestbook_memos SET content=%s, color=%s, border=%s, text_color=%s WHERE id=%s",
-                        (content, color, border, text_color, existing["id"])
-                    )
-                    return existing["id"]
-
+            # 무조건 새로운 메모를 추가하도록 기존 SELECT 및 UPDATE 로직 제거
             cur.execute(
                 """INSERT INTO guestbook_memos (user_id, author, content, color, border, text_color)
                    VALUES (%s, %s, %s, %s, %s, %s)""",
                 (user_id, author, content, color, border, text_color),
             )
             return conn.insert_id()
-
 
 
 def get_all_memos(limit: int = 30) -> list[dict]:
