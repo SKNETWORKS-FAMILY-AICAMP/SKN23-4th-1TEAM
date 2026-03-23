@@ -15,7 +15,8 @@ import "./Home.scss";
 type TabKey = "jobs" | "news" | "memos";
 
 export const Home = () => {
-  const { isAuthenticated, user, clearAuth, setUser } = useAuthStore();
+  // 💡 openLoginModal 전역 함수 가져오기
+  const { isAuthenticated, user, clearAuth, setUser, openLoginModal } = useAuthStore();
   const navigate = useNavigate();
 
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
@@ -139,8 +140,7 @@ export const Home = () => {
 
   const handleStartInterview = () => {
     if (!isAuthenticated) {
-      alert("로그인이 필요합니다.");
-      navigate("/auth");
+      openLoginModal(); // 💡 전역 모달 열기 호출
       return;
     }
     setIsSetupModalOpen(true);

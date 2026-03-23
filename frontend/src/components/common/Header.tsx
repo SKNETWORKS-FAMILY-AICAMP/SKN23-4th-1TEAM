@@ -4,7 +4,8 @@ import { createPortal } from "react-dom";
 import { useAuthStore } from "../../store/authStore";
 import { ROUTES } from "../../constants/routes";
 import { authApi } from "../../api/authApi";
-import { CustomAlert } from "./CustomAlert";
+// 💡 커스텀 모달 컴포넌트 임포트 (경로 확인 필요!)
+import { LoginModal } from "./LoginModal";
 import "./Header.scss";
 
 const NAV_ITEMS = [
@@ -16,10 +17,10 @@ const NAV_ITEMS = [
 ];
 
 export const Header = () => {
-  const { isAuthenticated, user, clearAuth } = useAuthStore();
+  // 💡 openLoginModal 함수 추가
+  const { isAuthenticated, user, clearAuth, openLoginModal } = useAuthStore();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showLoginRequiredAlert, setShowLoginRequiredAlert] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export const Header = () => {
     setIsMobileMenuOpen(false);
 
     if (!isAuthenticated) {
-      setShowLoginRequiredAlert(true);
+      openLoginModal(); // 💡 경고창 대신 모달 띄우기!
       return;
     }
 
@@ -163,16 +164,8 @@ export const Header = () => {
         </div>
       </aside>
 
-      <CustomAlert
-        open={showLoginRequiredAlert}
-        title="로그인이 필요합니다"
-        message="해당 메뉴는 로그인 후 이용할 수 있습니다. 로그인 페이지로 이동할까요?"
-        onCancel={() => setShowLoginRequiredAlert(false)}
-        onConfirm={() => {
-          setShowLoginRequiredAlert(false);
-          navigate(ROUTES.AUTH);
-        }}
-      />
+      {/* 💡 모든 페이지에서 공통으로 띄워질 커스텀 로그인 모달! */}
+      <LoginModal />
 
       {showLogoutModal &&
         createPortal(
