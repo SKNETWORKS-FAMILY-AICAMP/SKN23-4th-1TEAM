@@ -132,6 +132,7 @@ def _user_payload(user: User, access: str, refresh: str, csrf: str) -> dict:
         "profile_image_url": getattr(user, "profile_image_url", None),
         "email": user.email,
         "tier": getattr(user, "tier", "normal"),
+        "github_url": getattr(user, "github_url", None),
         "refresh_token": refresh,
         "csrf_token": csrf,
     }

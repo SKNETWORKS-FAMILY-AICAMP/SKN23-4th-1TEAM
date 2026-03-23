@@ -11,6 +11,7 @@ interface User {
   role?: string;
   job_role?: string;
   tier: UserTier;
+  github_url?: string;
 }
 
 interface AuthState {
@@ -20,6 +21,7 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   clearAuth: () => void;
   updateTier: (tier: UserTier) => void;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -37,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
           ...state,
           user: state.user ? { ...state.user, tier } : null,
         })),
+      setUser: (user) => set({ user }),
     }),
     {
       name: "auth-storage",

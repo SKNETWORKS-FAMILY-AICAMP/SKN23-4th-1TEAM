@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/auth/withdraw", views.auth_withdraw),
     path("api/auth/profile-image", views.auth_profile_image),
     path("api/auth/upgrade", views.auth_upgrade),
+    path("api/auth/user/<int:user_id>", views.auth_user_update),
     path("api/auth/kakao/start", views.social_kakao_start),
     path("api/auth/kakao/callback", views.social_kakao_callback),
     path("api/auth/google/start", views.social_google_start),

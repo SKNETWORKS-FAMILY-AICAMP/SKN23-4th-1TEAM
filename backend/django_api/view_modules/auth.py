@@ -127,6 +127,7 @@ def auth_verify(request):
                 "profile_image_url": getattr(user, "profile_image_url", None),
                 "email": user.email,
                 "tier": getattr(user, "tier", "normal"),
+                "github_url": getattr(user, "github_url", None),
             }
     except ExpiredSignatureError as exc:
         raise ApiError(
@@ -223,6 +224,21 @@ def auth_upgrade(request):
         db.commit()
         db.refresh(user)
         return {"detail": "등급 업그레이드가 완료되었습니다.", "tier": user.tier}
+
+
+@api_view(["PUT"])
+def auth_user_update(request, user_id):
+    body = json_body(request)
+    with db_session() as db:
+        user = get_current_user(request, db)
+        if user.id != user_id:
+            raise ApiError("권한이 없습니다.", 403)
+        if "github_url" in body:
+            user.github_url = body["github_url"]
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {"message": "프로필 업데이트 성공", "github_url": user.github_url}
 
 
 @api_view(["GET"])

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MessageCircle, ChevronLeft, ChevronRight, Github } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { GuideChatbot } from "../components/chat/GuideChatbot";
 import { Header } from "../components/common/Header";
@@ -9,12 +9,13 @@ import { JobCards } from "../components/home/JobCards";
 import { NewsFeed } from "../components/home/NewsFeed";
 import { MemoBoard } from "../components/home/MemoBoard";
 import { resumeApi } from "../api/resumeApi";
+import { homeApi } from "../api/homeApi";
 import "./Home.scss";
 
 type TabKey = "jobs" | "news" | "memos";
 
 export const Home = () => {
-  const { isAuthenticated, user, clearAuth } = useAuthStore();
+  const { isAuthenticated, user, clearAuth, setUser } = useAuthStore();
   const navigate = useNavigate();
 
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
@@ -24,8 +25,10 @@ export const Home = () => {
   const [resumeSlideIndex, setResumeSlideIndex] = useState(0);
 
   const [latestJobRole, setLatestJobRole] = useState<string | undefined>(undefined);
-  // 이력서 조회가 끝났는지 확인하는 상태값
   const [isResumeChecked, setIsResumeChecked] = useState(false);
+
+  const [isEditingGithub, setIsEditingGithub] = useState(false);
+  const [githubInput, setGithubInput] = useState(user?.github_url || "");
 
   const resumeSlides = [
     {
@@ -59,6 +62,30 @@ export const Home = () => {
     });
   };
 
+  const handleGithubSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user?.id) return;
+    if (!githubInput.trim()) {
+      alert("주소를 입력해주세요.");
+      return;
+    }
+    
+    let formattedUrl = githubInput.trim();
+    if (!/^https?:\/\//i.test(formattedUrl)) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+
+    try {
+      await homeApi.updateUserProfile(user.id, { github_url: formattedUrl });
+      setUser({ ...user, github_url: formattedUrl });
+      alert("깃허브 주소가 저장되었습니다.");
+      setIsEditingGithub(false);
+    } catch (error) {
+      console.error(error);
+      alert("저장에 실패했습니다.");
+    }
+  };
+
   useEffect(() => {
     const timer = window.setInterval(() => {
       setResumeSlideIndex((prev) =>
@@ -78,23 +105,19 @@ export const Home = () => {
       try {
         const data = await resumeApi.listResumes(Number(user.id));
         if (data && data.items && data.items.length > 0) {
-          // ID 값이 가장 큰(제일 마지막에 등록된) 이력서를 정확히 추출
           const latestResume = data.items.reduce((prev: any, current: any) => 
             prev.id > current.id ? prev : current
           );
-          
           if (latestResume.job_role) {
             setLatestJobRole(latestResume.job_role);
           }
         }
       } catch (error) {
-        console.error("Failed to fetch latest resume", error);
+        console.error(error);
       } finally {
-        // 성공하든 실패하든 조회 과정이 끝났음을 알림
         setIsResumeChecked(true);
       }
     };
-
     fetchLatestResumeRole();
   }, [user?.id]);
 
@@ -103,7 +126,6 @@ export const Home = () => {
       alert("검색어를 입력해주세요.");
       return;
     }
-
     let url = "";
     if (selectedPortal === "사람인") {
       url = `https://www.saramin.co.kr/zf_user/search?searchword=${encodeURIComponent(searchKeyword)}`;
@@ -112,7 +134,6 @@ export const Home = () => {
     } else if (selectedPortal === "워크넷") {
       url = `https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do?keyword=${encodeURIComponent(searchKeyword)}`;
     }
-
     if (url) window.open(url, "_blank");
   };
 
@@ -128,7 +149,6 @@ export const Home = () => {
   return (
     <div className="home-layout">
       <Header />
-
       <main className="dashboard-container">
         <div className="dashboard-left">
           <div className="dashboard-card search-card">
@@ -158,98 +178,43 @@ export const Home = () => {
           </div>
 
           <div className="dashboard-card resume-card">
-            <button
-              type="button"
-              className="resume-nav-btn side left"
-              onClick={() => handleResumeSlide("prev")}
-              aria-label="이전 카드"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            <button
-              type="button"
-              className="resume-nav-btn side right"
-              onClick={() => handleResumeSlide("next")}
-              aria-label="다음 카드"
-            >
-              <ChevronRight size={18} />
-            </button>
-
+            <button type="button" className="resume-nav-btn side left" onClick={() => handleResumeSlide("prev")} aria-label="이전 카드"><ChevronLeft size={18} /></button>
+            <button type="button" className="resume-nav-btn side right" onClick={() => handleResumeSlide("next")} aria-label="다음 카드"><ChevronRight size={18} /></button>
             <div className="resume-visual-glow"></div>
-
             <div className="resume-card-shell">
-              <div className="resume-illustration">
-                <img src={currentSlide.image} alt={currentSlide.title} />
-              </div>
-
+              <div className="resume-illustration"><img src={currentSlide.image} alt={currentSlide.title} /></div>
               <div className="resume-copy">
                 <span className="resume-badge">{currentSlide.badge}</span>
                 <h3>{currentSlide.title}</h3>
                 <p>{currentSlide.description}</p>
               </div>
-
               <div className="resume-status-spacer"></div>
             </div>
-
             <div className="progress-dots">
               {resumeSlides.map((_, index) => (
-                <span
-                  key={index}
-                  className={`dot ${resumeSlideIndex === index ? "active" : ""}`}
-                ></span>
+                <span key={index} className={`dot ${resumeSlideIndex === index ? "active" : ""}`}></span>
               ))}
             </div>
           </div>
 
           <div className="dashboard-card tabs-card">
             <div className="tabs-header">
-              <button
-                className={`tab-btn ${activeTab === "jobs" ? "active" : ""}`}
-                onClick={() => setActiveTab("jobs")}
-              >
-                추천 채용
-              </button>
-              <button
-                className={`tab-btn ${activeTab === "news" ? "active" : ""}`}
-                onClick={() => setActiveTab("news")}
-              >
-                {latestJobRole ? `${latestJobRole} 트렌드` : "인사이트"}
-              </button>
-              <button
-                className={`tab-btn ${activeTab === "memos" ? "active" : ""}`}
-                onClick={() => setActiveTab("memos")}
-              >
-                게시판
-              </button>
+              <button className={`tab-btn ${activeTab === "jobs" ? "active" : ""}`} onClick={() => setActiveTab("jobs")}>추천 채용</button>
+              <button className={`tab-btn ${activeTab === "news" ? "active" : ""}`} onClick={() => setActiveTab("news")}>{latestJobRole ? `${latestJobRole} 트렌드` : "인사이트"}</button>
+              <button className={`tab-btn ${activeTab === "memos" ? "active" : ""}`} onClick={() => setActiveTab("memos")}>게시판</button>
             </div>
-
             <div className="tabs-content">
-              <div className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}>
-                <JobCards jobRole={latestJobRole} />
-              </div>
+              <div className={`tab-panel ${activeTab === "jobs" ? "active" : ""}`}><JobCards jobRole={latestJobRole} /></div>
               <div className={`tab-panel ${activeTab === "news" ? "active" : ""}`}>
-                {/* 조회가 완전히 끝난 후에만 NewsFeed를 렌더링하도록 차단벽 설정 */}
-                {isResumeChecked ? (
-                  <NewsFeed jobRole={latestJobRole} />
-                ) : (
-                  <div style={{ textAlign: "center", padding: "40px 0", color: "#666" }}>
-                    이력서 기반 맞춤 트렌드를 준비 중입니다...
-                  </div>
-                )}
+                {isResumeChecked ? <NewsFeed jobRole={latestJobRole} /> : <div style={{ textAlign: "center", padding: "40px 0", color: "#666" }}>준비 중...</div>}
               </div>
-              <div className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}>
-                <MemoBoard />
-              </div>
+              <div className={`tab-panel ${activeTab === "memos" ? "active" : ""}`}><MemoBoard /></div>
             </div>
           </div>
         </div>
 
         <div className="dashboard-right">
-          <div
-            className={`dashboard-card profile-card ${isAuthenticated ? "member-card" : "guest-card"}`}
-            style={!isAuthenticated ? { alignItems: "center", textAlign: "center" } : {}}
-          >
+          <div className={`dashboard-card profile-card ${isAuthenticated ? "member-card" : "guest-card"}`} style={!isAuthenticated ? { alignItems: "center", textAlign: "center" } : {}}>
             {isAuthenticated ? (
               <>
                 <div className="profile-header">
@@ -257,80 +222,29 @@ export const Home = () => {
                     {user?.profile_image_url ? (
                       <img src={user.profile_image_url} alt="Profile" />
                     ) : (
-                      <div className="avatar-placeholder"></div>
+                      <img src="/images/default-profile.png" alt="Default Profile" /> 
                     )}
                     <span className="online-dot"></span>
                   </div>
-
                   <div className="profile-info">
                     <div className="name-row">
                       <span className="name">{user?.name}님</span>
-                      <span className={`tier-badge ${user?.tier || "normal"}`}>
-                        {(user?.tier || "NORMAL").toUpperCase()}
-                      </span>
+                      <span className={`tier-badge ${user?.tier || "normal"}`}>{(user?.tier || "NORMAL").toUpperCase()}</span>
                     </div>
                     <span className="email">{user?.email}</span>
                   </div>
                 </div>
-
                 <div className="profile-actions">
                   <button className="action-btn" onClick={() => navigate("/mypage")}>내 면접 기록</button>
                   <button className="action-btn" onClick={() => navigate("/my_info")}>계정 설정</button>
-                  <button
-                    className="action-btn logout-btn"
-                    onClick={() => {
-                      clearAuth();
-                      navigate("/auth");
-                    }}
-                    style={{ color: "#ef4444" }}
-                  >
-                    로그아웃
-                  </button>
+                  <button className="action-btn logout-btn" onClick={() => { clearAuth(); navigate("/auth"); }} style={{ color: "#ef4444" }}>로그아웃</button>
                 </div>
-
-                {user?.role === "admin" && (
-                  <button
-                    className="start-interview-btn admin-btn"
-                    onClick={() => navigate("/admin")}
-                    style={{ background: "#333", marginTop: "10px" }}
-                  >
-                    관리자 대시보드
-                  </button>
-                )}
-
-                <button
-                  className="start-interview-btn"
-                  onClick={handleStartInterview}
-                  style={user?.role === "admin" ? { marginTop: "10px" } : {}}
-                >
-                  AI 모의 면접 시작하기
-                </button>
+                <button className="start-interview-btn" onClick={handleStartInterview}>AI 모의 면접 시작하기</button>
               </>
             ) : (
               <div className="auth-prompt-container" style={{ width: "100%", padding: "10px 0" }}>
-                <p style={{ fontSize: "15px", fontWeight: 600, color: "#222", marginBottom: "20px" }}>
-                  AIWORK를 더 안전하고 편리하게 이용해보세요
-                </p>
-                <button
-                  onClick={() => navigate("/auth")}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "#0176f7",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    marginBottom: "16px",
-                    transition: "background 0.2s",
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = "#0062d1")}
-                  onMouseOut={(e) => (e.currentTarget.style.background = "#0176f7")}
-                >
-                  AIWORK 로그인
-                </button>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: "#222", marginBottom: "20px" }}>AIWORK를 더 편리하게 이용해보세요</p>
+                <button onClick={() => navigate("/auth")} style={{ width: "100%", padding: "14px", background: "#0176f7", color: "#fff", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: 700, cursor: "pointer", marginBottom: "16px" }}>AIWORK 로그인</button>
                 <div style={{ display: "flex", justifyContent: "center", gap: "12px", fontSize: "13px", color: "#666" }}>
                   <span style={{ cursor: "pointer" }} onClick={() => navigate("/auth?mode=find")}>아이디/비밀번호 찾기</span>
                   <span style={{ color: "#ddd" }}>|</span>
@@ -341,25 +255,33 @@ export const Home = () => {
           </div>
 
           <div
-            className="dashboard-card dark-card"
-            style={{ cursor: "pointer" }}
-            onClick={() => window.open("https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN23-4th-1Team", "_blank")}
-          >
-            <div className="card-icon"></div>
+              className="dashboard-card dark-card"
+              style={{ cursor: user?.github_url && !isEditingGithub ? "pointer" : "default" }}
+              onClick={() => {
+                if (user?.github_url && !isEditingGithub) {
+                  window.open(user.github_url, "_blank");
+                }
+              }}
+            >
+            <div className="card-icon"><Github size={24} color="#fff" /></div>
             <div className="card-content">
-              <h4>Project Repository</h4>
-              <p>스프린트 코드와 개발 문서를 확인하세요. SKN 1조의 프로젝트입니다.</p>
+              <h4>My GitHub Repository</h4>
+              {isEditingGithub ? (
+                <div className="github-input-row" style={{ display: "flex", gap: "8px", marginTop: "8px" }} onClick={(e) => e.stopPropagation()}>
+                  <input type="text" value={githubInput} onChange={(e) => setGithubInput(e.target.value)} placeholder="https://github.com/아이디" style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "none", color: "#000", fontSize: "13px" }} />
+                  <button onClick={handleGithubSave} style={{ padding: "8px 12px", background: "#0176f7", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}>저장</button>
+                </div>
+              ) : (
+                <>
+                  <p style={{ marginBottom: "8px" }}>{user?.github_url ? "등록된 깃허브로 이동하여 포트폴리오를 확인합니다." : "아직 깃허브가 연결되지 않았습니다."}</p>
+                  <button onClick={(e) => { e.stopPropagation(); setIsEditingGithub(true); }} style={{ padding: "6px 12px", background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}>{user?.github_url ? "수정하기" : "URL 등록하기"}</button>
+                </>
+              )}
             </div>
           </div>
 
-          <div
-            className="dashboard-card blue-card"
-            style={{ cursor: "pointer" }}
-            onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1465155158022426675&permissions=4279296&integration_type=0&scope=bot", "_blank")}
-          >
-            <div className="card-icon">
-              <MessageCircle size={24} color="#fff" fill="#fff" />
-            </div>
+          <div className="dashboard-card blue-card" style={{ cursor: "pointer" }} onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1465155158022426675&permissions=4279296&integration_type=0&scope=bot", "_blank")}>
+            <div className="card-icon"><MessageCircle size={24} color="#fff" fill="#fff" /></div>
             <div className="card-content">
               <h4>Discord 봇 추가</h4>
               <p>디스코드 환경에서도 AI 사자개가 채용 조언을 실시간으로 제공해줍니다.</p>
@@ -367,12 +289,8 @@ export const Home = () => {
           </div>
         </div>
       </main>
-
       <GuideChatbot />
-
-      {isSetupModalOpen && (
-        <InterviewSetupModal onClose={() => setIsSetupModalOpen(false)} />
-      )}
+      {isSetupModalOpen && <InterviewSetupModal onClose={() => setIsSetupModalOpen(false)} />}
     </div>
   );
 };

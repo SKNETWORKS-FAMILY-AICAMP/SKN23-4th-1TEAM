@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS users (
     status VARCHAR(20) COLLATE utf8mb4_unicode_ci DEFAULT 'active',         
     profile_image_url VARCHAR(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 프로필 이미지 URL 또는 로컬 경로',
     payment_status VARCHAR(20) DEFAULT NULL, -- ERD 반영용
+    github_url VARCHAR(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '깃허브 URL',
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

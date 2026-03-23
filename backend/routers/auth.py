@@ -379,3 +379,24 @@ def upgrade_tier(req: Request, db: Session = Depends(get_db)):
     db.refresh(user)
 
     return {"detail": "등급이 업그레이드 되었습니다.", "tier": user.tier}
+
+class UserProfileUpdate(BaseModel):
+    github_url: str
+
+@router.put("/user/{user_id}")
+def update_user_profile(
+    user_id: int,
+    req_data: UserProfileUpdate,
+    req: Request,
+    db: Session = Depends(get_db)
+):
+    """사용자 프로필 업데이트 API (예: github_url)"""
+    user = get_current_user(req, db)
+    if user.id != user_id:
+        raise HTTPException(status_code=403, detail="권한이 없습니다.")
+
+    user.github_url = req_data.github_url
+    db.add(user)
+    db.commit()
+    
+    return {"message": "프로필 업데이트 성공", "github_url": user.github_url}
