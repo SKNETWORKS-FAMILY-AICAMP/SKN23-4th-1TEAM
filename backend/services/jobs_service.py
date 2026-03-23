@@ -90,7 +90,7 @@ async def fetch_jobs(params: dict) -> dict:
             res = await client.get(url, params=qp)
 
             # “데이터를 실제로 받아오는지” 확인용 로그
-            logger.warning(f"[WORK24] final_url={res.request.url}")
+            # logger.warning(f"[WORK24] final_url={res.request.url}")
 
             res.raise_for_status()
             return parse_jobs_xml(res.text)

@@ -33,7 +33,6 @@ export const JobCards = ({ jobRole, keywords }: Props) => {
         setLoading(true);
 
         let resolvedJobRole = jobRole || "";
-
         if (user?.id && !resolvedJobRole) {
           try {
             const latestResume = await resumeApi.getLatestResume(
@@ -51,22 +50,13 @@ export const JobCards = ({ jobRole, keywords }: Props) => {
         }
 
         const primaryTitle = resolvedJobRole || "채용";
-
         // 키워드/직무 기반 검색
-        let data = await jobsApi.searchJobs({
+        const data = await jobsApi.searchJobs({
           startPage: 1,
           display: 100,
           empWantedTitle: primaryTitle,
-          jobRole: resolvedJobRole,
+          jobRole: primaryTitle,
         });
-
-        // 그래도 없으면 완전 기본 검색
-        if (!data.items || data.items.length === 0) {
-          data = await jobsApi.searchJobs({
-            startPage: 1,
-            display: 100,
-          });
-        }
 
         setJobs(data.items || []);
       } catch (error) {
