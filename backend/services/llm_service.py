@@ -200,9 +200,17 @@ def evaluate_and_respond(
         # 100점 만점을 우리 시스템 기준인 10점 만점으로 스케일링
         score = float(data.get("score", 50)) / 10.0
         feedback = data.get("feedback", "답변 감사합니다.")
-        follow_up_needed = data.get("follow_up_needed", False)
+        follow_up_needed = bool(data.get("follow_up_needed", False))
         follow_up_question = data.get("follow_up_question", "")
         next_q_trans = data.get("next_question_translated", "")
+
+        # 서버에서 꼬리질문 조건을 최종 강제한다.
+        follow_up_allowed = score <= 4.0 and followup_count < 2
+        if not follow_up_allowed:
+            follow_up_needed = False
+            follow_up_question = ""
+        elif not str(follow_up_question).strip():
+            follow_up_needed = False
 
         # 6. 최종 텍스트 조립
         reply_text = f"{feedback}\n\n"
@@ -355,10 +363,16 @@ def generate_evaluation(
 
 
 # ─── 이력서 종합 AI 분석 (이력서 대시보드용) ──────────────────────
-def analyze_resume_comprehensive(resume_text: str, job_role: str) -> dict:
+def analyze_resume_comprehensive(
+    resume_text: str,
+    job_role: str,
+    expected_question_count: int = 3,
+) -> dict:
     """이력서를 분석하여 키워드, 예상 질문, 직무 매칭률을 한 번에 JSON으로 추출합니다."""
     if not resume_text:
         return {}
+
+    question_count = max(1, min(int(expected_question_count or 3), 10))
 
     prompt = f"""
 당신은 {job_role} 전문 채용 담당자입니다.
@@ -373,12 +387,15 @@ def analyze_resume_comprehensive(resume_text: str, job_role: str) -> dict:
     "keywords": ["핵심기술1", "핵심기술2", "핵심기술3", "핵심기술4"],
     "expected_questions": [
         "이력서 경험 기반의 날카로운 실무 압박 질문 1",
-        "이력서 경험 기반의 날카로운 실무 압박 질문 2",
-        "이력서 경험 기반의 날카로운 실무 압박 질문 3"
+        "이력서 경험 기반의 날카로운 실무 압박 질문 2"
     ],
     "match_rate": <0~100 사이 정수 (직무 적합도 퍼센트)>,
     "match_feedback": "<{job_role} 직무 관점에서 이력서의 강점과 보완점 2문장 요약>"
 }}
+
+[추가 규칙]
+- expected_questions는 정확히 {question_count}개를 반환하세요.
+- 각 질문은 이력서에 적힌 경험/프로젝트/기술에서 직접 파생된 질문이어야 합니다.
 """
     try:
         from openai import OpenAI
@@ -396,6 +413,14 @@ def analyze_resume_comprehensive(resume_text: str, job_role: str) -> dict:
         )
         raw_json = response.choices[0].message.content.strip()
         data = json.loads(raw_json)
+        expected_questions = data.get("expected_questions") or []
+        if not isinstance(expected_questions, list):
+            expected_questions = []
+        data["expected_questions"] = [
+            str(question).strip()
+            for question in expected_questions
+            if str(question).strip()
+        ][:question_count]
         return data
     except Exception as e:
         print(f"이력서 분석 오류: {e}")

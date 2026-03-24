@@ -5,7 +5,11 @@ from .shared import *  # noqa: F401,F403
 def interview_analyze_resume(request):
     body = json_body(request)
     try:
-        result = analyze_resume_comprehensive(body["resume_text"], body["job_role"])
+        result = analyze_resume_comprehensive(
+            body["resume_text"],
+            body["job_role"],
+            body.get("question_count", 3),
+        )
     except Exception as exc:
         raise ApiError(str(exc), 500) from exc
     return {"status": "success", "data": result}

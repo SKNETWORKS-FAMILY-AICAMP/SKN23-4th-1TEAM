@@ -108,6 +108,7 @@ async def update_interview_session(
 class AnalyzeResumeRequest(BaseModel):
     resume_text: str
     job_role: str
+    question_count: int = 3
 
 class StoreResumeRequest(BaseModel):
     resume_text: str
@@ -122,7 +123,11 @@ class EvaluateInterviewRequest(BaseModel):
 @router.post("/analyze-resume")
 async def api_analyze_resume(req: AnalyzeResumeRequest):
     try:
-        result = analyze_resume_comprehensive(req.resume_text, req.job_role)
+        result = analyze_resume_comprehensive(
+            req.resume_text,
+            req.job_role,
+            req.question_count,
+        )
         return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

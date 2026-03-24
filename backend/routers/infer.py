@@ -281,6 +281,7 @@ def read_question_pool(
         .filter(
             base.JobCategory.target_role == job_role,
             base.QuestionPool.difficulty == difficulty,
+            base.QuestionPool.question_type == "기술",
         )
         .order_by(func.rand())
         .limit(limit)
@@ -292,6 +293,7 @@ def read_question_pool(
                 "id": row.id,
                 "question": row.content,
                 "difficulty": row.difficulty,
+                "question_type": row.question_type,
             }
             for row in rows
         ]
