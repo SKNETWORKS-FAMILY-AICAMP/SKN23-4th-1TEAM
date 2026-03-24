@@ -83,11 +83,11 @@ AGENT_TOOLS = [
                     "target_page": {
                         "type": "string",
                         "enum": ["home", "mypage", "resume", "my_info", "board"],
-                        "description": "이동할 목적지 페이지. (홈: home, 면접 기록: mypage, 이력서 저장소: resume, 내 정보: my_info, 커뮤니티/게시판: board)"
+                        "description": "이동할 목적지 페이지. (home: 홈, mypage: 면접 기록, resume: 이력서 저장소, my_info: 내 정보, board:커뮤니티/게시판 로 구분)"
                     },
                     "message": {
                         "type": "string",
-                        "description": "사용자에게 보여줄 안내 메시지. (예: '네, 마이페이지로 이동합니다.') ⚠️ 절대 '면접장으로 이동합니다'라는 말을 쓰지 마세요."
+                        "description": "사용자에게 보여줄 안내 메시지. (예: '네, OO 페이지로 이동합니다.') ⚠️ 절대 '면접장으로 이동합니다'라는 말을 쓰지 마세요."
                     }
                 },
                 "required": ["target_page", "message"]
