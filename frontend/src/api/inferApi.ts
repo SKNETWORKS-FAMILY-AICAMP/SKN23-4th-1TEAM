@@ -64,10 +64,15 @@ export const inferApi = {
   },
 
   // 예상 질문 추출
-  analyzeResume: async (resumeText: string, jobRole: string) => {
+  analyzeResume: async (
+    resumeText: string,
+    jobRole: string,
+    questionCount = 3,
+  ) => {
     const response = await axiosClient.post("/api/interview/analyze-resume", {
       resume_text: resumeText,
       job_role: jobRole,
+      question_count: questionCount,
     });
     return response.data;
   },

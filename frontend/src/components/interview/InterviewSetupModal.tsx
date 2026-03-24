@@ -12,6 +12,53 @@ interface Props {
   onClose: () => void;
 }
 
+const normalizeQuestion = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/\*\*/g, "")
+    .replace(/\b(그럼|이번에는|혹시|좀 더|조금 더|자세히|구체적으로)\b/gu, " ")
+    .replace(/\b(말씀해 주시겠어요|말씀해주시겠어요|설명해 주시겠어요|설명해주시겠어요|말씀해 주세요|설명해 주세요)\b/gu, " ")
+    .replace(/기술들/g, "기술")
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .trim();
+
+const isDuplicateQuestion = (source: string, candidate: string) => {
+  const a = normalizeQuestion(source);
+  const b = normalizeQuestion(candidate);
+
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+
+  const aTokens = new Set(a.split(" ").filter(Boolean));
+  const bTokens = new Set(b.split(" ").filter(Boolean));
+  const smallerSize = Math.min(aTokens.size, bTokens.size);
+  if (smallerSize === 0) return false;
+
+  let overlap = 0;
+  aTokens.forEach((token) => {
+    if (bTokens.has(token)) overlap += 1;
+  });
+
+  return overlap / smallerSize >= 0.6;
+};
+
+const buildFallbackTechQuestions = (jobRole: string, count: number) => {
+  const templates = [
+    `${jobRole}로서 가장 자신 있는 프레임워크나 라이브러리를 하나 골라, 선택 이유와 실무 적용 사례를 설명해주세요.`,
+    `${jobRole} 업무에서 성능 병목을 직접 해결한 경험이 있다면 원인 분석과 개선 방법을 설명해주세요.`,
+    `${jobRole} 업무에서 데이터베이스 설계나 쿼리 최적화를 수행한 사례를 설명해주세요.`,
+    `${jobRole} 업무에서 비동기 처리나 백그라운드 작업을 설계한 경험이 있다면 구조와 트레이드오프를 설명해주세요.`,
+    `${jobRole} 업무에서 운영 장애나 예외 상황을 해결했던 경험을 기술적으로 설명해주세요.`,
+    `${jobRole} 업무에서 테스트 자동화나 코드 품질 관리를 위해 적용한 방법을 설명해주세요.`,
+  ];
+
+  return Array.from({ length: count }, (_, index) => ({
+    question: templates[index % templates.length],
+  }));
+};
+
 export const InterviewSetupModal = ({ onClose }: Props) => {
   const { user } = useAuthStore();
   const setInferSettings = useInferStore((state) => state.setInferSettings);
@@ -99,19 +146,24 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
 
       const fixedFirstQ = { question: "간단하게 자기소개를 부탁드립니다." };
       const remainCount = questionCount - 1;
-      const techCount = Math.floor(remainCount / 2);
+      const resumeCount = finalResumeText ? Math.floor(remainCount / 2) : 0;
+      const techCount = remainCount - resumeCount;
 
       let resumeQs: string[] = [];
       let techQs: string[] = [];
+      const techFetchCount = techCount > 0 ? Math.max(techCount * 3, techCount + 2) : 0;
 
       if (finalResumeText) {
         try {
           const [analyzeRes, poolRes] = await Promise.all([
-            inferApi.analyzeResume(finalResumeText, jobRole),
-            inferApi.getQuestionPool(jobRole, difficulty, techCount),
+            inferApi.analyzeResume(finalResumeText, jobRole, resumeCount),
+            inferApi.getQuestionPool(jobRole, difficulty, techFetchCount),
           ]);
 
-          resumeQs = analyzeRes.data?.expected_questions || [];
+          resumeQs = (analyzeRes.data?.expected_questions || []).slice(
+            0,
+            resumeCount,
+          );
           techQs = poolRes.items?.map((item: any) => item.question) || [];
         } catch (e) {
           console.error("질문 배분 및 추출 실패:", e);
@@ -121,7 +173,7 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
           const poolRes = await inferApi.getQuestionPool(
             jobRole,
             difficulty,
-            remainCount,
+            Math.max(remainCount * 3, remainCount + 2),
           );
           techQs = poolRes.items?.map((item: any) => item.question) || [];
         } catch (e) {
@@ -129,15 +181,39 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
         }
       }
 
+      techQs = techQs.slice(0, techCount);
+
+      const dedupedResumeQs = resumeQs.filter((question, index, array) => {
+        return !array.slice(0, index).some((prev) => isDuplicateQuestion(prev, question));
+      });
+      const dedupedTechQs = techQs.filter((question, index, array) => {
+        return !array.slice(0, index).some((prev) => isDuplicateQuestion(prev, question));
+      });
+
       let mixedQuestions: { question: string }[] = [];
-      const maxLength = Math.max(resumeQs.length, techQs.length);
+      const usedQuestions = [fixedFirstQ.question];
+      const maxLength = Math.max(dedupedResumeQs.length, dedupedTechQs.length);
 
       for (let i = 0; i < maxLength; i++) {
-        if (resumeQs[i]) {
-          mixedQuestions.push({ question: resumeQs[i] });
+        if (dedupedResumeQs[i]) {
+          const resumeQuestion = dedupedResumeQs[i];
+          const isDuplicate = usedQuestions.some((prev) =>
+            isDuplicateQuestion(prev, resumeQuestion),
+          );
+          if (!isDuplicate) {
+            mixedQuestions.push({ question: resumeQuestion });
+            usedQuestions.push(resumeQuestion);
+          }
         }
-        if (techQs[i]) {
-          mixedQuestions.push({ question: techQs[i] });
+        if (dedupedTechQs[i]) {
+          const techQuestion = dedupedTechQs[i];
+          const isDuplicate = usedQuestions.some((prev) =>
+            isDuplicateQuestion(prev, techQuestion),
+          );
+          if (!isDuplicate) {
+            mixedQuestions.push({ question: techQuestion });
+            usedQuestions.push(techQuestion);
+          }
         }
       }
 
@@ -148,10 +224,21 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
 
       if (finalQuestions.length < questionCount) {
         const shortfall = questionCount - finalQuestions.length;
-        for (let i = 0; i < shortfall; i++) {
-          finalQuestions.push({
-            question: `${jobRole} 직무와 관련된 핵심 기술 경험에 대해 설명해주세요. (${i + 1})`,
-          });
+        const fallbackTechQuestions = buildFallbackTechQuestions(
+          jobRole,
+          shortfall * 2,
+        );
+
+        for (const fallbackQuestion of fallbackTechQuestions) {
+          const isDuplicate = finalQuestions.some((existing) =>
+            isDuplicateQuestion(existing.question, fallbackQuestion.question),
+          );
+          if (!isDuplicate) {
+            finalQuestions.push(fallbackQuestion);
+          }
+          if (finalQuestions.length >= questionCount) {
+            break;
+          }
         }
       }
 
