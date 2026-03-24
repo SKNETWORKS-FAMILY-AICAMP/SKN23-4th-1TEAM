@@ -4,9 +4,17 @@ import type { PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../components/common/Header";
-import { ChevronRight, ArrowLeft, Plus, Upload, X, AlertCircle } from "lucide-react";
+import {
+  ChevronRight,
+  ArrowLeft,
+  Plus,
+  Upload,
+  X,
+  AlertCircle,
+} from "lucide-react";
 import { authApi } from "../api/authApi";
 import "./MyPage.scss";
+import { GuideChatbot } from "../components/chat/GuideChatbot";
 
 const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
 const customerKey = "test_customer_key_12345";
@@ -131,13 +139,13 @@ export const MyPage = () => {
     handlePaymentResult();
   }, [user, updateTier]);
 
-
   const openCancelSubscriptionModal = () => {
     setConfirmModal({
       title: "PRO 구독을 해지하시겠습니까?",
       desc: (
         <>
-          해지를 예약하시더라도, 이번 결제 주기가 끝나는<br />
+          해지를 예약하시더라도, 이번 결제 주기가 끝나는
+          <br />
           다음 갱신일 전까지는 PRO 혜택이 유지됩니다.
         </>
       ),
@@ -146,19 +154,19 @@ export const MyPage = () => {
       btnText: "해지 예약하기",
       onConfirm: async () => {
         try {
-          const res = await authApi.downgradeTier(); 
-          setExpireDate(res.expire_date); 
+          const res = await authApi.downgradeTier();
+          setExpireDate(res.expire_date);
 
           if (user) {
-            setUser({ 
-              ...user, 
-              is_cancel_scheduled: 1, 
-              pro_expire_date: res.expire_date 
+            setUser({
+              ...user,
+              is_cancel_scheduled: 1,
+              pro_expire_date: res.expire_date,
             });
           }
 
           setConfirmModal(null);
-          setShowCancelSuccessModal(true); 
+          setShowCancelSuccessModal(true);
         } catch (error) {
           console.error("Cancel subscription failed:", error);
           showToast("구독 해지 처리 중 오류가 발생했습니다.");
@@ -169,39 +177,40 @@ export const MyPage = () => {
   };
 
   const handleReactivateSubscription = () => {
-  setConfirmModal({
-    title: "구독 유지를 결정하셨나요?",
-    desc: "해지 예약이 취소되며, PRO 멤버십 혜택을 계속 이용하실 수 있습니다.",
-    iconBg: "#eff6ff",
-    iconColor: "#0176f7",
-    btnText: "확인",
-    onConfirm: async () => {
-      try {
-        await authApi.reactivateSubscription(); 
-        setConfirmModal(null);
-        showToast("구독이 다시 활성화되었습니다!");
+    setConfirmModal({
+      title: "구독 유지를 결정하셨나요?",
+      desc: "해지 예약이 취소되며, PRO 멤버십 혜택을 계속 이용하실 수 있습니다.",
+      iconBg: "#eff6ff",
+      iconColor: "#0176f7",
+      btnText: "확인",
+      onConfirm: async () => {
+        try {
+          await authApi.reactivateSubscription();
+          setConfirmModal(null);
+          showToast("구독이 다시 활성화되었습니다!");
 
-        if (user) {
-          setUser({
-            ...user,
-            is_cancel_scheduled: 0,
-            pro_expire_date: null
-          });
+          if (user) {
+            setUser({
+              ...user,
+              is_cancel_scheduled: 0,
+              pro_expire_date: null,
+            });
+          }
+        } catch (error) {
+          setConfirmModal(null);
+          showToast("구독 유지 처리에 실패했습니다.");
         }
-      } catch (error) {
-        setConfirmModal(null);
-        showToast("구독 유지 처리에 실패했습니다.");
-      }
-    },
-  });
-};
+      },
+    });
+  };
 
   const openWithdrawModal = () => {
     setConfirmModal({
       title: "정말 탈퇴하시겠습니까?",
       desc: (
         <>
-          모든 면접 기록과 이력서 정보가 삭제되며<br />
+          모든 면접 기록과 이력서 정보가 삭제되며
+          <br />
           복구할 수 없습니다.
         </>
       ),
@@ -380,44 +389,43 @@ export const MyPage = () => {
             </div>
           </div>
           <div className="list-row no-border">
-          <div>
-            <div className="list-label">회원 등급</div>
-            <div className="list-value tier">
-              {user?.tier === "premium" ? "PRO 회원" : "NORMAL 회원"}
+            <div>
+              <div className="list-label">회원 등급</div>
+              <div className="list-value tier">
+                {user?.tier === "premium" ? "PRO 회원" : "NORMAL 회원"}
+              </div>
             </div>
+
+            {/* 1. NORMAL 회원일 때 (업그레이드 버튼) */}
+            {user?.tier !== "premium" && (
+              <button
+                className="upgrade-action-btn"
+                onClick={() => setShowUpgrade(true)}
+              >
+                PRO 업그레이드
+              </button>
+            )}
+
+            {/* 2. PRO 회원일 때 (해지 여부에 따른 버튼 분기) */}
+            {user?.tier === "premium" &&
+              (user?.is_cancel_scheduled ? (
+                /* 해지 예약 상태 -> 구독 유지 버튼 */
+                <button
+                  className="upgrade-action-btn"
+                  onClick={handleReactivateSubscription}
+                >
+                  구독 유지하기
+                </button>
+              ) : (
+                /* 정상 구독 상태 -> 구독 해지 버튼 */
+                <button
+                  className="upgrade-action-btn"
+                  onClick={openCancelSubscriptionModal}
+                >
+                  구독 해지
+                </button>
+              ))}
           </div>
-
-          {/* 1. NORMAL 회원일 때 (업그레이드 버튼) */}
-          {user?.tier !== "premium" && (
-            <button
-              className="upgrade-action-btn"
-              onClick={() => setShowUpgrade(true)}
-            >
-              PRO 업그레이드
-            </button>
-          )}
-
-          {/* 2. PRO 회원일 때 (해지 여부에 따른 버튼 분기) */}
-          {user?.tier === "premium" && (
-            user?.is_cancel_scheduled ? (
-              /* 해지 예약 상태 -> 구독 유지 버튼 */
-              <button
-                className="upgrade-action-btn" 
-                onClick={handleReactivateSubscription}
-              >
-                구독 유지하기
-              </button>
-            ) : (
-              /* 정상 구독 상태 -> 구독 해지 버튼 */
-              <button
-                className="upgrade-action-btn" 
-                onClick={openCancelSubscriptionModal}
-              >
-                구독 해지
-              </button>
-            )
-          )}
-        </div>
         </section>
 
         <section className="info-section">
@@ -443,28 +451,31 @@ export const MyPage = () => {
           </div>
         </div>
       </main>
-
+      <GuideChatbot />
       {/* 공통 커스텀 컨펌 모달 (해지 재확인, 탈퇴 등) */}
       {confirmModal && (
         <div className="upgrade-modal-overlay">
           <div className="confirm-modal-content">
-            <div 
-              className="confirm-icon" 
-              style={{ background: confirmModal.iconBg, color: confirmModal.iconColor }}
+            <div
+              className="confirm-icon"
+              style={{
+                background: confirmModal.iconBg,
+                color: confirmModal.iconColor,
+              }}
             >
               <AlertCircle size={32} />
             </div>
             <h3>{confirmModal.title}</h3>
             <p>{confirmModal.desc}</p>
             <div className="confirm-actions">
-              <button 
-                className="btn-cancel" 
+              <button
+                className="btn-cancel"
                 onClick={() => setConfirmModal(null)}
               >
                 취소하기
               </button>
-              <button 
-                className="btn-proceed" 
+              <button
+                className="btn-proceed"
                 onClick={confirmModal.onConfirm}
                 style={{ background: confirmModal.iconColor }}
               >
@@ -475,27 +486,71 @@ export const MyPage = () => {
         </div>
       )}
 
-
       {showCancelSuccessModal && (
         <div className="upgrade-modal-overlay">
-          <div className="confirm-modal-content" style={{ padding: "40px 32px 32px" }}>
-            <div 
-              className="confirm-icon" 
-              style={{ background: "#f0fdf4", color: "#16a34a", fontSize: "32px", width: "64px", height: "64px", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "24px" }}
+          <div
+            className="confirm-modal-content"
+            style={{ padding: "40px 32px 32px" }}
+          >
+            <div
+              className="confirm-icon"
+              style={{
+                background: "#f0fdf4",
+                color: "#16a34a",
+                fontSize: "32px",
+                width: "64px",
+                height: "64px",
+                borderRadius: "50%",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "24px",
+              }}
             >
               ✓
             </div>
-            <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>구독 해지 예약 완료</h3>
-            <p style={{ fontSize: "15px", color: "#64748b", lineHeight: "1.6", marginBottom: "28px" }}>
-              정상적으로 해지 예약이 처리되었습니다.<br />
-              <strong style={{ color: "#0176f7" }}>{expireDate}</strong>까지는<br />
+            <h3
+              style={{
+                fontSize: "20px",
+                fontWeight: 800,
+                color: "#111",
+                marginBottom: "12px",
+              }}
+            >
+              구독 해지 예약 완료
+            </h3>
+            <p
+              style={{
+                fontSize: "15px",
+                color: "#64748b",
+                lineHeight: "1.6",
+                marginBottom: "28px",
+              }}
+            >
+              정상적으로 해지 예약이 처리되었습니다.
+              <br />
+              <strong style={{ color: "#0176f7" }}>{expireDate}</strong>까지는
+              <br />
               PRO 혜택을 계속 이용하실 수 있습니다.
             </p>
-            <div className="confirm-actions" style={{ display: "flex", width: "100%" }}>
-              <button 
-                className="btn-proceed" 
+            <div
+              className="confirm-actions"
+              style={{ display: "flex", width: "100%" }}
+            >
+              <button
+                className="btn-proceed"
                 onClick={() => setShowCancelSuccessModal(false)}
-                style={{ background: "#0176f7", color: "#fff", width: "100%", padding: "14px 0", borderRadius: "12px", fontSize: "15px", fontWeight: 700, border: "none", cursor: "pointer" }}
+                style={{
+                  background: "#0176f7",
+                  color: "#fff",
+                  width: "100%",
+                  padding: "14px 0",
+                  borderRadius: "12px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 확인
               </button>

@@ -9,6 +9,7 @@ import { useAuthStore } from "../store/authStore";
 import { axiosClient } from "../api/axiosClient";
 import { ROUTES } from "../constants/routes";
 import "./RecordsPage.scss";
+import { GuideChatbot } from "../components/chat/GuideChatbot";
 
 interface InterviewSession {
   id: number;
@@ -361,7 +362,7 @@ export const RecordsPage = () => {
           </div>
         )}
       </main>
-
+      <GuideChatbot />
       {selectedSessionId !== null && (
         <SessionDetailModal
           sessionId={selectedSessionId}
