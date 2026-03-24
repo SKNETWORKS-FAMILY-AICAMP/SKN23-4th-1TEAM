@@ -525,7 +525,6 @@ export const GuideChatbot = () => {
 
       let finalDbResumeToUse = dbResumeToUse;
 
-      // 💡 여기서 isInterviewIntent가 false이므로 이력서 자동 세팅 로직을 타지 않습니다!
       if (isInterviewIntent && !fileToUpload && !dbResumeToUse) {
         if (savedResumes.length > 0) {
           finalDbResumeToUse = savedResumes[0];

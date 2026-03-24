@@ -425,59 +425,137 @@ User Flow: AI 모의면접 진행 파이프라인
 
 <br><br>
 
-## 10-1. Agent Guide ChatBot 🦁
+# 11. 고도화된 <span style="color: #0162e0;">AI</span>WORK (시연 캡처본 및 UX Flow)
+
+
+### 1) Agent 가이드 챗봇
+
+<br>
+
+<div align="center">
+
+## **기본 가이드 챗봇 화면**
+
+</div>
 
 | **가이드 챗봇** | **가이드 챗봇 모달** |
 | :---: | :---: |
 | <img src="frontend/src/assets/rm/가이드챗봇1.png" width="90%"> |<img src="frontend/src/assets/rm/가이드챗봇2.png" width="90%"> |
 
 
+<br>
+
+<div align="center">
+
+## **이력서 기반 챗봇 화면**
+
+</div>
+
 | **@ 입력시 저장된 이력서 목록 띄움** | **@이력서 선택** |**저장된 이력서 분석 결과** |**저장된 이력서 첨삭**|
 | :---: | :---: | :---: | :---: |
-| <img src="frontend/src/assets/rm/@이력서분석.png" width="50%"> |<img src="frontend/src/assets/rm/@이력서분석선택.png" width="50%"> |<img src="frontend/src/assets/rm/@이력서분석결과.png" width="50%"> |<img src="frontend/src/assets/rm/@이력서첨삭.png" width="50%"> |
+| <img src="frontend/src/assets/rm/@이력서분석.png" width="70%"> |<img src="frontend/src/assets/rm/@이력서분석선택.png" width="70%"> |<img src="frontend/src/assets/rm/@이력서분석결과.png" width="70%"> |<img src="frontend/src/assets/rm/@이력서첨삭.png" width="70%"> |
 
 
 | **이력서 첨삭 및 분석 (종합 요청)** | **이력서 저장 모달** |**이력서 저장 결과** |
 | :---: | :---: | :---: |
 | <img src="frontend/src/assets/rm/이력서종합결과.png" width="100%"> |<img src="frontend/src/assets/rm/이력서분석저장.png" width="70%"> |<img src="frontend/src/assets/rm/이력서분석결과저장.png" width="70%"> |
 
+
+<br>
+
+<div align="center">
+
+## **Zero-Click 면접 세팅 화면**
+
+</div>
+
 | **Zero-Click 면접 세팅 (1)** | **Zero-Click 면접 세팅 (2)** |**Zero-Click 면접 세팅 결과** |
 | :---: | :---: | :---: |
 | <img src="frontend/src/assets/rm/이력서첨부면접.png" width="100%"> |<img src="frontend/src/assets/rm/이력서면접설정.png" width="100%"> |<img src="frontend/src/assets/rm/zero-click면접설정.gif" width="90%"> |
 
 
-| **Zero-Click 페이지 이동 (1)** | **Zero-Click 페이지 이동 (2)** | **페이지 이동 gif** |
+| **Zero-Click 페이지 이동 (1)** | **Zero-Click 페이지 이동 (2)** | **Zero-Click 페이지 이동** |
 | :---: | :---: | :---: |
 | <img src="frontend/src/assets/rm/zero-click이동.png" width="100%"> |<img src="frontend/src/assets/rm/zero-click이동결과.png" width="80%"> | <img src="frontend/src/assets/rm/zero-click이동용.gif" width="100%"> |
-<br><br>
 
-# 11. 수행결과 (시연 캡처본 및 UX Flow)
+<br>
 
-### ✧ 로그인 및 회원가입
+<div align="center">
 
-| **로그인** | **비밀번호 찾기** | **회원가입** |
+## **기타 기능**
+
+</div>
+
+|**가이드봇 시작 채팅**| **Tavily 웹 검색** | **면접 점수 확인** |
 | :---: | :---: | :---: |
-| \<img src="frontend/assets/rm/login.png" width="90%"\> | \<img src="frontend/assets/rm/find\_pw.png" width="90%"\> | \<img src="frontend/assets/rm/sign\_up.png" width="100%"\> |
+| <img src="frontend/src/assets/rm/사용법.png" width="60%"> | <img src="frontend/src/assets/rm/tavily검색.png" width="60%"> |<img src="frontend/src/assets/rm/면접점수확인.png" width="60%"> |
 
-### ✧ 메인 대시보드 및 가이드 챗봇
 
-| **홈** | **가이드 챗봇 (Zero-Click)** |
+<br><br>
+---
+
+### 2) **수익 모델 (Tier System)** - 일반(Normal) 회원과 프리미엄(PRO) 회원의 기능 및 접근 권한 차별화
+
+|**PRO 구독**| **PRO회원 권한 예시** | 
 | :---: | :---: |
-| \<img src="frontend/assets/rm/home.png" width="100%"\> | \<img src="frontend/assets/rm/guide\_chatbot.png" width="100%"\> |
+| <img src="frontend/src/assets/rm/PRO구독.gif" width="100%"> | <img src="frontend/src/assets/rm/pro예시.png" width="60%"> |
 
-### ✧ 면접 진행 및 결과
+<br><br>
+---
 
-| **면접 진행(Text)** | **면접 진행(TTS & 웹캠)** |
+### 3) 로딩 처리 
+
+<div align="center">
+
+## **로딩 애니메이션**
+
+</div>
+
+| **로딩 애니메이션** | **면접중** |**면접모달리포트** |
+| :---: | :---: | :---: |
+| <img src="frontend/public/images/common/loading.gif" width="1000" align="absmiddle"> | <img src="frontend/src/assets/rm/로딩면접.png" width="100%" align="absmiddle"> |<img src="frontend/src/assets/rm/로딩모달.png" width="100%" align="absmiddle"> |
+
+<br>
+
+<div align="center">
+
+## **가이드챗봇 로딩중**
+
+| **로딩 애니메이션** | 
+| :---: |   
+| <img src="frontend/src/assets/rm/로딩챗봇.png" width="30%"> | 
+
+</div>
+
+---
+
+### 4) 인성면접 게시판
+
+<div align="center">
+
+## **인성면접 게시판 페이지**
+
+</div>
+
+| **인성면접 게시판 페이지** | **인성면접 질문 등록** |
 | :---: | :---: |
-| \<img src="frontend/assets/rm/interview\_text.png" width="100%"\> | \<img src="frontend/assets/rm/interview\_cam.png" width="100%"\> |
-| **면접 설정 모달** | **면접 결과 리포트** |
-| \<img src="frontend/assets/rm/interview\_setting.png" width="70%"\> | \<img src="frontend/assets/rm/interview\_result.png" width="70%"\> |
+| <img src="frontend/src/assets/rm/인성면접페이지.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/인성면접게시판.gif" width="100%" align="absmiddle"> |
 
-### ✧ 이력서 분석 및 마이페이지
+<br>
 
-| **면접 기록 (마이페이지)** | **이력서 등록 및 AI 분석** |
-| :---: | :---: |
-| \<img src="frontend/assets/rm/mypage.png" width="100%"\> | \<img src="frontend/assets/rm/resume.png" width="100%"\> |
+<div align="center">
+
+## **인성면접 질문 답변 등록**
+
+</div>
+
+| **인성면접 질문** | **질문 답변** | **질문 답변 분석** |
+| :---: | :---: | :---: |
+| <img src="frontend/src/assets/rm/인성면접질문.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/답변.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/인성면접답변분석.png" width="100%" align="absmiddle"> |
+
+| **답변 좋아요 기능** | **답변 삭제** | **답변 삭제완료** |
+| :---: | :---: | :---: |
+| <img src="frontend/src/assets/rm/좋아요.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/답변삭제.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/인성면접질문.png" width="100%" align="absmiddle"> |
 
 <br><br>
 
