@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import { useAuthStore } from "../../store/authStore";
 import { ROUTES } from "../../constants/routes";
 import { authApi } from "../../api/authApi";
-// 💡 커스텀 모달 컴포넌트 임포트 (경로 확인 필요!)
 import { LoginModal } from "./LoginModal";
 import "./Header.scss";
 
@@ -38,7 +37,7 @@ export const Header = () => {
     setIsMobileMenuOpen(false);
 
     if (!isAuthenticated) {
-      openLoginModal(); // 💡 경고창 대신 모달 띄우기!
+      openLoginModal(); 
       return;
     }
 
