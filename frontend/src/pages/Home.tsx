@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, MessageCircle, ChevronLeft, ChevronRight, Github } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { GuideChatbot } from "../components/chat/GuideChatbot";
+import { CustomAlert } from "../components/common/CustomAlert";
 import { Header } from "../components/common/Header";
 import { InterviewSetupModal } from "../components/interview/InterviewSetupModal";
 import { JobCards } from "../components/home/JobCards";
@@ -10,6 +11,7 @@ import { NewsFeed } from "../components/home/NewsFeed";
 import { MemoBoard } from "../components/home/MemoBoard";
 import { resumeApi } from "../api/resumeApi";
 import { homeApi } from "../api/homeApi";
+import { authApi } from "../api/authApi";
 import "./Home.scss";
 
 type TabKey = "jobs" | "news" | "memos";
@@ -30,6 +32,7 @@ export const Home = () => {
 
   const [isEditingGithub, setIsEditingGithub] = useState(false);
   const [githubInput, setGithubInput] = useState(user?.github_url || "");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const resumeSlides = [
     {
@@ -84,6 +87,18 @@ export const Home = () => {
     } catch (error) {
       console.error(error);
       alert("저장에 실패했습니다.");
+    }
+  };
+
+  const executeLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setShowLogoutConfirm(false);
+      clearAuth();
+      navigate("/auth");
     }
   };
 
@@ -237,7 +252,7 @@ export const Home = () => {
                 <div className="profile-actions">
                   <button className="action-btn" onClick={() => navigate("/mypage")}>내 면접 기록</button>
                   <button className="action-btn" onClick={() => navigate("/my_info")}>계정 설정</button>
-                  <button className="action-btn logout-btn" onClick={() => { clearAuth(); navigate("/auth"); }} style={{ color: "#ef4444" }}>로그아웃</button>
+                  <button className="action-btn logout-btn" onClick={() => setShowLogoutConfirm(true)} style={{ color: "#ef4444" }}>로그아웃</button>
                 </div>
                 <button className="start-interview-btn" onClick={handleStartInterview}>AI 모의 면접 시작하기</button>
               </>
@@ -290,6 +305,15 @@ export const Home = () => {
         </div>
       </main>
       <GuideChatbot />
+      <CustomAlert
+        open={showLogoutConfirm}
+        title={"로그아웃 하시겠습니까?"}
+        message={"로그아웃 후 로그인 화면으로 이동합니다."}
+        confirmText={"확인"}
+        cancelText={"취소"}
+        onConfirm={executeLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
       {isSetupModalOpen && <InterviewSetupModal onClose={() => setIsSetupModalOpen(false)} />}
     </div>
   );
