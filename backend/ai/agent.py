@@ -17,9 +17,9 @@ _base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def run_agent(user_message: str) -> dict:
     load_dotenv(find_dotenv())
     load_dotenv(dotenv_path=os.path.join(_base_dir, ".env")) 
-    
+
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    
+
     if not api_key:
         print("[Agent Error] OPENAI_API_KEY가 비어있습니다.")
         return {
@@ -28,13 +28,14 @@ def run_agent(user_message: str) -> dict:
             "target_page": "",
             "session_params": {}
         }
-        
+
     client = OpenAI(api_key=api_key)
     
     system_prompt = (
         "당신은 AIWORK 플랫폼의 중앙 컨트롤 타워 AI '사자개'입니다.\n"
         "사용자의 의도를 파악하고 제공된 함수(tools) 중 가장 적절한 것을 반드시 호출하여 플랫폼을 제어하세요.\n"
         "함수 호출이 필요 없는 단순 인사나 질문에만 텍스트로 대답하세요."
+
     )
 
     try:
@@ -132,11 +133,11 @@ def run_agent(user_message: str) -> dict:
                     "message": search_result
                 }
 
-            # 누적 성적/브리핑 확인 시 내 기록(history) 이동
+            # 누적 성적/브리핑 확인 시 내 기록(mypage) 이동
             elif function_name in ["fetch_interview_analytics", "get_interview_briefing"]:
                 return {
                     "action": "navigate",
-                    "target_page": "history",
+                    "target_page": "mypage",
                     "session_params": {},
                     "message": "네, 그동안의 면접 성적과 상세한 피드백을 확인하실 수 있도록 '내 기록' 페이지로 안내해 드릴게요!"
                 }

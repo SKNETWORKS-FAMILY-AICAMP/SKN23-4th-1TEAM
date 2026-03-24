@@ -273,8 +273,9 @@ export const GuideChatbot = () => {
         currentInput.includes("세팅") ||
         currentInput.includes("시작");
       const wantsScoreSummary =
-        (currentInput.includes("면접") || currentInput.includes("기록")) &&
-        (currentInput.includes("점수") ||
+        currentInput.includes("면접") &&
+        (currentInput.includes("기록") ||
+          currentInput.includes("점수") ||
           currentInput.includes("평균") ||
           currentInput.includes("누적") ||
           currentInput.includes("총점"));
@@ -486,31 +487,7 @@ export const GuideChatbot = () => {
       });
       const agentData = response.data;
 
-      let finalBotMessage = agentData.message || "응답을 처리할 수 없습니다.";
-      if (
-        agentData.action === "navigate" &&
-        agentData.target_page !== "interview"
-      ) {
-        if (finalBotMessage.includes("면접")) {
-          if (
-            agentData.target_page === "mypage" ||
-            agentData.target_page === "my_info"
-          )
-            finalBotMessage = "네, 마이페이지로 이동합니다.";
-          else if (agentData.target_page === "history")
-            finalBotMessage = "네, 내 기록 페이지로 이동합니다.";
-          else if (
-            agentData.target_page === "board" ||
-            agentData.target_page === "community"
-          )
-            finalBotMessage = "네, 커뮤니티(게시판)로 이동합니다.";
-          else if (agentData.target_page === "resume")
-            finalBotMessage = "네, 이력서 보관함으로 이동합니다.";
-          else if (agentData.target_page === "home")
-            finalBotMessage = "네, 메인 화면으로 이동합니다.";
-        }
-      }
-
+      const finalBotMessage = agentData.message || "응답을 처리할 수 없습니다.";
       addMessage({
         id: Date.now().toString(),
         type: "bot",
@@ -579,18 +556,15 @@ export const GuideChatbot = () => {
           } catch (e) {
             showToast("면접 세션을 생성하는데 실패했습니다.", "error");
           }
-        } else if (agentData.target_page === "history") {
+        } else if (agentData.target_page === "mypage") {
           setTimeout(() => {
             setIsOpen(false);
-            navigate("/history");
+            navigate("/mypage");
           }, 1000);
-        } else if (
-          agentData.target_page === "mypage" ||
-          agentData.target_page === "my_info"
-        ) {
+        } else if (agentData.target_page === "my_info") {
           setTimeout(() => {
             setIsOpen(false);
-            navigate(ROUTES.MY_INFO);
+            navigate("/my_info");
           }, 1000);
         } else if (agentData.target_page === "resume") {
           setTimeout(() => {
