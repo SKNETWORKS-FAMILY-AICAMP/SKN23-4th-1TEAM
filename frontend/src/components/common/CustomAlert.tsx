@@ -16,8 +16,8 @@ export const CustomAlert = ({
   open,
   title,
   message,
-  confirmText = "\ub85c\uadf8\uc544\uc6c3",
-  cancelText = "\ub2eb\uae30",
+  confirmText = "로그아웃",
+  cancelText = "닫기",
   onConfirm,
   onCancel,
 }: CustomAlertProps) => {
