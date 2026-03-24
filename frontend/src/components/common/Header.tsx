@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { useInferStore } from "../../store/inferStore";
 import { ROUTES } from "../../constants/routes";
 import { authApi } from "../../api/authApi";
 import { LoginModal } from "./LoginModal";
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
 
 export const Header = () => {
   const { isAuthenticated, user, clearAuth, openLoginModal } = useAuthStore();
+  const clearInferSettings = useInferStore((state) => state.clearInferSettings);
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,6 +40,11 @@ export const Header = () => {
     if (!isAuthenticated) {
       openLoginModal();
       return;
+    }
+
+    if (path === ROUTES.INTERVIEW) {
+      localStorage.removeItem("current_session_id");
+      clearInferSettings();
     }
 
     navigate(path);
