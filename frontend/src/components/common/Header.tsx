@@ -133,7 +133,8 @@ export const Header = () => {
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="메뉴 닫기"
           >
-            X
+            <span />
+            <span />
           </button>
         </div>
 
