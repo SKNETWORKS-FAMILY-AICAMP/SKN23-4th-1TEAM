@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useAuthStore } from "../../store/authStore";
 import { authApi } from "../../api/authApi";
@@ -19,6 +19,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchMode }) => {
   const [tempAdminData, setTempAdminData] = useState<any>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -26,8 +27,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchMode }) => {
     const socialError = searchParams.get("error");
     if (socialError) {
       setError(socialError);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("error");
+      nextParams.delete("social");
+      const nextQuery = nextParams.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextQuery ? `?${nextQuery}` : "",
+        },
+        { replace: true },
+      );
     }
-  }, [searchParams]);
+  }, [location.pathname, navigate, searchParams]);
 
   const handleLoginSuccess = (userData: any, token: string) => {
     if (userData.role === "admin") {
