@@ -504,10 +504,10 @@ export const ResumePage = () => {
 
       <CustomAlert
         open={pendingDeleteResumeId !== null}
-        title="?대젰???곸쓣 ??젣?좉퉴??"
-        message="?대젰?쒕? ??젣?섎㈃ 蹂듦뎄???섏? ?딆뒿?덈떎."
-        confirmText="??젣?섍린"
-        cancelText="痍⑥냼"
+        title="이력서를 삭제하시겠습니까?"
+        message="선택하신 이력서가 삭제됩니다."
+        confirmText="삭제하기"
+        cancelText="취소"
         onCancel={() => setPendingDeleteResumeId(null)}
         onConfirm={async () => {
           if (pendingDeleteResumeId === null) return;
