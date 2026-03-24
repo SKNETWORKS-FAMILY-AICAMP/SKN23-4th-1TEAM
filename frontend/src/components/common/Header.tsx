@@ -92,14 +92,14 @@ export const Header = () => {
           {isAuthenticated ? (
             <>
               <span className="user-greeting">{user?.name}님</span>
-                <button className="logout-btn" onClick={handleLogoutClick}>
-                  로그아웃
-                </button>
+              <button className="logout-btn" onClick={handleLogoutClick}>
+                로그아웃
+              </button>
             </>
           ) : (
             <button className="login-btn" onClick={() => navigate(ROUTES.AUTH)}>
-                로그인 / 회원가입
-              </button>
+              로그인 / 회원가입
+            </button>
           )}
         </div>
 
@@ -124,7 +124,7 @@ export const Header = () => {
       <aside className={`mobile-menu-drawer${isMobileMenuOpen ? " open" : ""}`}>
         <div className="mobile-menu-header">
           <div>
-              <strong>AIWORK 메뉴</strong>
+            <strong>AIWORK 메뉴</strong>
             <p>모바일에서도 편하게 둘러보세요.</p>
           </div>
           <button
@@ -133,7 +133,7 @@ export const Header = () => {
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="메뉴 닫기"
           >
-            ?
+            X
           </button>
         </div>
 
@@ -146,9 +146,9 @@ export const Header = () => {
                 <span className="mobile-user-label">현재 로그인</span>
                 <strong>{user?.name}님</strong>
               </div>
-                <button className="mobile-auth-btn secondary" onClick={handleLogoutClick}>
-                  로그아웃
-                </button>
+              <button className="mobile-auth-btn secondary" onClick={handleLogoutClick}>
+                로그아웃
+              </button>
             </>
           ) : (
             <button
