@@ -16,6 +16,10 @@ from sqlalchemy.orm import Session  # DB 세션
 from backend.core.config import settings  # 설정
 from backend.models.user import User  # 유저 모델
 
+class SocialLoginConflictError(ValueError):
+    """기존 계정과 소셜 로그인 정보가 충돌할 때 사용."""
+
+
 def _require(value: str, name: str) -> str:
     if not value:
         raise ValueError(f"missing {name}")
@@ -53,6 +57,33 @@ def get_or_create_social_user(
             db.commit()
             db.refresh(user)
         return user
+
+    if email:
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            if existing_user.provider == provider and not existing_user.provider_user_id:
+                existing_user.provider = provider
+                existing_user.provider_user_id = provider_user_id
+                if name and existing_user.name != name:
+                    existing_user.name = name
+                elif not existing_user.name:
+                    existing_user.name = email or f"{provider}_{provider_user_id}"
+                if profile_image_url and existing_user.profile_image_url != profile_image_url:
+                    existing_user.profile_image_url = profile_image_url
+                db.add(existing_user)
+                db.commit()
+                db.refresh(existing_user)
+                return existing_user
+
+            login_method = {
+                None: "이메일",
+                "google": "Google",
+                "kakao": "카카오",
+                "naver": "네이버",
+            }.get(existing_user.provider, "기존")
+            raise SocialLoginConflictError(
+                f"이미 가입된 이메일입니다. 기존 {login_method} 로그인으로 이용해 주세요."
+            )
 
     display_name = name or email or f"{provider}_{provider_user_id}"
 

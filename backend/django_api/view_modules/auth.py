@@ -309,6 +309,14 @@ def social_kakao_start(request):
     )
 
 
+def _social_auth_error_redirect(provider: str, message: str):
+    frontend_url = (
+        f"{settings.FRONTEND_BASE_URL}/auth?"
+        f"{urlencode({'mode': 'login', 'error': message, 'social': provider})}"
+    )
+    return HttpResponseRedirect(frontend_url)
+
+
 @api_view(["GET"])
 def social_kakao_callback(request):
     code = request.GET.get("code")
@@ -319,14 +327,17 @@ def social_kakao_callback(request):
         access_token
     )
     with db_session() as db:
-        user = social_service.get_or_create_social_user(
-            db,
-            provider="kakao",
-            provider_user_id=provider_user_id,
-            email=email,
-            name=name,
-            profile_image_url=image_url,
-        )
+        try:
+            user = social_service.get_or_create_social_user(
+                db,
+                provider="kakao",
+                provider_user_id=provider_user_id,
+                email=email,
+                name=name,
+                profile_image_url=image_url,
+            )
+        except social_service.SocialLoginConflictError as exc:
+            return _social_auth_error_redirect("kakao", str(exc))
         _ensure_active_user(user)
         our_access, our_refresh = auth_service.issue_tokens_for_user_id(db, user.id)
     csrf = fresh_csrf_token()
@@ -366,14 +377,17 @@ def social_google_callback(request):
         access_token
     )
     with db_session() as db:
-        user = social_service.get_or_create_social_user(
-            db,
-            provider="google",
-            provider_user_id=provider_user_id,
-            email=email,
-            name=name,
-            profile_image_url=image_url,
-        )
+        try:
+            user = social_service.get_or_create_social_user(
+                db,
+                provider="google",
+                provider_user_id=provider_user_id,
+                email=email,
+                name=name,
+                profile_image_url=image_url,
+            )
+        except social_service.SocialLoginConflictError as exc:
+            return _social_auth_error_redirect("google", str(exc))
         _ensure_active_user(user)
         our_access, our_refresh = auth_service.issue_tokens_for_user_id(db, user.id)
     csrf = fresh_csrf_token()
@@ -408,13 +422,16 @@ def social_naver_callback(request):
     access_token = social_service.naver_exchange_code_for_token(code, state=state)
     provider_user_id, email, name = social_service.naver_fetch_profile(access_token)
     with db_session() as db:
-        user = social_service.get_or_create_social_user(
-            db,
-            provider="naver",
-            provider_user_id=provider_user_id,
-            email=email,
-            name=name,
-        )
+        try:
+            user = social_service.get_or_create_social_user(
+                db,
+                provider="naver",
+                provider_user_id=provider_user_id,
+                email=email,
+                name=name,
+            )
+        except social_service.SocialLoginConflictError as exc:
+            return _social_auth_error_redirect("naver", str(exc))
         _ensure_active_user(user)
         our_access, our_refresh = auth_service.issue_tokens_for_user_id(db, user.id)
     csrf = fresh_csrf_token()
