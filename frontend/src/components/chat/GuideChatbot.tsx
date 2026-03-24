@@ -13,6 +13,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { useInferStore } from "../../store/inferStore";
+import {
+  useGuideChatbotStore,
+  type SavedResume,
+  type ToastType,
+} from "../../store/guideChatbotStore";
 import { inferApi } from "../../api/inferApi";
 import { ROUTES } from "../../constants/routes";
 import { homeApi } from "../../api/homeApi";
@@ -33,53 +38,42 @@ interface Message {
   };
 }
 
-interface SavedResume {
-  id: string;
-  title: string;
-}
-
-type ToastType = "success" | "error" | "warning";
-
 export const GuideChatbot = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "bot",
-      content:
-        "안녕하세요! AIWORK 수석 어드바이저 사자개입니다.\n\n플랫폼 사용법, 취업 트렌드, 직무 고민 등 무엇이든 물어보세요. 실시간 웹 검색으로 2026년 최신 데이터를 기반으로 답변드립니다.",
-    },
-  ]);
-  const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const [showMentionMenu, setShowMentionMenu] = useState(false);
-  const [selectedDbResume, setSelectedDbResume] = useState<SavedResume | null>(
-    null,
-  );
+  const [isSaving, setIsSaving] = useState(false);
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
 
-  const [confirmModalPayload, setConfirmModalPayload] = useState<{
-    title: string;
-    text: string;
-    msgId: string;
-  } | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [savedPayloadIds, setSavedPayloadIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [toast, setToast] = useState<{
-    message: string;
-    type: ToastType;
-  } | null>(null);
+  const {
+    ownerUserId,
+    setOwnerUserId,
+    isOpen,
+    setIsOpen,
+    messages,
+    addMessage,
+    setMessages,
+    removeMessageById,
+    removeLoadingMessages,
+    input,
+    setInput,
+    selectedDbResume,
+    setSelectedDbResume,
+    confirmModalPayload,
+    setConfirmModalPayload,
+    savedPayloadIds,
+    markPayloadSaved,
+    toast,
+    setToast,
+    resetChat,
+  } = useGuideChatbotStore();
 
   // 💡 openLoginModal 가져오기
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
   const navigate = useNavigate();
   const { setInferSettings, setResumeUsed } = useInferStore();
 
+  const chatBodyRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -89,11 +83,33 @@ export const GuideChatbot = () => {
       const timer = setTimeout(() => setToast(null), 2500);
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [toast, setToast]);
 
   const showToast = (message: string, type: ToastType) => {
     setToast({ message, type });
   };
+
+  useEffect(() => {
+    const currentUserId = user?.id ? String(user.id) : null;
+
+    // 로그아웃한 경우
+    if (!currentUserId) {
+      resetChat();
+      return;
+    }
+
+    // 처음 로그인한 경우
+    if (ownerUserId === null) {
+      setOwnerUserId(currentUserId);
+      return;
+    }
+
+    // 다른 계정으로 로그인한 경우
+    if (ownerUserId !== currentUserId) {
+      resetChat();
+      setOwnerUserId(currentUserId);
+    }
+  }, [user?.id, ownerUserId, resetChat, setOwnerUserId]);
 
   useEffect(() => {
     const loadResumes = async () => {
@@ -114,13 +130,37 @@ export const GuideChatbot = () => {
     if (isOpen) loadResumes();
   }, [isOpen, user?.id]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTo({
+        top: chatBodyRef.current.scrollHeight,
+        behavior,
+      });
+      return;
+    }
+
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping, selectedFile, selectedDbResume]);
+    if (!isOpen) return;
+
+    const timer = requestAnimationFrame(() => {
+      scrollToBottom("auto");
+    });
+
+    return () => cancelAnimationFrame(timer);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = requestAnimationFrame(() => {
+      scrollToBottom("smooth");
+    });
+
+    return () => cancelAnimationFrame(timer);
+  }, [messages, isTyping, selectedFile, selectedDbResume, isOpen]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -185,10 +225,11 @@ export const GuideChatbot = () => {
       default:
         return;
     }
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), type: "bot", content: aiResponse },
-    ]);
+    addMessage({
+      id: Date.now().toString(),
+      type: "bot",
+      content: aiResponse,
+    });
   };
 
   const handleSend = async () => {
@@ -209,14 +250,11 @@ export const GuideChatbot = () => {
     const userMessageContent = input.trim()
       ? `${input}${attachedText}`
       : attachedText.trim();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        type: "user",
-        content: userMessageContent.trim(),
-      },
-    ]);
+    addMessage({
+      id: Date.now().toString(),
+      type: "user",
+      content: userMessageContent.trim(),
+    });
 
     const fileToUpload = selectedFile;
     const dbResumeToUse = selectedDbResume;
@@ -284,14 +322,11 @@ export const GuideChatbot = () => {
             `최고 점수는 **${bestScore.toFixed(1)}점 / 100점**입니다.`;
         }
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            type: "bot",
-            content: scoreMessage,
-          },
-        ]);
+        addMessage({
+          id: Date.now().toString(),
+          type: "bot",
+          content: scoreMessage,
+        });
 
         setIsTyping(false);
         return;
@@ -321,10 +356,11 @@ export const GuideChatbot = () => {
           loadingText = "문서를 분석하고 첨삭을 진행 중입니다...";
         }
 
-        setMessages((prev) => [
-          ...prev,
-          { id: loadingId, type: "bot", content: loadingText },
-        ]);
+        addMessage({
+          id: loadingId,
+          type: "bot",
+          content: loadingText,
+        });
 
         let finalChatMsg = "";
         let finalDownloadContent = "";
@@ -385,14 +421,17 @@ export const GuideChatbot = () => {
           finalDownloadContent += `[AI 이력서 첨삭 결과]\n\n${feedbackContent}`;
         }
 
-        setMessages((prev) => prev.filter((m) => m.id !== loadingId));
+        removeMessageById(loadingId);
         setResumeUsed(true);
 
         let generatedFilename = "AIWORK_결과.txt";
         if (wantsAnalysis && wantsProofread) {
           generatedFilename = "AIWORK_이력서_분석&첨삭결과.txt";
         } else if (wantsProofread) {
-          if (currentInput.includes("이력서") && currentInput.includes("자소서")) {
+          if (
+            currentInput.includes("이력서") &&
+            currentInput.includes("자소서")
+          ) {
             generatedFilename = "AIWORK_이력서_자소서_첨삭결과.txt";
           } else if (currentInput.includes("자소서")) {
             generatedFilename = "AIWORK_자소서_첨삭결과.txt";
@@ -403,17 +442,14 @@ export const GuideChatbot = () => {
           generatedFilename = "AIWORK_이력서_분석결과.txt";
         }
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now().toString(),
-            type: "bot",
-            content: finalChatMsg.trim(),
-            downloadContent: finalDownloadContent.trim() || undefined,
-            downloadFilename: generatedFilename,
-            saveResumePayload: savePayload,
-          },
-        ]);
+        addMessage({
+          id: Date.now().toString(),
+          type: "bot",
+          content: finalChatMsg.trim(),
+          downloadContent: finalDownloadContent.trim() || undefined,
+          downloadFilename: generatedFilename,
+          saveResumePayload: savePayload,
+        });
 
         setIsTyping(false);
         return;
@@ -424,23 +460,17 @@ export const GuideChatbot = () => {
       if (isInterviewIntent && !fileToUpload && !dbResumeToUse) {
         if (savedResumes.length > 0) {
           finalDbResumeToUse = savedResumes[0];
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString() + "_auto",
-              type: "bot",
-              content: `(이력서를 지정하지 않으셔서, 보관함의 최신 이력서인 **[${finalDbResumeToUse!.title}]**를 바탕으로 면접을 준비할게요!)`,
-            },
-          ]);
+          addMessage({
+            id: Date.now().toString() + "_auto",
+            type: "bot",
+            content: `(이력서를 지정하지 않으셔서, 보관함의 최신 이력서인 **[${finalDbResumeToUse.title}]**를 바탕으로 면접을 준비할게요!)`,
+          });
         } else {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString() + "_no_resume",
-              type: "bot",
-              content: `(현재 보관함에 이력서가 없네요. 이번 면접은 이력서 기반 꼬리질문 없이 **[직무 및 기술 집중 면접]**으로 진행됩니다.)`,
-            },
-          ]);
+          addMessage({
+            id: Date.now().toString() + "_no_resume",
+            type: "bot",
+            content: `(현재 보관함에 이력서가 없네요. 이번 면접은 이력서 기반 꼬리질문 없이 **[직무 및 기술 집중 면접]**으로 진행됩니다.)`,
+          });
         }
       }
 
@@ -481,10 +511,11 @@ export const GuideChatbot = () => {
         }
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), type: "bot", content: finalBotMessage },
-      ]);
+      addMessage({
+        id: Date.now().toString(),
+        type: "bot",
+        content: finalBotMessage,
+      });
 
       if (agentData.action === "navigate") {
         if (agentData.target_page === "interview") {
@@ -582,19 +613,16 @@ export const GuideChatbot = () => {
         }
       }
     } catch (error: any) {
-      setMessages((prev) => prev.filter((m) => !m.id.endsWith("_loading")));
+      removeLoadingMessages();
       const errorDetail =
         error.response?.data?.detail ||
         error.message ||
         "알 수 없는 서버 오류 (500)";
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          type: "bot",
-          content: `요청을 처리하는 도중 서버 오류가 발생했습니다.\n\n**백엔드 에러 내용:** \n${errorDetail}`,
-        },
-      ]);
+      addMessage({
+        id: Date.now().toString(),
+        type: "bot",
+        content: `요청을 처리하는 도중 서버 오류가 발생했습니다.\n\n**백엔드 에러 내용:** \n${errorDetail}`,
+      });
     } finally {
       setIsTyping(false);
     }
@@ -617,9 +645,7 @@ export const GuideChatbot = () => {
         resume_text: confirmModalPayload.text,
       });
       showToast("성공적으로 저장되었습니다!", "success");
-      setSavedPayloadIds((prev) =>
-        new Set(prev).add(confirmModalPayload.msgId),
-      );
+      markPayloadSaved(confirmModalPayload.msgId);
       setConfirmModalPayload(null);
     } catch (error) {
       showToast("이력서 저장에 실패했습니다.", "error");
@@ -719,7 +745,7 @@ export const GuideChatbot = () => {
             </button>
           </div>
 
-          <div className="chat-body">
+          <div className="chat-body" ref={chatBodyRef}>
             {messages.map((msg, index) => (
               <div key={msg.id} className={`message-row ${msg.type}`}>
                 {msg.type === "bot" && <div className="msg-avatar">🦁</div>}
@@ -755,7 +781,7 @@ export const GuideChatbot = () => {
                               <strong key={idx}>{part}</strong>
                             ) : (
                               part
-                            )
+                            ),
                           )}
                           <br />
                         </Fragment>
@@ -779,16 +805,16 @@ export const GuideChatbot = () => {
                         )}
                         {msg.saveResumePayload && (
                           <button
-                            className={`bubble-action-btn btn-save ${savedPayloadIds.has(msg.id) ? "saved" : ""}`}
+                            className={`bubble-action-btn btn-save ${savedPayloadIds.includes(msg.id) ? "saved" : ""}`}
                             onClick={() =>
                               setConfirmModalPayload({
                                 ...msg.saveResumePayload!,
                                 msgId: msg.id,
                               })
                             }
-                            disabled={savedPayloadIds.has(msg.id)}
+                            disabled={savedPayloadIds.includes(msg.id)}
                           >
-                            {savedPayloadIds.has(msg.id) ? (
+                            {savedPayloadIds.includes(msg.id) ? (
                               <>
                                 <CheckCircle size={14} /> 저장 완료
                               </>
