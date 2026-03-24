@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $signature-blue: #0176f7;
 $bg-main: #f8fafc;
 $border-color: #e2e8f0;
@@ -338,7 +340,7 @@ $text-sub: #64748b;
           transition: background 0.2s;
 
           &:hover:not(:disabled) {
-            background: darken($signature-blue, 10%);
+            background: color.adjust($signature-blue, $lightness: -10%);
           }
           &:disabled {
             background: #cbd5e1;
@@ -467,7 +469,7 @@ $text-sub: #64748b;
     }
 
     &:hover:not(:disabled) {
-      background: darken($signature-blue, 10%);
+      background: color.adjust($signature-blue, $lightness: -10%);
     }
   }
 }

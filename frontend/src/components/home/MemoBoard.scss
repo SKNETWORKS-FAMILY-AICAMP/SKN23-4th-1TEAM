@@ -20,9 +20,11 @@
     .memo-input-row {
       display: flex;
       gap: 12px;
+      align-items: stretch;
 
       input {
         flex: 1;
+        min-width: 0;
         border-radius: 12px;
         border: 1px solid #e2e8f0;
         background: #f8f9fa;
@@ -39,13 +41,17 @@
       }
 
       button {
-        background:#0176f7;
+        background: #0176f7;
         border: none;
         border-radius: 10px;
         color: white;
         font-weight: 700;
         font-size: 14px;
         padding: 0 20px;
+        min-width: 88px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+        word-break: keep-all;
         cursor: pointer;
         transition: all 0.2s;
 
@@ -117,6 +123,24 @@
         line-height: 1.6;
         font-weight: 600;
         word-break: keep-all;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .memo-board-container {
+    .memo-form {
+      padding: 18px 16px;
+
+      .memo-input-row {
+        flex-direction: column;
+        gap: 10px;
+
+        button {
+          width: 100%;
+          min-height: 48px;
+        }
       }
     }
   }
