@@ -26,6 +26,48 @@ import { resumeApi } from "../../api/resumeApi";
 import { axiosClient } from "../../api/axiosClient";
 import "./GuideChatbot.scss";
 
+// 메시지 중복 Key 에러 방지용 고유 ID 생성
+const generateId = () => {
+  return Date.now().toString() + Math.random().toString(36).substring(2, 9);
+};
+
+// 챗봇 내부 텍스트 렌더링
+const SimpleMarkdownRenderer = ({ content }: { content: string }) => {
+  return (
+    <Fragment>
+      {content.split("\n").map((line, i) => {
+        let trimmedLine = line.trim();
+        
+        if (trimmedLine.startsWith("#")) {
+          const match = trimmedLine.match(/^#+\s*/);
+          const level = match ? match[0].trim().length : 1;
+          const text = trimmedLine.replace(/^#+\s*/, "");
+          
+          if (level === 1) return <h1 key={i} className="md-header">{text}</h1>;
+          if (level === 2) return <h2 key={i} className="md-header">{text}</h2>;
+          if (level === 3) return <h3 key={i} className="md-header">{text}</h3>;
+          return <h4 key={i} className="md-header">{text}</h4>;
+        }
+        
+        if (trimmedLine === "---") {
+          return <hr key={i} className="md-divider" />;
+        }
+
+        const parts = line.split(/\*\*(.*?)\*\*/g);
+        
+        return (
+          <p key={i} className="md-line">
+            {parts.map((part, idx) =>
+              idx % 2 === 1 ? <strong key={idx} className="md-bold">{part}</strong> : part
+            )}
+            <br />
+          </p>
+        );
+      })}
+    </Fragment>
+  );
+};
+
 interface Message {
   id: string;
   type: "user" | "bot";
@@ -68,7 +110,6 @@ export const GuideChatbot = () => {
     resetChat,
   } = useGuideChatbotStore();
 
-  // 💡 openLoginModal 가져오기
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
   const navigate = useNavigate();
   const { setInferSettings, setResumeUsed } = useInferStore();
@@ -92,19 +133,16 @@ export const GuideChatbot = () => {
   useEffect(() => {
     const currentUserId = user?.id ? String(user.id) : null;
 
-    // 로그아웃한 경우
     if (!currentUserId) {
       resetChat();
       return;
     }
 
-    // 처음 로그인한 경우
     if (ownerUserId === null) {
       setOwnerUserId(currentUserId);
       return;
     }
 
-    // 다른 계정으로 로그인한 경우
     if (ownerUserId !== currentUserId) {
       resetChat();
       setOwnerUserId(currentUserId);
@@ -116,15 +154,19 @@ export const GuideChatbot = () => {
       if (!user?.id) return;
       try {
         const data = await resumeApi.listResumes(Number(user.id));
-        if (data && data.items) {
-          const formattedData = data.items.map((item) => ({
-            id: item.id.toString(),
+        
+        const items = Array.isArray(data) ? data : data?.items || [];
+        
+        if (items.length > 0) {
+          const formattedData = items.map((item: any) => ({
+            id: item.id?.toString(),
             title: item.title,
+            text: item.resume_text || item.resumeText || item.text || item.content || "", 
           }));
           setSavedResumes(formattedData);
         }
       } catch (error) {
-        console.error(error);
+        console.error("이력서 목록 로드 에러:", error);
       }
     };
     if (isOpen) loadResumes();
@@ -226,7 +268,7 @@ export const GuideChatbot = () => {
         return;
     }
     addMessage({
-      id: Date.now().toString(),
+      id: generateId(),
       type: "bot",
       content: aiResponse,
     });
@@ -236,7 +278,6 @@ export const GuideChatbot = () => {
     if (!input.trim() && !selectedFile && !selectedDbResume) return;
 
     if (!isAuthenticated) {
-      // 💡 인위적인 시간 딜레이와 페이지 이동 대신, 챗봇 창을 닫고 예쁜 로그인 모달을 엽니다!
       setIsOpen(false);
       openLoginModal();
       return;
@@ -251,7 +292,7 @@ export const GuideChatbot = () => {
       ? `${input}${attachedText}`
       : attachedText.trim();
     addMessage({
-      id: Date.now().toString(),
+      id: generateId(),
       type: "user",
       content: userMessageContent.trim(),
     });
@@ -272,6 +313,7 @@ export const GuideChatbot = () => {
         currentInput.includes("준비") ||
         currentInput.includes("세팅") ||
         currentInput.includes("시작");
+        
       const wantsScoreSummary =
         currentInput.includes("면접") &&
         (currentInput.includes("기록") ||
@@ -279,13 +321,22 @@ export const GuideChatbot = () => {
           currentInput.includes("평균") ||
           currentInput.includes("누적") ||
           currentInput.includes("총점"));
+          
       const hasReportKeyword =
         currentInput.includes("성적") ||
         currentInput.includes("기록") ||
         currentInput.includes("결과") ||
         currentInput.includes("피드백") ||
         currentInput.includes("브리핑");
-      const isInterviewIntent = hasInterviewKeyword && !hasReportKeyword;
+        
+      // 💡 게시판 이동 의도 감지 (인성, 게시판, 커뮤니티 등의 단어)
+      const hasBoardKeyword = 
+        currentInput.includes("게시판") || 
+        currentInput.includes("커뮤니티") || 
+        currentInput.includes("인성");
+
+      // 💡 게시판 키워드가 있으면 면접 의도에서 완전히 제외시킵니다!
+      const isInterviewIntent = hasInterviewKeyword && !hasReportKeyword && !hasBoardKeyword;
 
       if (wantsScoreSummary && user?.id) {
         const scoreRes = await axiosClient.get(
@@ -324,7 +375,7 @@ export const GuideChatbot = () => {
         }
 
         addMessage({
-          id: Date.now().toString(),
+          id: generateId(),
           type: "bot",
           content: scoreMessage,
         });
@@ -336,18 +387,10 @@ export const GuideChatbot = () => {
       const wantsProofread =
         currentInput.includes("첨삭") || currentInput.includes("교정");
       const wantsAnalysis =
-        currentInput.includes("분석") ||
-        currentInput.includes("평가") ||
-        (!wantsProofread &&
-          !isInterviewIntent &&
-          (fileToUpload || dbResumeToUse));
+        currentInput.includes("분석") || currentInput.includes("평가");
 
-      if (
-        (fileToUpload || dbResumeToUse) &&
-        wantsAnalysis &&
-        !isInterviewIntent
-      ) {
-        const loadingId = Date.now().toString() + "_loading";
+      if ((fileToUpload || dbResumeToUse) && (wantsAnalysis || wantsProofread) && !isInterviewIntent) {
+        const loadingId = generateId() + "_loading";
         let loadingText = "스마트 이력서 분석 중입니다...";
 
         if (wantsProofread && wantsAnalysis) {
@@ -393,8 +436,21 @@ export const GuideChatbot = () => {
               }
             }
           } else if (dbResumeToUse) {
-            await new Promise((r) => setTimeout(r, 1000));
-            finalChatMsg += `### AI 이력서 로드 완료\n\nDB에 저장된 [${dbResumeToUse.title}] 이력서가 성공적으로 로드되었습니다.\n\n`;
+            try {
+              const textToAnalyze = (dbResumeToUse as any).text || (dbResumeToUse as any).resume_text || (dbResumeToUse as any).resumeText;
+              
+              if (textToAnalyze && textToAnalyze.trim() !== "") {
+                const analysisRes = await inferApi.analyzeResume(textToAnalyze, "기본 직무");
+                const { keywords, match_feedback } = analysisRes.data;
+
+                finalChatMsg += `### AI 이력서 분석 완료\n\n**강점 키워드:** ${keywords?.join(", ") || "없음"}\n\n**종합 피드백:** ${match_feedback || "분석 결과가 없습니다."}\n\n`;
+                finalDownloadContent += `[AI 이력서 분석 결과]\n\n강점 키워드: ${keywords?.join(", ") || "없음"}\n\n종합 피드백: ${match_feedback || "분석 결과가 없습니다."}\n\n--------------------------------\n\n`;
+              } else {
+                finalChatMsg += `### AI 이력서 분석\n\n저장된 이력서의 본문 내용이 비어있습니다. 다시 확인해주세요.\n\n`;
+              }
+            } catch (e) {
+              finalChatMsg += `### AI 이력서 분석\n\n이력서 분석 중 오류가 발생했습니다.\n\n`;
+            }
           }
         }
 
@@ -415,10 +471,21 @@ export const GuideChatbot = () => {
             );
             feedbackContent = response.feedback;
           } else if (dbResumeToUse) {
-            feedbackContent = `[DB 이력서 첨삭 결과 테스트]\n${dbResumeToUse.title} 문서의 첨삭이 완료되었습니다.\n(현재 DB 문서는 가짜 데이터입니다.)`;
+            try {
+              const textToProofread = (dbResumeToUse as any).text || (dbResumeToUse as any).resume_text || (dbResumeToUse as any).resumeText;
+              if (textToProofread && textToProofread.trim() !== "") {
+                const pseudoFile = new File([textToProofread], `${dbResumeToUse.title}.txt`, { type: "text/plain" });
+                const response = await homeApi.proofreadFile(pseudoFile, documentType);
+                feedbackContent = response.feedback;
+              } else {
+                feedbackContent = "저장된 이력서의 텍스트를 불러올 수 없어 첨삭에 실패했습니다.";
+              }
+            } catch (e) {
+              feedbackContent = "이력서 첨삭 중 오류가 발생했습니다.";
+            }
           }
 
-          finalChatMsg += `### 첨삭 완료\n\n첨삭이 완료되었습니다. 결과는 아래 다운로드 버튼을 통해 확인하세요.`;
+          finalChatMsg += `### 이력서 첨삭 완료\n\n교정 및 다듬기가 완료되었습니다. 아래 TXT 저장 버튼을 통해 확인하세요!`;
           finalDownloadContent += `[AI 이력서 첨삭 결과]\n\n${feedbackContent}`;
         }
 
@@ -444,7 +511,7 @@ export const GuideChatbot = () => {
         }
 
         addMessage({
-          id: Date.now().toString(),
+          id: generateId(),
           type: "bot",
           content: finalChatMsg.trim(),
           downloadContent: finalDownloadContent.trim() || undefined,
@@ -458,17 +525,18 @@ export const GuideChatbot = () => {
 
       let finalDbResumeToUse = dbResumeToUse;
 
+      // 💡 여기서 isInterviewIntent가 false이므로 이력서 자동 세팅 로직을 타지 않습니다!
       if (isInterviewIntent && !fileToUpload && !dbResumeToUse) {
         if (savedResumes.length > 0) {
           finalDbResumeToUse = savedResumes[0];
           addMessage({
-            id: Date.now().toString() + "_auto",
+            id: generateId() + "_auto",
             type: "bot",
             content: `(이력서를 지정하지 않으셔서, 보관함의 최신 이력서인 **[${finalDbResumeToUse.title}]**를 바탕으로 면접을 준비할게요!)`,
           });
         } else {
           addMessage({
-            id: Date.now().toString() + "_no_resume",
+            id: generateId() + "_no_resume",
             type: "bot",
             content: `(현재 보관함에 이력서가 없네요. 이번 면접은 이력서 기반 꼬리질문 없이 **[직무 및 기술 집중 면접]**으로 진행됩니다.)`,
           });
@@ -489,7 +557,7 @@ export const GuideChatbot = () => {
 
       const finalBotMessage = agentData.message || "응답을 처리할 수 없습니다.";
       addMessage({
-        id: Date.now().toString(),
+        id: generateId(),
         type: "bot",
         content: finalBotMessage,
       });
@@ -593,7 +661,7 @@ export const GuideChatbot = () => {
         error.message ||
         "알 수 없는 서버 오류 (500)";
       addMessage({
-        id: Date.now().toString(),
+        id: generateId(),
         type: "bot",
         content: `요청을 처리하는 도중 서버 오류가 발생했습니다.\n\n**백엔드 에러 내용:** \n${errorDetail}`,
       });
@@ -605,7 +673,6 @@ export const GuideChatbot = () => {
   const executeSaveResume = async () => {
     if (!confirmModalPayload || isSaving) return;
     if (!user) {
-      // 💡 여기서도 로그인 알림창 대신 예쁜 모달 띄우기
       openLoginModal();
       return;
     }
@@ -726,41 +793,7 @@ export const GuideChatbot = () => {
 
                 <div className="message-content">
                   <div className="message-bubble">
-                    {msg.content.split("\n").map((line, i) => {
-                      if (line.trim().startsWith("###")) {
-                        return (
-                          <h4 key={i} style={{ margin: "8px 0" }}>
-                            {line.replace(/^###\s*/, "")}
-                          </h4>
-                        );
-                      }
-                      if (line.trim().startsWith("---")) {
-                        return (
-                          <hr
-                            key={i}
-                            style={{
-                              border: "none",
-                              borderTop: "1px dashed #e2e8f0",
-                              margin: "12px 0",
-                            }}
-                          />
-                        );
-                      }
-
-                      const parts = line.split(/\*\*(.*?)\*\*/g);
-                      return (
-                        <Fragment key={i}>
-                          {parts.map((part, idx) =>
-                            idx % 2 === 1 ? (
-                              <strong key={idx}>{part}</strong>
-                            ) : (
-                              part
-                            ),
-                          )}
-                          <br />
-                        </Fragment>
-                      );
-                    })}
+                    <SimpleMarkdownRenderer content={msg.content} />
 
                     {(msg.downloadContent || msg.saveResumePayload) && (
                       <div className="bubble-actions-row">
