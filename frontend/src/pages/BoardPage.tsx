@@ -6,6 +6,7 @@ import { CreateQuestionModal } from "../components/board/CreateQuestionModal";
 import { Trash2, AlertCircle, CheckCircle, Info, Trash } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import "./Board.scss";
+import { GuideChatbot } from "../components/chat/GuideChatbot";
 
 interface Question {
   id: number;
@@ -160,7 +161,7 @@ export const BoardPage = () => {
           </div>
         )}
       </main>
-
+      <GuideChatbot />
       {deleteTargetId && (
         <div className="confirm-modal-overlay">
           <div className="confirm-modal-content">

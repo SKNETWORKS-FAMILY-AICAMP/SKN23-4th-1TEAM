@@ -7,6 +7,7 @@ import { TextInterview } from "../components/interview/TextInterview";
 import { VoiceInterview } from "../components/interview/VoiceInterview";
 import { useInferStore } from "../store/inferStore";
 import "./Interview.scss";
+import { GuideChatbot } from "../components/chat/GuideChatbot";
 
 type ReportMessage = {
   role: "user" | "assistant";
@@ -113,6 +114,7 @@ export const Interview = () => {
             <TextInterview onMessagesChange={setReportMessages} />
           ))}
       </main>
+      <GuideChatbot />
 
       {isSetupModalOpen && (
         <InterviewSetupModal onClose={() => setIsSetupModalOpen(false)} />

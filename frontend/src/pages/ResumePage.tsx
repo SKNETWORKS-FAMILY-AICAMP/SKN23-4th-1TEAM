@@ -11,6 +11,7 @@ import type { ResumeItem } from "../api/resumeApi";
 import { useInferStore } from "../store/inferStore";
 import { ROUTES } from "../constants/routes";
 import "./ResumePage.scss";
+import { GuideChatbot } from "../components/chat/GuideChatbot";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
@@ -434,7 +435,7 @@ export const ResumePage = () => {
           </div>
         )}
       </main>
-
+      <GuideChatbot />
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
@@ -513,10 +514,9 @@ export const ResumePage = () => {
           if (pendingDeleteResumeId === null) return;
           const resumeId = pendingDeleteResumeId;
           setPendingDeleteResumeId(null);
-          await handleDelete(
-            resumeId,
-            { stopPropagation: () => undefined } as React.MouseEvent,
-          );
+          await handleDelete(resumeId, {
+            stopPropagation: () => undefined,
+          } as React.MouseEvent);
         }}
       />
     </div>
