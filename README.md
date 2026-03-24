@@ -12,15 +12,15 @@
 <table style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px;">
   <tr>
       <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/assets/images/6.png" style="width: 100%; height: auto; display: block;" alt="김지우" />
+        <img src="frontend/src/assets/rm/kjw.png" style="width: 100%; height: auto; display: block;" alt="김지우" />
       </td>
       <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/assets/images/8.png" style="width: 100%; height: auto; display: block;" alt="김다빈" />
+        <img src="frontend/src/assets/rm/kdb.png" style="width: 100%; height: auto; display: block;" alt="김다빈" />
       <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/assets/images/1.png" style="width: 100%; height: auto; display: block;" alt="양창일" />
+        <img src="frontend/src/assets/rm/yci.png" style="width: 100%; height: auto; display: block;" alt="양창일" />
       </td>
       <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/assets/images/3.png" style="width: 100%; height: auto; display: block;" alt="유헌상" />
+        <img src="frontend/src/assets/rm/yhs.png" style="width: 100%; height: auto; display: block;" alt="유헌상" />
       </td>
   </tr>
   <tr style="background-color: #f9f9f9; font-weight: bold;">
@@ -257,7 +257,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ## ERD
 
-<img src="frontend/assets/images/erd.png" width="800">
+<img src="frontend/src/assets/rm/[SKN23-4th-1TEAM]ERD.png" width="800">
 
 </div>
 
@@ -265,7 +265,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ## 시스템 아키텍쳐
 
-<img src="frontend/assets/images/system_architecture.png" width="800">
+<img src="frontend/src/assets/rm/[SKN23-4th-1TEAM]시스템 아키텍쳐.png" width="800">
 
 </div>
 
