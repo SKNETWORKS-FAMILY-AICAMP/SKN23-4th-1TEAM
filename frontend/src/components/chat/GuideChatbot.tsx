@@ -902,7 +902,7 @@ export const GuideChatbot = () => {
                     handleSend();
                   }
                 }}
-                placeholder="질문을 입력하거나 @를 눌러 이력서를 불러오세요..."
+                placeholder="질문 입력 및 @로 이력서 불러오기"
                 disabled={isTyping}
               />
 
