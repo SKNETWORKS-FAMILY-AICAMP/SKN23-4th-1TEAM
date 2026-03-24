@@ -93,13 +93,13 @@ def set_auth_cookies(response: HttpResponse, refresh_token: str, csrf_token: str
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE,
         domain=settings.COOKIE_DOMAIN,
-        path="/api/auth",
+        path="/",
     )
 
 
 def clear_auth_cookies(response: HttpResponse) -> None:
     response.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/auth", domain=settings.COOKIE_DOMAIN)
-    response.delete_cookie(settings.CSRF_COOKIE_NAME, path="/api/auth", domain=settings.COOKIE_DOMAIN)
+    response.delete_cookie(settings.CSRF_COOKIE_NAME, path="/", domain=settings.COOKIE_DOMAIN)
 
 
 def require_csrf(request: HttpRequest) -> None:

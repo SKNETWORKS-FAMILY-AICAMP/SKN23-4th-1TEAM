@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPortal } from "react-dom";
 import { useAuthStore } from "../../store/authStore";
 import { ROUTES } from "../../constants/routes";
 import { authApi } from "../../api/authApi";
 import { LoginModal } from "./LoginModal";
+import { CustomAlert } from "./CustomAlert";
 import "./Header.scss";
 
 const NAV_ITEMS = [
@@ -166,87 +166,15 @@ export const Header = () => {
       {/* 💡 모든 페이지에서 공통으로 띄워질 커스텀 로그인 모달! */}
       <LoginModal />
 
-      {showLogoutModal &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(15,23,42,0.6)",
-              backdropFilter: "blur(4px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9999,
-            }}
-          >
-            <div
-              style={{
-                background: "#ffffff",
-                padding: "32px",
-                borderRadius: "20px",
-                width: "90%",
-                maxWidth: "360px",
-                textAlign: "center",
-                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 12px 0",
-                  fontSize: "20px",
-                  fontWeight: "800",
-                  color: "#1e293b",
-                }}
-              >
-                로그아웃 하시겠습니까?
-              </h3>
-              <p
-                style={{
-                  margin: "0 0 24px 0",
-                  fontSize: "14px",
-                  color: "#64748b",
-                }}
-              >
-                로그아웃 후 로그인 화면으로 이동합니다.
-              </p>
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button
-                  onClick={() => setShowLogoutModal(false)}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    borderRadius: "12px",
-                    border: "1px solid #e2e8f0",
-                    background: "#ffffff",
-                    color: "#475569",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                  }}
-                >
-                  취소
-                </button>
-                <button
-                  onClick={executeLogout}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    borderRadius: "12px",
-                    border: "none",
-                    background: "#0176f7",
-                    color: "#ffffff",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(1, 118, 247, 0.3)",
-                  }}
-                >
-                  확인
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      <CustomAlert
+        open={showLogoutModal}
+        title={"로그아웃 하시겠습니까?"}
+        message={"로그아웃 후 로그인 화면으로 이동합니다."}
+        confirmText={"확인"}
+        cancelText={"취소"}
+        onConfirm={executeLogout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
     </>
   );
 };
