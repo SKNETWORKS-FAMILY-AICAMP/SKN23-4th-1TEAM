@@ -1,605 +1,503 @@
-# 👾 AIWORK — 차세대 AI 주도형 면접 SaaS
+<br>
+
+# <div align="center"> **👾 AIWORK (고도화된 차세대 AI 주도형 면접 SaaS)** </div>
 
 <br>
 
-# 👥 팀 소개
+# 1. 팀 소개 
+## ✦ 팀 명 : **사자개 물어**
 
-## ✦ 팀명 : **사자개와 아이들**
 
-|                                                  양창일                                                   |                                                 김다빈                                                  |                                                 김지우                                                 |                                                     유헌상                                                      |
-| :-------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------: |
-|                                                 **팀장**                                                  |                                                **팀원**                                                 |                                                **팀원**                                                |                                                    **팀원**                                                     |
-|                                            PM & 아키텍처 설계                                             |                                  클라우드 인프라 & DevOps & 프론트엔드                                  |                              AI 파이프라인 (RAG & Vector DB) & 프론트엔드                              |                               백엔드 개발 & 외부 API 연동 및 프롬프트 엔지니어링                                |
-| [![GitHub](https://img.shields.io/badge/GitHub-clachic00-blue?logo=github)](https://github.com/clachic00) | [![GitHub](https://img.shields.io/badge/GitHub-tree0327-pink?logo=github)](https://github.com/tree0327) | [![GitHub](https://img.shields.io/badge/GitHub-jooooww-black?logo=github)](https://github.com/jooooww) | [![GitHub](https://img.shields.io/badge/GitHub-hunsang--you-green?logo=github)](https://github.com/hunsang-you) |
+
+<table style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px;">
+  <tr>
+      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
+        <img src="frontend/assets/images/6.png" style="width: 100%; height: auto; display: block;" alt="김지우" />
+      </td>
+      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
+        <img src="frontend/assets/images/8.png" style="width: 100%; height: auto; display: block;" alt="김다빈" />
+      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
+        <img src="frontend/assets/images/1.png" style="width: 100%; height: auto; display: block;" alt="양창일" />
+      </td>
+      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
+        <img src="frontend/assets/images/3.png" style="width: 100%; height: auto; display: block;" alt="유헌상" />
+      </td>
+  </tr>
+  <tr style="background-color: #f9f9f9; font-weight: bold;">
+    <td style="border: 1px solid #ddd; padding: 8px;"><strong>김지우</strong></td>
+    <td style="border: 1px solid #ddd; padding: 8px;"><strong>김다빈</strong></td>
+    <td style="border: 1px solid #ddd; padding: 8px;"><strong>양창일</strong></td>
+    <td style="border: 1px solid #ddd; padding: 8px;"><strong>유헌상</strong></td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+        <span style="font-size: 13px;">역할</span>
+    </td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+        <span style="font-size: 13px;">역할</span>
+    </td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+        <span style="font-size: 13px;">역할</span>
+    </td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+        <span style="font-size: 13px;">역할</span>
+    </td>
+  </tr>
+  <tr style="background-color: #ffffff; font-size: 13px;">
+    <td style="border: 1px solid #ddd; padding: 8px;">
+        <a href="https://github.com/jooooww">
+        <img src="https://img.shields.io/badge/GitHub-jooooww-black?logo=github">
+        </a>
+    </td>
+    <td style="border: 1px solid #ddd; padding: 8px;">
+        <a href="https://github.com/tree0327">
+        <img src="https://img.shields.io/badge/GitHub-tree0327-pink?logo=github">
+        </a>
+    </td>
+    <td style="border: 1px solid #ddd; padding: 8px;">
+        <a href="https://github.com/clachic00">
+        <img src="https://img.shields.io/badge/GitHub-clachic00-blue?logo=github">
+        </a>
+    </td>
+    <td style="border: 1px solid #ddd; padding: 8px;">
+        <a href="https://github.com/hunsang-you">
+        <img src="https://img.shields.io/badge/GitHub-hunsang--you-green?logo=github">
+        </a>
+    </td>
+  </tr>
+</table>
 
 <br><br>
 
-# 📄 프로젝트 개요 (Overview)
 
-> _"소프트웨어가 세상을 집어삼키던 시대는 끝났다. 이제 AI가 소프트웨어를 집어삼킬 것이다."_
+# 2. 프로젝트 개요
 
-최근 IT 업계에서는 **"기존 SaaS의 80%가 도태될 것"** 이라는 위기론이 확산되고 있습니다. 사용자는 더 이상 복잡한 기능을 클릭하며 직접 학습해야 하는 수동적 도구를 원하지 않습니다. 이제 사용자는 자신의 목표 달성을 위해 먼저 고민하고 과정을 이끌어주는 **능동적인 AI 파트너** 를 원합니다.
+<br>
 
-**AIWORK** 는 이 지점에서 출발했습니다. 기능만 나열한 플랫폼이 아니라, **AI가 시스템의 심장부에서 사용자의 취업 여정을 직접 이끌어주는 차세대 AI 지원형 SaaS** 입니다.
+> *"소프트웨어가 세상을 집어삼키던 시대는 끝났다. 이제 AI가 소프트웨어를 집어삼킬 것이다."*
+
+최근 IT 업계에서는 <strong>"기존 SaaS(Software as a Service)의 80%가 도태될 것"</strong>이라는 위기론이 돌고 있습니다. 사용자는 더 이상 복잡한 기능을 직접 클릭하고 학습해야 하는 '정적인 도구(Tool)'를 원하지 않기 때문입니다. 이제 사용자는 자신의 목표 달성을 위해 먼저 고민해주고 과정을 리드하는 <strong>'능동적인 파트너'</strong>를 원합니다. 
+
+기존 SaaS가 사용자가 기능을 사용하는 구조에서 그쳤다면,  
+<strong>AIWORK</strong>는 <u>AI와의 상호작용</u>을 통해 사용자가 자신의 준비 상태를 검증받을 수 있는 구조를 제공합니다.
+
+<strong>AIWORK</strong>는 바로 이 지점에서 출발했습니다. 우리는 기능만 나열해 둔 플랫폼이 아니라, AI가 시스템의 심장부에서 사용자의 취업 여정을 직접 이끌어주는 <strong>'차세대 AI 지원형 SaaS'</strong>를 제안합니다.
+
+<br>
 
 ## ✦ 프로젝트 소개
+<strong>AIWORK</strong>는 로그인, 대시보드 등 표준화된 SaaS 아키텍처 위에 RAG 기반의 AI 면접관을 결합한 서비스입니다. 사용자의 이력서를 분석하여 실전과 같은 압박 꼬리질문을 던지고, Zero-Click 기반의 능동적인 면접 세팅 및 정밀한 성과 리포트를 제공합니다.
 
-**AIWORK** 는 표준화된 SaaS 아키텍처(로그인 · 회원 등급 · 대시보드) 위에 **RAG 기반 AI 면접관** 을 핵심으로 결합한 서비스입니다. 사용자의 이력서를 분석해 실전과 같은 압박 꼬리질문을 생성하고, 4가지 평가 지표에 기반한 정밀한 성과 리포트를 제공합니다.
-
-> **프로젝트 기간:** 2026.02.27(금) ~ 2026.03.21(토)
-
-<br>
-
-# 📋 필수 산출물
+> **프로젝트 기간:** 2026.02.27(금) ~ 2026.03.25(수)
 
 <br>
 
-## <span style="color:#0176f7;">1. 요구사항 정의서</span>
+## ✦ 프로젝트 필요성 (배경)
+기존 SaaS의 수동적인 기능 나열에서 벗어나, AI가 사용자의 취업 여정을 직접 이끌어주는 '능동적인 파트너' 역할을 수행해야 합니다. 고비용의 1:1 대면 컨설팅을 대체할 수 있는 초개인화된 AI 면접 경험을 시공간 제약 없이 제공하고자 기획했습니다.
 
-### 기능 요구사항
 
-|  ID   |   구분    | 요구사항                                                      | 우선순위 |
-| :---: | :-------: | ------------------------------------------------------------- | :------: |
-| FR-01 | 회원 관리 | 이메일 회원가입 및 이메일 인증                                |    상    |
-| FR-02 | 회원 관리 | JWT 기반 로그인 (Access 30분 + Refresh 14일 httpOnly 쿠키)    |    상    |
-| FR-03 | 회원 관리 | Kakao · Google · Naver OAuth 2.0 소셜 로그인                  |    상    |
-| FR-04 | 회원 관리 | 이메일 인증 코드 기반 비밀번호 찾기 · 재설정                  |    중    |
-| FR-05 | 회원 관리 | 회원 등급(Tier) 기반 기능 접근 제어                           |    중    |
-| FR-06 |  이력서   | PDF 이력서 업로드 및 텍스트 추출                              |    상    |
-| FR-07 |  이력서   | 이력서 텍스트 400자 청크 분할 → ChromaDB 벡터 임베딩 저장     |    상    |
-| FR-08 |  이력서   | LLM 기반 이력서 AI 분석 리포트 생성                           |    중    |
-| FR-09 | 면접 설정 | 직무 · 난이도(상/중/하) · 면접관 페르소나 수동 선택           |    상    |
-| FR-10 | 면접 설정 | 자연어 명령 기반 LUI 자동 면접 세팅 (OpenAI Function Calling) |    상    |
-| FR-11 | 면접 진행 | 채팅 기반 텍스트 면접                                         |    상    |
-| FR-12 | 면접 진행 | WebRTC + OpenAI Realtime API 기반 실시간 음성 면접            |    상    |
-| FR-13 | 면접 진행 | 이력서 50% + 직무 질문 풀 50% 하이브리드 RAG 문항 출제        |    상    |
-| FR-14 | 면접 진행 | 4가지 평가 지표(정확성·깊이·구조·명확성) 기반 답변 채점       |    상    |
-| FR-15 | 면접 진행 | 점수 40점 이하 시 꼬리질문 자동 생성 (최대 2회)               |    상    |
-| FR-16 | 면접 진행 | 웹캠 HuggingFace 랜드마크 모델 기반 비언어적 태도 분석        |    중    |
-| FR-17 |   결과    | 면접 종료 후 마크다운 종합 리포트 자동 생성                   |    상    |
-| FR-18 |   결과    | 면접 기록 마이페이지 누적 저장 및 상세 조회                   |    상    |
-| FR-19 | 대시보드  | Tavily API 연동 가이드 챗봇 (최신 면접 트렌드 실시간 응답)    |    중    |
-| FR-20 | 대시보드  | 고용24(워크넷) API 연동 직무 맞춤 채용 공고 실시간 조회       |    중    |
-| FR-21 | 대시보드  | Tavily 기반 최신 IT 뉴스 요약 피드 제공                       |    중    |
-| FR-22 |  관리자   | 관리자 전용 로그인 및 사용자 관리 대시보드                    |    하    |
-
-### 비기능 요구사항
-
-|   ID   |   구분   | 요구사항                                                         |
-| :----: | :------: | ---------------------------------------------------------------- |
-| NFR-01 |   보안   | JWT Access/Refresh Token 이중 인증 체계                          |
-| NFR-02 |   보안   | CSRF 이중 쿠키 검증 패턴 (Double Submit Cookie)                  |
-| NFR-03 |   보안   | 모든 AI API 키 백엔드 서버 경유 처리 (클라이언트 노출 원천 차단) |
-| NFR-04 |   성능   | 텍스트 면접 LLM 응답 5초 이내                                    |
-| NFR-05 |   성능   | 음성 면접 STT/TTS 실시간 처리 (WebRTC Realtime API)              |
-| NFR-06 |  인프라  | AWS EC2 공용 MySQL 서버로 팀원 전체 공유 DB 운영                 |
-| NFR-07 |  인프라  | Ngrok 유료 플랜 고정 HTTPS 도메인으로 WebRTC 마이크 권한 확보    |
-| NFR-08 |  확장성  | 회원 등급제(Tier) 시스템 내장으로 프리미엄 수익화 전환 가능 구조 |
-| NFR-09 | 유지보수 | LangGraph StateGraph 기반 AI 파이프라인 모듈화                   |
-| NFR-10 | 유지보수 | 3계층 아키텍처 (React ↔ Django ↔ DB/AI) 명확한 역할 분리         |
 
 <br>
 
-## <span style="color:#0176f7;">2. 화면설계서</span>
+# 3. 비즈니스 이해 
 
-### ✧ 인증 (로그인 · 회원가입 · 비밀번호 찾기)
+본 프로젝트는 **전형적인 SaaS 비즈니스 모델**을 기반으로, AI를 통해 사용자 경험의 가치를 극대화하도록 설계되었습니다.
 
-|       화면        |                     스크린샷                     | 구성 요소                                                                                                 | 사용자 흐름                                                |
-| :---------------: | :----------------------------------------------: | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-|    **로그인**     |     ![로그인](frontend/assets/rm/login.png)      | 이메일/비밀번호 입력 필드, 로그인 버튼, 소셜 로그인 (Kakao · Google · Naver), 회원가입/비밀번호 찾기 링크 | 이메일+비밀번호 입력 → JWT 발급 → 홈 이동                  |
-| **비밀번호 찾기** | ![비밀번호 찾기](frontend/assets/rm/find_pw.png) | 이메일 입력, 인증코드 발송 버튼, 인증코드 입력, 새 비밀번호 입력                                          | 이메일 입력 → 인증코드 수신 → 코드 확인 → 새 비밀번호 설정 |
-|   **회원가입**    |   ![회원가입](frontend/assets/rm/sign_up.png)    | 이름/이메일/비밀번호/직무 입력 필드, 이메일 인증 버튼, 가입 완료 버튼                                     | 정보 입력 → 이메일 인증 → 가입 완료 → 로그인 이동          |
+### 1. 타겟 고객 및 가치 제안 (Target & Value)
 
-### ✧ 메인 대시보드
+**✶ B2C (구직자 대상 에듀테크 SaaS)**
+* 이력서 기반 무한 반복 AI 모의 면접 제공
+* 면접 전 예상 압박 질문 및 직무 매칭률을 보여주는 **AI 대시보드** 제공
+* 문항별 피드백 제공
 
-|      화면       |                       스크린샷                       | 구성 요소                                                                                       | 사용자 흐름                                                            |
-| :-------------: | :--------------------------------------------------: | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-|     **홈**      |          ![홈](frontend/assets/rm/home.png)          | 상단 헤더(네비게이션), 가이드 챗봇 위젯, 직무 맞춤 채용 공고 카드, IT 뉴스 피드, 면접 시작 버튼 | 홈 접속 → 채용 공고/뉴스 확인 → 면접 시작 또는 챗봇으로 자동 세팅      |
-| **가이드 챗봇** | ![가이드 챗봇](frontend/assets/rm/guide_chatbot.png) | 채팅 입력창, AI 응답 버블, Zero-Click 면접 세팅 자동 완성                                       | 자연어 입력 → LUI 파라미터 추출 → 면접 설정 자동 주입 → 면접 화면 이동 |
 
-### ✧ 면접 설정 및 진행
-
-|         화면         |                        스크린샷                         | 구성 요소                                                                                                     | 사용자 흐름                                                   |
-| :------------------: | :-----------------------------------------------------: | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-|    **면접 설정**     | ![면접 설정](frontend/assets/rm/interview_setting.png)  | 직무 선택 드롭다운, 난이도(상/중/하) 선택, 면접관 페르소나 선택, 이력서 연동 토글, 면접 모드(Text/Voice) 선택 | 설정 완료 → 면접 시작                                         |
-|   **텍스트 면접**    |  ![텍스트 면접](frontend/assets/rm/interview_text.png)  | AI 면접관 질문 버블, 사용자 답변 입력창, 전송 버튼, 면접 종료 버튼                                            | AI 질문 수신 → 텍스트 답변 입력 → 제출 → LLM 평가 → 다음 질문 |
-| **음성 면접 + 웹캠** |   ![음성 면접](frontend/assets/rm/interview_cam.png)    | 웹캠 영상 뷰, 음성 파형 시각화, 실시간 STT 자막, 태도 분석 인디케이터                                         | 마이크/웹캠 활성화 → 음성 답변 → Realtime API 실시간 평가     |
-| **면접 결과 리포트** | ![결과 리포트](frontend/assets/rm/interview_result.png) | 4축 평가 점수 (정확성·깊이·구조·명확성), 총점, 항목별 피드백, 강점/약점 마크다운 분석                         | 면접 종료 → 리포트 자동 생성 → 결과 확인 → 마이페이지 저장    |
-
-### ✧ 마이페이지 · 이력서
-
-|        화면        |                       스크린샷                       | 구성 요소                                                | 사용자 흐름                                     |
-| :----------------: | :--------------------------------------------------: | -------------------------------------------------------- | ----------------------------------------------- |
-|   **면접 기록**    |     ![마이페이지](frontend/assets/rm/mypage.png)     | 면접 기록 리스트 (날짜·직무·총점), 필터링, 상세보기 버튼 | 기록 목록 확인 → 상세보기 클릭                  |
-| **면접 상세보기**  |  ![상세보기](frontend/assets/rm/mypage_detail.png)   | 면접 세션별 Q&A 목록, 문항별 점수, 종합 리포트           | 면접별 상세 피드백 확인                         |
-|  **이력서 관리**   |       ![이력서](frontend/assets/rm/resume.png)       | 이력서 업로드 버튼, 등록 이력서 목록, 삭제 버튼          | PDF 업로드 → ChromaDB 임베딩 → 면접에 자동 연동 |
-| **이력서 AI 분석** | ![이력서 분석](frontend/assets/rm/resume_result.png) | LLM 분석 결과 마크다운, 강점 요약, 개선 제안             | 이력서 선택 → AI 분석 요청 → 분석 리포트 확인   |
-
-### ✧ 관리자 페이지
-
-|       화면        |                       스크린샷                       | 구성 요소                                                    | 사용자 흐름                             |
-| :---------------: | :--------------------------------------------------: | ------------------------------------------------------------ | --------------------------------------- |
-| **관리자 로그인** | ![관리자 로그인](frontend/assets/rm/admin_login.png) | 관리자 전용 이메일/비밀번호 입력, 로그인 버튼                | 관리자 계정 로그인 → 관리 대시보드 이동 |
-|  **관리자 설정**  | ![관리자 설정](frontend/assets/rm/admin_setting.png) | 사용자 목록, 계정 활성화/비활성화, 등급 변경, 면접 기록 통계 | 사용자 관리 및 시스템 모니터링          |
-
-<br>
-
-## <span style="color:#0176f7;">3. 개발된 LLM 연동 웹 애플리케이션</span>
-
-<span style="color:#0176f7;">AIWORK는 OpenAI GPT-4o 및 다중 AI 서비스를 LangGraph StateGraph 파이프라인에 통합한 LLM 연동 웹 애플리케이션입니다. 단순 챗봇 임베딩이 아닌, AI가 면접 출제 → 평가 → 꼬리질문 생성의 전 과정을 주도하는 AI-Native 구조로 설계되었습니다.</span>
-
-### LLM 연동 포인트
-
-| 기능                       | 모델 / API                | 연동 방식                                             | 담당 모듈                                       |
-| -------------------------- | ------------------------- | ----------------------------------------------------- | ----------------------------------------------- |
-| 면접 질문 생성 · 답변 평가 | GPT-4o                    | LangGraph StateGraph 노드, JSON Schema 출력 강제      | `backend/ai/graph.py` `backend/ai/evaluator.py` |
-| 이력서 벡터 임베딩         | text-embedding-3-small    | 400자 청크 → ChromaDB 저장, 면접 시 Top-K 유사도 검색 | `backend/services/rag_service.py`               |
-| 실시간 음성 면접           | OpenAI Realtime API       | WebRTC DataChannel 스트리밍, STT/TTS 지연 없는 처리   | `frontend/src/hooks/useWebRTC.ts`               |
-| LUI 자동 면접 세팅         | GPT-4o (Function Calling) | 자연어 발화 → JSON 파라미터 추출 → Zustand Store 주입 | `backend/ai/agent.py`                           |
-| 이력서 AI 분석 리포트      | GPT-4o                    | 청크 컨텍스트 기반 강점/약점 분석 리포트 생성         | `backend/services/llm_service.py`               |
-| 가이드 챗봇                | GPT-4o + Tavily Search    | Web RAG 기반 최신 면접 트렌드 실시간 응답             | `backend/django_api/views.py` (`home_guide`)    |
-| 웹캠 태도 분석             | HuggingFace 랜드마크 모델 | 이미지 → 랜드마크 수치 추출 → 서비스 레이어 해석      | `backend/services/hf_landmark_service.py`       |
-
-### 주요 API 엔드포인트
-
-| 엔드포인트                  |   메서드   | 설명                                                    |
-| --------------------------- | :--------: | ------------------------------------------------------- |
-| `/api/infer/start`          |    POST    | 면접 세션 생성, MySQL `interview_sessions` 레코드 삽입  |
-| `/api/infer/evaluate-turn`  |    POST    | 답변 제출 → LangGraph 평가 → 점수/피드백/다음 질문 반환 |
-| `/api/infer/sessions/<id>`  | GET/DELETE | 면접 세션 조회 및 종료, 마크다운 리포트 생성            |
-| `/api/infer/realtime-token` |    GET     | OpenAI Realtime API WebRTC 세션 토큰 발급               |
-| `/api/v1/agent/chat`        |    POST    | LUI 자연어 입력 → Function Calling 파라미터 추출        |
-| `/api/infer/ingest`         |    POST    | PDF 업로드 → 텍스트 추출 → ChromaDB 임베딩 저장         |
-| `/api/infer/attitude`       |    POST    | 웹캠 이미지 → 랜드마크 추출 → 태도 수치 반환            |
-
-<br>
-
-## <span style="color:#0176f7;">4. 시스템 구성도</span>
-
-### 전체 시스템 아키텍처
-
-![시스템 아키텍처](frontend/assets/images/system_architecture.png)
-
-### 구성 요소 설명
-
-|      계층      | 컴포넌트                          | 역할                                                             |
-| :------------: | --------------------------------- | ---------------------------------------------------------------- |
-| **프론트엔드** | React + Vite (Port 5173)          | SPA UI 렌더링, Zustand 전역 상태 관리, Vite Proxy `/api → :8000` |
-|   **백엔드**   | Django (Port 8000)                | REST API 뷰, JWT/CSRF 인증, AI 파이프라인 오케스트레이션         |
-|  **AI 엔진**   | LangGraph + GPT-4o                | 면접 StateGraph 실행 (질문 선택 → 평가 → 꼬리질문 분기)          |
-| **RAG 저장소** | ChromaDB                          | 이력서 청크 벡터 저장, 면접 시 Top-K 유사도 검색                 |
-| **관계형 DB**  | MySQL (AWS EC2)                   | 사용자 정보, 면접 세션, 질문 풀, 평가 기록                       |
-|  **외부 API**  | OpenAI Realtime / Tavily / 고용24 | 음성 처리, 웹 검색, 채용 공고                                    |
-|   **인프라**   | AWS EC2 + Ngrok 유료              | 공용 DB 서버, 고정 HTTPS 도메인 (WebRTC 마이크 권한 확보)        |
-
-<br>
-
-## <span style="color:#0176f7;">5. 테스트 계획 및 결과 보고서</span>
-
-### 테스트 케이스 및 결과
-
-| TC-ID | 기능 영역 | 테스트 시나리오                     | 기대 결과                                      | 실제 결과      |  상태   |
-| :---: | :-------: | ----------------------------------- | ---------------------------------------------- | -------------- | :-----: |
-| TC-01 | 회원 관리 | 유효한 이메일/비밀번호로 회원가입   | 가입 성공, 이메일 인증 발송                    | 가입 성공      | ✅ PASS |
-| TC-02 | 회원 관리 | 이미 가입된 이메일로 재가입 시도    | 중복 이메일 오류 메시지 반환                   | 오류 처리 정상 | ✅ PASS |
-| TC-03 | 회원 관리 | Kakao 소셜 로그인                   | OAuth 인증 후 JWT 발급, 홈 이동                | 정상 로그인    | ✅ PASS |
-| TC-04 | 회원 관리 | Access Token 만료 후 자동 재발급    | 401 발생 → Refresh → 재요청 자동 처리          | 자동 갱신 정상 | ✅ PASS |
-| TC-05 |  이력서   | PDF 이력서 업로드                   | 텍스트 추출 후 ChromaDB 임베딩 저장            | 정상 임베딩    | ✅ PASS |
-| TC-06 |  이력서   | AI 분석 리포트 생성 요청            | LLM 기반 강점/약점 마크다운 리포트 반환        | 정상 생성      | ✅ PASS |
-| TC-07 | 면접 설정 | LUI 챗봇으로 자연어 면접 세팅       | 파라미터 자동 추출, 면접 화면 이동             | 정상 동작      | ✅ PASS |
-| TC-08 | 면접 진행 | 텍스트 면접 — 이력서 연동 질문 생성 | 이력서 기반 맞춤 질문 50% + 고정 질문 50% 출제 | RAG 정상 연동  | ✅ PASS |
-| TC-09 | 면접 진행 | 점수 40점 이하 답변 제출            | 꼬리질문 생성 (최대 2회)                       | 꼬리질문 정상  | ✅ PASS |
-| TC-10 | 면접 진행 | 점수 40점 초과 답변 제출            | 다음 질문으로 이동 (꼬리질문 없음)             | 정상 동작      | ✅ PASS |
-| TC-11 | 면접 진행 | 음성 면접 — WebRTC 연결             | Realtime API 세션 수립, STT 정상 동작          | 정상 연결      | ✅ PASS |
-| TC-12 | 면접 진행 | 웹캠 태도 분석                      | 랜드마크 추출, 시선/표정 수치화 정상 처리      | 정상 분석      | ✅ PASS |
-| TC-13 |   결과    | 면접 종료 후 리포트 생성            | 마크다운 종합 리포트 생성 + DB 저장            | 정상 생성      | ✅ PASS |
-| TC-14 |   결과    | 마이페이지 면접 기록 조회           | 누적 면접 기록 리스트 정상 출력                | 정상 출력      | ✅ PASS |
-| TC-15 | 대시보드  | 채용 공고 직무 매칭 조회            | 직무 설정값 기반 고용24 공고 출력              | 정상 출력      | ✅ PASS |
-| TC-16 | 대시보드  | 가이드 챗봇 IT 트렌드 질의          | Tavily 검색 기반 실시간 응답                   | 정상 응답      | ✅ PASS |
-| TC-17 |   보안    | CSRF 토큰 미포함 요청               | 403 Forbidden 반환                             | 정상 차단      | ✅ PASS |
-| TC-18 |   보안    | 인증 없이 보호된 라우트 접근        | 401 반환 후 로그인 페이지 리다이렉트           | 정상 차단      | ✅ PASS |
-
-### 발견된 이슈 및 해결
-
-| 이슈 ID | 기능 영역 | 발견된 문제                                   | 원인                                                                 | 해결 방법                                                            |
-| :-----: | :-------: | --------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| BUG-01  | RAG 연동  | 이력서 업로드 후에도 일반 질문만 출제         | 레거시 라우터(`/infer/ask`) 경유 시 `session_id` 누락                | `/api/infer/evaluate-turn`으로 통신 경로 일원화                      |
-| BUG-02  | 면접 진행 | 채팅 입력 후 메시지 미전송 및 무한 로딩       | `attitude: None` 누락 → 422 에러 → UI 강제 갱신이 에러 로그 덮어씌움 | API 반환 타입 Boolean으로 변경, 실패 시 `return False`로 재실행 차단 |
-| BUG-03  | DB 무결성 | 면접 종료 후 `user_id`, `total_score` DB 누락 | 프론트엔드 JWT 토큰 페이로드 키 불일치                               | 토큰 키워드 통일, 서버 시간(`func.now()`) 삽입 로직 추가             |
-| BUG-04  | 음성 면접 | HTTP 환경에서 마이크 권한 차단                | 브라우저 보안 정책 (WebRTC는 HTTPS 필수)                             | Ngrok 유료 플랜 고정 HTTPS 도메인 적용                               |
-| BUG-05  |  인프라   | 팀원별 로컬 DB 데이터 불일치                  | 개별 로컬 MySQL 사용으로 통합 테스트 불가                            | AWS EC2 공용 MySQL 서버 구축, 전원 원격 DB 연결                      |
-
-<br>
-
-# 💼 비즈니스 이해 (Business Understanding)
-
-본 프로젝트는 **전형적인 SaaS 비즈니스 모델** 을 기반으로, AI를 통해 사용자 경험의 가치를 극대화하도록 설계되었습니다.
-
-### 1. 타겟 고객 및 가치 제안
-
-**✶ B2C — 구직자 대상 에듀테크 SaaS**
-
-- 이력서 기반 무한 반복 AI 모의 면접 제공
-- 면접 전 예상 압박 질문 및 직무 매칭률을 보여주는 **AI 대시보드** 제공
-- 문항별 루브릭 평가 기반 피드백 및 마크다운 리포트 제공
-
-### 2. 핵심 비즈니스 전략
-
-| 전략                     | 내용                                                                                           |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| **사용자 경험 혁신**     | 고비용 1:1 대면 컨설팅을 대체하는 초개인화 AI 면접 경험을 시공간 제약 없이 제공                |
-| **락인 효과 (Lock-in)**  | 이력서 청크 · 누적 점수 · 강약점 분석이 마이페이지에 자산처럼 축적되어 지속적 이용 유도        |
-| **확장 가능한 아키텍처** | 회원 등급제(Tier) 시스템 내장으로 향후 프리미엄 AI 모델 적용 및 수익화(Monetization) 전환 용이 |
-
-<br>
-
-# 🎯 프로젝트 목표
-
-**1. 차세대 AI 지원형 SaaS 및 Dual DB 아키텍처 구축**
-
-- AI를 단순 부가 기능(Add-on)이 아닌 시스템의 핵심 엔진으로 설계
-- **RDBMS (MySQL):** 사용자 세션, 면접 메타데이터, 질문 풀, 평가 기록 관리
-- **Vector DB (ChromaDB):** 이력서 텍스트 청크 임베딩 및 AI 문맥 검색
-
-**2. 동적 RAG (Continuous Learning RAG) 구현**
-
-- 지원자의 이력서와 실시간 답변을 맵핑하여 파고드는 **스마트 AI 면접관** 구현
-- 이전 답변 맥락을 기억하고 꼬리질문을 던지는 유기적인 면접 흐름 생성
-
-**3. 환각 현상(Hallucination) 통제 및 정교한 AI 제어 로직**
-
-- **JSON Schema + 4가지 평가 지표 (정확성 · 깊이 · 구조 · 명확성)** 기반 프롬프트 엔지니어링
-- 답변 환산 점수 40점 이하 시에만 동적 꼬리질문 생성 (최대 2회)
-
-**4. Seamless UX/UI — Zero-Click 네비게이션**
-
-- OpenAI Function Calling 기반 LUI(Language User Interface) 에이전트 구축
-- 자연어 한 문장으로 면접 세팅부터 시작까지 자동 처리
-
-**5. 엔터프라이즈급 보안 및 3계층 아키텍처 구축**
-
-- React 프론트엔드와 Django 백엔드를 엄격하게 분리한 Proxy 구조
-- 모든 AI API 접근은 백엔드를 경유하여 민감 정보 노출 원천 차단
-
-<br>
-
-# ✨ 주요 기능 (Key Features)
-
-### <span style="color:#0176f7;">1. LUI 기반 Zero-Click 네비게이션</span>
-
-- <span style="color:#0176f7;">OpenAI Function Calling으로 사용자의 자연어 발화에서 **면접 세팅 파라미터(직무 · 난이도 · 페르소나 · 이력서 연동 여부)** 를 자동 추출</span>
-- <span style="color:#0176f7;">추출된 파라미터를 프론트엔드 상태(Zustand Store)에 주입하고 즉시 면접 화면으로 강제 전환</span>
-- <span style="color:#0176f7;">복잡한 모달 설정을 우회하는 **하이패스(High-pass) 컨트롤러** 구현</span>
-
-### 2. 다중 모드 면접 (Text / Realtime Voice)
-
-| 모드           | 설명                                                                       |
-| -------------- | -------------------------------------------------------------------------- |
-| **Text Mode**  | 채팅 기반 텍스트 면접, RAG 평가 엔진(`/api/infer/evaluate-turn`) 직결      |
-| **Voice Mode** | WebRTC + OpenAI Realtime API 기반 실시간 음성 대화, 지연 없는 STT/TTS 통신 |
-
-<span style="color:#0176f7;">**Realtime Voice — 비언어적 태도 분석**</span>
-
-- <span style="color:#0176f7;">웹캠 이미지를 백엔드로 전송 → HuggingFace 랜드마크 모델로 얼굴 Feature 수치화</span>
-- <span style="color:#0176f7;">모델이 태도를 직접 판단하지 않고, **수치화 → 서비스 로직에서 해석** 하는 구조</span>
-
-| 분석 항목     | 측정 방법                     |
-| ------------- | ----------------------------- |
-| **좌우 시선** | 코 위치 기반 계산             |
-| **아래 보기** | 코–눈 상대 좌표 기반 계산     |
-| **표정 변화** | 눈썹 이동 벡터 기반 신호 추출 |
-
-### 3. 하이브리드 문항 출제
-
-- 직무/난이도 기반 **고정 기술 질문 50%** (MySQL `question_pool`)
-- 이력서 기반 **맞춤형 돌발 질문 50%** (ChromaDB Top-K 검색)
-- 균형 잡힌 심층 평가 구조로 CS 지식과 경험 역량을 동시에 검증
-
-### 4. 면접관 페르소나 3종
-
-| 페르소나            | 특징                           |
-| ------------------- | ------------------------------ |
-| 깐깐한 기술팀장     | 날카로운 기술 심층 질문 중심   |
-| 부드러운 인사담당자 | 직무 적합성 및 인성 중심       |
-| 스타트업 CTO        | 실행력 · 문제 해결력 집중 평가 |
-
-### 5. 정밀 평가 리포트
-
-- 4가지 평가 지표(정확성 · 깊이 · 구조 · 명확성) 기반 항목별 점수
-- 종합 피드백 · 강/약점 분석 마크다운 리포트
-- 면접 기록이 마이페이지에 누적 저장되어 성장 추이 확인 가능
-
-### 6. Tavily Web Search API 연동
-
-- 통합 대시보드 내 **가이드 챗봇** — 최신 면접 트렌드 기반 실시간 응답
-- 최신 **IT 뉴스 요약** — Web RAG 적용으로 항상 팩트 기반 정보 제공
-
-### 7. 고용24(워크넷) 채용공고 연동
-
-- 사용자의 직무 설정값에 매칭되는 실제 기업 채용 공고 실시간 조회
-- AI 면접으로 향상된 역량을 즉시 실전으로 연결하는 완결형 취업 파이프라인
-
-<br>
-
-## 🧭 사용자 이용 흐름 (User Flow)
-
-```
-1. 회원가입 / 로그인 (이메일 인증 · 소셜 로그인)
-        ↓
-2. 이력서 업로드 → ChromaDB 임베딩 저장
-        ↓
-3. 면접 세팅 (직접 설정 or 챗봇 Zero-Click 자동 세팅)
-        ↓
-4. AI 모의면접 진행 (Text / Voice 선택)
-        ↓
-5. 실시간 답변 평가 + 동적 꼬리질문 생성
-        ↓
-6. 면접 종료 → 종합 리포트 생성
-        ↓
-7. 결과 마이페이지 누적 저장 → 채용 공고 연결
-```
+### 2. 핵심 비즈니스 전략 
+* **사용자 경험 혁신 :** 고비용의 1:1 대면 모의면접 컨설팅을 대체할 수 있는 수준의 초개인화된 AI 면접 경험을 시공간 제약 없이 제공
+* **락인 효과 (Lock-in Effect) :** 면접 데이터(이력서 청크, 누적 점수, 강약점 분석)가 면접 기록에 자산처럼 축적되어 지속적인 서비스 이용 유도
+* **회원 등급별 차별화된 경험 제공 :** 회원 등급제(Tier) 시스템을 내장하여, 일반 회원과 PRO 회원의 차별화된 경험 제공
 
 <br><br>
 
-# 📂 프로젝트 설계 (Architecture)
+# 4. 프로젝트 목표
+
+**1. 차세대 AI 지원형 SaaS 및 Dual DB 아키텍처 구축**
+* AI를 단순한 부가 기능(Add-on)이 아닌 시스템의 핵심 기능으로 배치
+* **RDBMS (MySQL):** 사용자 세션, 면접 메타데이터, 질문 풀, 평가 기록 관리
+* **Vector DB (ChromaDB):** 이력서 텍스트 청크 임베딩 및 AI 문맥 검색
+
+**2. 면접을 위한 동적 RAG(Continuous Learning RAG) 구현**
+* 지원자의 이력서와 실시간 답변을 맵핑하여 파고드는 '스마트 AI 면접관' 구현
+* 이전 답변 맥락을 기억하고 꼬리질문을 던지는 유기적인 면접 흐름 생성
+
+**3. 환각 현상(Hallucination) 통제 및 정교한 AI 제어 로직**
+* 엄격한 **JSON Schema**와 **4가지 평가 지표 기반(정확성, 깊이, 구조, 명확성)** 기반 프롬프트 엔지니어링
+* 답변 품질(40점 이하)을 실시간으로 평가하여 부족한 답변에만 동적 꼬리질문(최대 2회) 생성
+
+**4. Seamless UX/UI를 통한 사용자 몰입감 극대화**
+* **Realtime Voice:** WebRTC 기반의 지연 없는 실시간 음성 대화 및 웹캠 환경
+* **Zero-Click Navigation:** 사용자가 별도의 클릭 없이 AI의 안내에 따라 자연스럽게 면접을 진행할 수 있는 환경 제공
+
+**5. 보안 및 확장성 확보:** 
+* 3-Tier 아키텍처 구축을 통한 프록시(Proxy) 구조화 및 민감 정보 차단
+
+<br><br>
+
+# 5. 주요 기능
+
+### 1. 다중 모드 면접 (Text / Realtime Voice)
+OpenAI Realtime API 기반의 지연 없는 음성 대화 및 직관적인 텍스트 채팅을 지원합니다.
+
+**Realtime Voice – 비언어적 태도 분석**
+면접 진행 시 웹캠에서 얼굴 랜드마크(코, 눈, 눈썹 등) 좌표를 추출하고, 이를 자체 해석 로직으로 변환하여 태도 피드백에 반영합니다.
+
+*HuggingFace 기반 실시간 웹캠 태도 분석*
+<br>
+<img src="frontend/assets/images/huggingface.png" width="250" alt="웹캠 기반 비언어적 Feature 평가">
+
+모델이 태도를 직접 판단하지 않습니다. 얼굴 Feature를 수치화하여 서비스 로직에서 해석하는 구조입니다.
+- 좌우 시선: 코 위치 기반 계산
+- 아래 보기: 코-눈 상대 좌표 기반 계산
+- 표정 변화: 눈썹 이동 벡터 기반 신호 추출
+
+이를 통해 단순 감정 분류가 아닌, 면접 상황에 적합한 비언어적 태도 지표를 도출합니다.
+
+### 2. 하이브리드 문항 출제 & RAG 파이프라인
+- **균형 잡힌 심층 평가 구조:** 이력서 기반 맞춤형 돌발 질문 50% + 직무/난이도 기반 고정 기술 질문 50%
+- **이력서 RAG 임베딩:** 업로드된 PDF/TXT 이력서를 400자 단위 청크(Chunk)로 분할 후, text-embedding-3-small을 활용해 ChromaDB(Vector DB)에 저장하여 빠르고 정확한 문맥 검색을 지원합니다.
+
+### 3. LangGraph 기반 동적 꼬리질문 및 환각(Hallucination) 제어
+- **실시간 Turn 단위 채점:** 사용자의 매 답변마다 4가지 지표(정확성, 깊이, 구조, 명확성)를 기준으로 JSON Schema 포맷으로 실시간 평가합니다.
+- **스마트 꼬리질문(Follow-up):** 답변 환산 점수가 특정 기준(예: 40점) 이하일 경우, 이전 대화 맥락과 이력서를 팩트 체크하여 이력서에 없는 허위 사실 출제를 차단하고 최대 2회의 날카로운 꼬리질문을 동적으로 생성합니다.
+- **면접 자동 종료 제어:** 꼬리질문 무한 루프를 방지하고 실제 면접 환경을 구현하기 위해, 사전 설정된 총 질문 횟수(예: 5회)에 도달하면 상태(State)를 감지하여 면접 사이클을 확정 종료하고 결과 리포트 생성 단계로 자동 전환합니다.
+
+### 4. 면접관 페르소나
+- 깐깐한 기술팀장
+- 부드러운 인사담당자
+- 스타트업 CTO
+
+실제 면접 상황을 반영한 맞춤형 페르소나 프롬프트를 통해 몰입감 있는 시뮬레이션을 제공합니다.
+
+### 5. Zero-Click 에이전트 네비게이션
+- **의도 파악(Intent Analysis) 라우팅:** 메인 대시보드 우측 하단의 가이드 챗봇에 자연어(예: "내 면접 성적 볼래", "파이썬 면접 준비해줘") 입력 시, LLM 에이전트가 의도를 분석하여 마이페이지나 면접 세팅 화면으로 즉시 이동합니다.       
+- **인앱 퀵 분석:** 챗봇 내에 이력서 첨부 시, 즉각적인 강점 키워드 추출 및 마크다운 기반의 이력서 분석 결과를 제공합니다.
+- **이력서/자소서 첨삭:** 챗봇 내에 이력서/자소서 첨부 시, 이력서/자소서 첨삭 결과를 제공합니다.
+
+### 6. 정밀 평가 리포트 및 시각화 (PDF Export)
+- 4가지 평가 지표 기준 항목별 점수(Score Circle) 및 종합 피드백 제공합니다.
+- AI가 분석한 강/약점 및 BEST 답변 마크다운 리포트 아코디언 UI 제공합니다.
+- **TXT 및 PDF 다운로드:** html2canvas 및 jsPDF를 활용하여 시각화된 전체 리포트 레이아웃을 깨짐 없이 로컬 디바이스에 저장할 수 있습니다.
+
+### 7. Third-party API & Data Search
+- **Tavily Web Search API** 
+    - **가이드 챗봇** : 최신 면접 트렌드 및 기업 정보 등 검색 제공합니다.
+    - **트랜드 인사이트 요약** : 사용자의 최신 이력서 기반 직무에 맞는 트랜드 인사이트 요약 정보를 제공합니다.
+        
+- **OpenAI Realtime API:** 실시간 음성(STT/TTS) 대화 환경 구축합니다.
+- **HuggingFace API:** 웹캠 기반 얼굴 랜드마크 데이터 및 비언어적 Feature 추출합니다.
+- **고용24(워크넷) API:** 사용자의 관심 직무 설정 값에 매칭되는 실제 기업들의 최신 채용 공고 리스트를 실시간으로 노출합니다. AI 모의면접으로 향상된 스킬을 즉시 실전 채용으로 연결할 수 있도록 서비스의 완결성을 높였습니다.
+
+### 8. JWT 기반 보안 및 OAuth 2.0 소셜 로그인
+- **다중 소셜 로그인 지원:** Kakao, Google OAuth 2.0 연동을 통해 사용자의 초기 진입 장벽을 낮추고 접근성을 극대화했습니다.
+- **보안 아키텍처:** JWT(Access Token / Refresh Token) 발급 및 갱신 로직을 구현하여 안전한 세션 관리와 API Gateway 통신 보안을 보장합니다.
+
+### 9. 커뮤니티 (인성면접 질문 공유 게시판)
+- **사용자 간 상호작용:** 인성 면접 질문을 자유롭게 공유하고 질문에 대한 답변 등록이 가능한 커뮤니티 공간을 제공합니다.
+- **안정적인 CRUD 처리:** Django RDBMS 기반의 게시물 작성, 상세 조회, 수정, 삭제 파이프라인을 구축하여 사용자 데이터를 체계적으로 관리합니다.
+- **AI 챗봇 연동:** 사용자의 경험에 기반인 인성면접 질문 등록시 AI가 문장교정을 제공하여 더 나은 질문을 할 수 있도록 돕습니다. 또한, 인성질문과 관련이 없는 질문을 등록할 경우 AI가 부적절한 질문임을 감지 및 중복된 질문일 경우 사용자에게 알립니다.
+- **답변 피드백** : 사용자가 인성면접 질문에 대한 답변을 등록할 경우 AI가 답변에 대한 피드백을 제공합니다.
+
+<br><br>
+
+# 6. 프로젝트 설계
+
+<div align="center">
 
 ## LLM 파이프라인
+</div>
 
 ```plaintext
-AI 모의면접 진행 파이프라인
+User Flow: AI 모의면접 진행 파이프라인
  │
- ├── 1. 초기화 및 데이터 전처리 (Initialization & Ingestion)
- │    ├── 프론트엔드(React)에서 직무 · 난이도 · 페르소나 설정 및 이력서 업로드
- │    ├── MySQL: 신규 면접 세션 생성 및 고유 Session ID 발급
- │    └── ChromaDB: 이력서 텍스트를 400자 청크로 분할 후 임베딩(text-embedding-3-small) 저장
+ ├── 1. 면접 환경 설정 및 데이터 전처리 (Initialization & Ingestion)
+ │    ├── 사용자 설정: React 프론트엔드에서 직무, 난이도, 페르소나 설정 및 이력서(PDF/TXT) 업로드
+ │    ├── RDBMS (MySQL): 신규 면접 세션(Session) 생성 및 고유 식별자(Session ID) 발급
+ │    └── Vector DB (ChromaDB): 이력서 텍스트를 400자 청크(Chunk) 단위로 분할 후 임베딩(text-embedding-3-small) 적재
  │
  ├── 2. 다중 모드 면접 실행 (Dual-Mode Interview Execution)
- │    ├── [Text Mode]  채팅창 텍스트 입력 → /api/infer/evaluate-turn 호출
- │    └── [Voice Mode] WebRTC 기반 OpenAI Realtime API 음성 스트리밍
- │                      + 웹캠 이미지 → HuggingFace 랜드마크 실시간 추론
+ │    │
+ │    ├── [Text Mode] 채팅 기반 텍스트 면접
+ │    │    ├── 사용자가 채팅창에 답변 텍스트 입력 및 전송
+ │    │    └── 백엔드 LangGraph 추론 엔진(`/api/infer/evaluate-turn`) 즉시 호출
+ │    │
+ │    └── [Voice Mode] 실시간 음성/화상 면접
+ │         ├── 음성 스트리밍: WebRTC 및 OpenAI Realtime API 기반 지연 없는 STT/TTS 양방향 통신
+ │         └── 비전 태도 분석: 웹캠 이미지를 백엔드로 전송 ➔ Hugging Face 랜드마크 모델로 시선/표정 실시간 추론
  │
- ├── 3. 하이브리드 RAG & AI 추론 엔진  ← [Core 핵심]
- │    ├── Context Retrieval
- │    │    ├── 이력서 팩트 체크: ChromaDB Top-K 유사도 검색
- │    │    └── 실무 역량 체크: MySQL question_pool 직무/난이도 고정 질문 혼합
- │    ├── LLM Evaluation
- │    │    ├── 4가지 평가 지표 + JSON Schema 기반 답변 채점
- │    │    └── 환산 점수 40점 이하 시 → 이력서 기반 꼬리질문 생성 (최대 2회)
- │    └── 트랜잭션 로깅: 매 턴마다 Q·A·점수·피드백을 MySQL interview_details에 저장
+ ├── 3. 하이브리드 RAG & LangGraph 추론 엔진 (Inference Engine) ← [Core 핵심]
+ │    │
+ │    ├── Question Routing (문항 출제 제어)
+ │    │    ├── RAG 팩트 체크: 이력서에 없는 허위 지식이나 부풀림을 방지하기 위해 ChromaDB의 지원자 기술 맥락 검색
+ │    │    └── 실무 역량 체크: MySQL [question_pool] 테이블에서 선택한 직무/난이도에 맞는 기술 면접 모의 질문 무작위 추출
+ │    │
+ │    ├── LangGraph Evaluation (턴 단위 실시간 채점 및 꼬리질문 제어)
+ │    │    ├── 4가지 평가 지표(정확성, 깊이, 구조, 명확성) 기준 및 엄격한 JSON Schema 강제 채점 (`node_evaluate`)
+ │    │    └── [Hallucination Control] 환산 점수 40점 이하 시 ➔ 이력서를 바탕으로 날카로운 꼬리질문 동적 생성 (`node_follow_up`, 최대 2회 제한)
+ │    │
+ │    └── Transaction Logging (데이터 무결성)
+ │         └── 면접관과 주고받은 질문, 사용자 답변, 환산 점수, 피드백을 매 턴마다 MySQL `interview_details` 테이블에 저장
  │
- └── 4. 면접 종료 및 결과 분석
-      ├── [INTERVIEW_END] 시그널 감지 → 전체 턴 평균 점수 계산
-      ├── 세션 상태 'COMPLETED' 업데이트
-      └── LLM 전체 로그 종합 분석 → 강/약점 마크다운 리포트 생성
+ └── 4. 면접 종료 및 결과 분석 (Termination & Analytics)
+      ├── 종료 로직: 프론트엔드가 정의한 세션 길이에 도달하거나, AI가 `[INTERVIEW_END]` 시그널 송출 시 면접 종료
+      ├── 성과 집계: 백엔드에서 해당 세션(Session ID)의 턴별 평균 점수를 계산하고 상태를 'COMPLETED'로 DB 동기화
+      ├── 리포트 생성: LLM이 전체 대화 로그 및 점수를 종합 분석하여 강/약점 도출 마크다운(Markdown) 리포트 작성
+      └── 결과 렌더링: React 마이페이지 대시보드로 라우팅하여 사용자에게 최종 시각화 아코디언 및 점수 그래프 제공
+
 ```
+<div align="center">
 
 ## ERD
 
-![ERD](frontend/assets/images/erd.png)
+<img src="frontend/assets/images/erd.png" width="800">
 
-## 시스템 아키텍처
+</div>
 
-![시스템 아키텍처](frontend/assets/images/system_architecture.png)
+<div align="center">
+
+## 시스템 아키텍쳐
+
+<img src="frontend/assets/images/system_architecture.png" width="800">
+
+</div>
+
+
+<div align="center">
 
 ## 파일 구조
+</div>
 
 ```plaintext
-SKN23-4th-1TEAM/
-├── README.md
-├── requirements.txt
-├── manage.py                         # Django 관리 명령어 진입점
-├── django_backend/                   # Django 프로젝트 설정
-│   ├── settings.py                   # Django 설정 (DB, INSTALLED_APPS 등)
-│   ├── urls.py                       # URL 루트 → backend/django_api/urls.py 위임
-│   ├── asgi.py                       # ASGI 앱 (uvicorn/daphne 서빙)
-│   └── wsgi.py                       # WSGI 앱
-├── backend/                          # 핵심 비즈니스 로직 (Django 독립)
-│   ├── app.py                        # Django ASGI 앱 진입점
-│   ├── django_api/                   # Django 앱 (View · URL · 미들웨어)
-│   │   ├── views.py                  # 모든 API 핸들러 (커스텀 @api_view 데코레이터)
-│   │   ├── urls.py                   # /api/* 전체 URL 라우팅
-│   │   ├── utils.py                  # @api_view, db_session(), json_body() 유틸
-│   │   ├── middleware.py             # SimpleCORSMiddleware
-│   │   ├── startup.py                # DB 초기화 · 스키마 패치 (AppConfig.ready)
-│   │   └── apps.py                   # DjangoApiConfig (ready 훅)
-│   ├── ai/                           # LangGraph 기반 AI 파이프라인
-│   │   ├── graph.py                  # 면접 StateGraph (질문 → 평가 → 꼬리질문)
-│   │   ├── evaluator.py              # 4축 루브릭 평가 로직
-│   │   ├── infer_adapter.py          # Django View ↔ LangGraph 연결 어댑터
-│   │   ├── agent.py                  # LUI 네비게이션 에이전트
-│   │   ├── prompts.py                # 평가/질문 생성 프롬프트
-│   │   ├── personality_prompts.py    # 면접관 페르소나 프롬프트
-│   │   ├── question_bank.py          # 하이브리드 문항 선택 로직
-│   │   └── state.py                  # InterviewState TypedDict 정의
-│   ├── core/                         # 설정(config.py) · 보안(security.py)
-│   ├── db/                           # SQLAlchemy 세션 · ORM · 마이그레이션
-│   ├── models/                       # User · RefreshToken ORM 모델
-│   ├── routers/                      # (레거시 FastAPI 라우터, django_api로 이관됨)
-│   └── services/                     # 핵심 비즈니스 로직 계층
-│       ├── rag_service.py            # ChromaDB 기반 RAG
-│       ├── llm_service.py            # LLM 평가 · 질문 생성
-│       └── hf_landmark_service.py    # HuggingFace 랜드마크 추론
-├── frontend/                         # React + TypeScript 프론트엔드
-│   ├── src/
-│   │   ├── api/                      # Axios 클라이언트 · API 모듈
-│   │   │   └── axiosClient.ts        # JWT 인터셉터 · CSRF · 토큰 자동 갱신
-│   │   ├── store/                    # Zustand 전역 상태
-│   │   │   ├── authStore.ts          # 인증 · 사용자 정보
-│   │   │   └── inferStore.ts         # 면접 세션 상태
-│   │   ├── pages/                    # 페이지 컴포넌트
-│   │   ├── components/               # 재사용 UI 컴포넌트
-│   │   ├── hooks/                    # useWebRTC · useWebcam · useInterviewChat
-│   │   ├── router/                   # AppRouter · ProtectedRoute
-│   │   └── styles/                   # SCSS 모듈
-│   └── vite.config.ts                # /api → :8000 프록시 설정
-└── static/                           # 정적 파일 서빙
+🦁 SKN23-4th-1TEAM/
+├── .claude                 # Claude AI 에디터 관련 로컬 커스텀 프롬프트
+├── .gitignore              # 버전 관리 제외 파일 목록
+├── README.md               # 프로젝트 상세 설명 문서
+├── app.db                  # 로컬/테스트용 SQLite 초기 DB 파일
+├── manage.py               # Django 명령형 관리 스크립트 도구 
+├── requirements.txt        # Backend 파이썬 서버 구동 필수 라이브러리 목록
+├── test_aws.py             # 시스템 인프라 연동 확인 테스트 스크립트
+│
+├── backend/                # 🟢 FastAPI & Django 혼합 메인 백엔드 서버 루트
+│   ├── .env                # DB 연동, API 키, 서버 보안 관련 루트 환경변수
+│   ├── import_questions.py # 초기 500개 면접 질문 데이터를 MySQL에 적재
+│   ├── app.py              # FastAPI 메인 프로토콜 마운트 및 실행 진입점
+│   ├── ai/                 # LangGraph 및 평가 파이프라인
+│   │   ├── agent.py, evaluator.py, graph.py, prompts.py, question_bank.py, state.py
+│   ├── core/               # CORS 등 전역 서버/보안 설정
+│   │   ├── config.py, rate_limit.py, security.py
+│   ├── data/               # RAG 분석용 로컬 처리 스토리지
+│   │   ├── chroma/         # 임베딩 완료된 실제 Chroma 벡터 DB
+│   │   └── resume/         # 이력서 PDF 파싱 전 임시 저장소
+│   ├── db/                 # RDBMS 연결 풀(Pool) 설정
+│   │   ├── base.py, database.py, session.py
+│   ├── django_api/         # 🟠 Django 앱 (강력한 라우팅 및 보안 뷰 전담)
+│   │   ├── urls.py, views.py
+│   │   └── view_modules/   # auth, board, interview, users 등 기능 단위 격리
+│   ├── models/             # ORM 데이터 모델 (FastAPI 구동 연동)
+│   │   ├── refresh_token.py, user.py
+│   ├── routers/            # FastAPI 통신 모듈 (비동기 처리 최적화)
+│   │   ├── admin, attitude, auth, home, infer, interview, jobs, social_auth 모듈
+│   ├── schemas/            # Pydantic 기반 입력/출력 인터페이스 규격
+│   │   ├── agent, attitude, auth, infer, jobs 스키마 모듈
+│   └── services/           # DB 처리, 외부 API, AI 로직 등이 얽혀있는 핵심 비즈니스 로직
+│       ├── auth_service.py       # JWT/세션 발급
+│       ├── llm_service.py        # OpenAI 연동 질의응답 처리
+│       ├── rag_service.py        # ChromaDB 벡터 스플릿/청킹
+│       ├── hf_landmark_service.py# 웹캠 시선 및 표정 처리
+│       └── social_service.py, tavily_service.py, resume_service.py, jobs_service.py 등
+│
+├── django_backend/         # 🟠 Django 전체 프로젝트의 메인 환경/설정 통제
+│   ├── __init__.py, asgi.py, wsgi.py
+│   ├── settings.py         # 커뮤니티, 로그인 미들웨어 관통 설정
+│   └── urls.py             # 통합 라우팅 허브
+│
+└── frontend/               # 🔵 React (Vite) + TS 프론트엔드 워크스페이스
+    ├── index.html          # 리액트 앱 렌더링 HTML 틀
+    ├── package.json        # 모듈 의존성 트래커 및 스크립트 도구
+    ├── vite.config.ts      # 빌드 도구 (포트, 프록시 매핑 컨트롤)
+    ├── public/             # 빌드 시 1:1로 서빙되는 정적 에셋 베이스
+    └── src/                # 실제 프론트엔드 비즈니스 소스 트리의 심장
+        ├── App.tsx         # 모든 라우트, 스토어를 감싸는 앱의 뿌리
+        ├── main.tsx        # DOM 렌더러
+        ├── api/            # Axios 클라이언트 및 엔드포인트 통신 모듈
+        │   ├── axiosClient.ts, authApi.ts, boardApi.ts, homeApi.ts, inferApi.ts, interviewApi.ts 등
+        ├── assets/         # 앱 번들에 포함되어 최적화되는 로고 및 아이콘
+        ├── components/     # UI를 조립하는 재사용 파츠 모음 (TSX 및 SCSS 스타일링 레이어 포함)
+        │   ├── auth/       # LoginForm, SignUpForm 등 로그인 폼 렌더러
+        │   ├── board/      # CreateQuestionModal, QuestionDetailModal (다이얼로그 컨트롤)
+        │   ├── chat/       # GuideChatbot (우측 하단 Zero-Click 에이전트 인터페이스)
+        │   ├── common/     # Header, CustomAlert, LoginModal, ProtectedRoute (인증 방어/공통 모달)
+        │   ├── home/       # JobCards, MemoBoard, NewsFeed 등 홈 화면을 채우는 모듈들
+        │   └── interview/  # ChatWindow, TextInterview, VoiceInterview, WebcamBox, InterviewReportModal (모의면접 핵심 UI)
+        ├── constants/      # 화면 라우팅 경로, 옵션 매핑 등 변형 없는 고정 상수 (routes.ts 등)
+        ├── hooks/          # React 상태 변화를 관리하는 추상화 커스텀 훅
+        │   ├── useAutoLogout.ts, useInterviewChat.ts, useWebRTC.ts, useWebcam.ts
+        ├── pages/          # URL에 매핑되는 1 Depth 화면의 통짜 렌더링 (각 화면마다 SCSS 종속)
+        │   ├── AdminPage, Auth, BoardPage, Home, Interview, MyPage, RecordsPage, ResumePage 등
+        ├── router/         # React Router Path를 조율하는 라우팅 브릿지 (AppRouter.tsx)
+        ├── store/          # Zustand 스토어로 관리하는 애플리케이션의 전역 두뇌 (데이터 락인)
+        │   ├── authStore.ts (유저 권한), inferStore.ts (면접 상태)
+        ├── styles/         # 전역 컬러 토큰 및 HTML 바디 리셋 베이스 (_variables.scss, global.scss)
+        ├── types/          # TS 인터페이스 DTO 명세서 (interview.ts 등)
+        └── utils/          # 특정 종속성이 없는 순수 기능 함수 (pdfParser.ts 등)
+            # S3 등 AWS 클라우드 연동 상태 확인용 테스트 스크립트
+
 ```
 
 <br><br>
 
-# 📄 데이터셋 (Dataset)
+# 7. 데이터셋
 
-| 데이터 유형             | 저장소                      | 설명                                                                                |
-| ----------------------- | --------------------------- | ----------------------------------------------------------------------------------- |
-| **직무별 면접 질문 풀** | MySQL (`question_pool`)     | Python · Java · AI/ML 등 직무 및 난이도별(상/중/하) 기술 질문 데이터셋              |
-| **이력서 벡터 데이터**  | ChromaDB                    | 사용자 업로드 이력서를 400자 단위 청크로 분할, `text-embedding-3-small` 임베딩 저장 |
-| **면접 세션 로그**      | MySQL (`interview_details`) | 턴별 질문 · 답변 · 평가 점수 · 피드백 트랜잭션 누적 데이터                          |
+* **직무별 면접 질문 풀 (MySQL DB):** Python, Java, AI/ML 등 직무 및 난이도별(상/중/하) 초기 기술 질문 데이터셋
 
-<br><br>
+* **사용자 맞춤형 컨텍스트 (ChromaDB):** 사용자가 업로드한 이력서를 400자 단위 청크로 분할 후 OpenAI 임베딩(`text-embedding-3-small`)을 거친 벡터 데이터
 
-# 💡 시연 이미지
-
-### ✧ 로그인 · 회원가입
-
-|               **로그인**                |                **비밀번호 찾기**                 |                **회원가입**                 |
-| :-------------------------------------: | :----------------------------------------------: | :-----------------------------------------: |
-| ![로그인](frontend/assets/rm/login.png) | ![비밀번호 찾기](frontend/assets/rm/find_pw.png) | ![회원가입](frontend/assets/rm/sign_up.png) |
-
-### ✧ 메인 대시보드
-
-|               **홈**               |             **가이드 챗봇 (Zero-Click)**             |
-| :--------------------------------: | :--------------------------------------------------: |
-| ![홈](frontend/assets/rm/home.png) | ![가이드 챗봇](frontend/assets/rm/guide_chatbot.png) |
-
-### ✧ 면접 진행
-
-|                     **면접 설정**                      |                 **면접 진행 (Text)**                  |
-| :----------------------------------------------------: | :---------------------------------------------------: |
-| ![면접 설정](frontend/assets/rm/interview_setting.png) | ![텍스트 면접](frontend/assets/rm/interview_text.png) |
-
-|            **면접 진행 (Voice & 웹캠)**            |                  **면접 결과 리포트**                   |
-| :------------------------------------------------: | :-----------------------------------------------------: |
-| ![음성 면접](frontend/assets/rm/interview_cam.png) | ![결과 리포트](frontend/assets/rm/interview_result.png) |
-
-### ✧ 마이페이지 · 이력서
-
-|                **면접 기록**                 |                 **면접 상세보기**                 |
-| :------------------------------------------: | :-----------------------------------------------: |
-| ![마이페이지](frontend/assets/rm/mypage.png) | ![상세보기](frontend/assets/rm/mypage_detail.png) |
-
-|             **이력서 관리**              |                  **이력서 AI 분석**                  |
-| :--------------------------------------: | :--------------------------------------------------: |
-| ![이력서](frontend/assets/rm/resume.png) | ![이력서 분석](frontend/assets/rm/resume_result.png) |
-
-### ✧ 관리자 페이지
-
-|                  **관리자 로그인**                   |                   **관리자 설정**                    |
-| :--------------------------------------------------: | :--------------------------------------------------: |
-| ![관리자 로그인](frontend/assets/rm/admin_login.png) | ![관리자 설정](frontend/assets/rm/admin_setting.png) |
+* **면접 세션 및 평가 로그 (MySQL DB):** 턴(Turn)별 질문, 답변, 평가 점수, 피드백을 누적 저장하는 트랜잭션 데이터셋
 
 <br><br>
 
-# 🛠️ 기술 스택 (Tech Stack)
 
-### ✦ <span style="color:#0176f7;">Frontend</span>
+# 8. 기술 스택
 
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Zustand](https://img.shields.io/badge/Zustand-000000?style=for-the-badge&logo=react&logoColor=white)
-![SCSS](https://img.shields.io/badge/SCSS-CC6699?style=for-the-badge&logo=sass&logoColor=white)
+### ✦ Frontend
+<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black"> <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"> <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white"> <img src="https://img.shields.io/badge/Zustand-000000?style=for-the-badge&logo=react&logoColor=white"> <img src="https://img.shields.io/badge/SCSS-CC6699?style=for-the-badge&logo=sass&logoColor=white">
 
 ### ✦ Backend
-
-![Python](https://img.shields.io/badge/Python-0f29d1?style=for-the-badge&logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=python&logoColor=white)
+<img src="https://img.shields.io/badge/Python-0f29d1?style=for-the-badge&logo=python&logoColor=white"> <img src="https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white"> <img src="https://img.shields.io/badge/FastAPI-d93209?style=for-the-badge&logo=fastapi&logoColor=white"> <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=python&logoColor=white">
 
 ### ✦ AI & LLM Engine
-
-![OpenAI](https://img.shields.io/badge/OpenAI-54d7ff?style=for-the-badge&logo=openai&logoColor=black)
-![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white)
-![LangGraph](https://img.shields.io/badge/LangGraph-4B8BBE?style=for-the-badge&logoColor=white)
-![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)
-![Tavily](https://img.shields.io/badge/Tavily_Search-0099CC?style=for-the-badge&logoColor=white)
+<img src="https://img.shields.io/badge/OpenAI-54d7ff?style=for-the-badge&logo=openai&logoColor=white"> <img src="https://img.shields.io/badge/LangGraph-4B8BBE?style=for-the-badge&logoColor=white"> <img src="https://img.shields.io/badge/Hugging_Face-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black"> <img src="https://img.shields.io/badge/Tavily_Search-0099CC?style=for-the-badge&logoColor=white"> 
 
 ### ✦ Database & Infra
+<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"> <img src="https://img.shields.io/badge/ChromaDB-5175c4?style=for-the-badge&logoColor=white"> <img src="https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white"> <img src="https://img.shields.io/badge/Ngrok-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white">
 
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![ChromaDB](https://img.shields.io/badge/ChromaDB-5175c4?style=for-the-badge&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS_EC2/S3-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
-![Ngrok](https://img.shields.io/badge/Ngrok-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white)
+
 
 <br><br>
 
-# 🚀 Trouble Shooting
+# 9. Version 2.0 핵심 엔진 고도화 내용 (vs 3차 프로젝트)
 
-## 1. AI & RAG 파이프라인
+이전 3차 프로젝트(V 1.0) 대비 시스템이 고도화된 기술적 로직 비교입니다.
 
-### ✦ 이력서를 무시하는 AI 동문서답 현상 (RAG 연동 오류)
+| 구분 | 1.0 (3차 프로젝트 코드베이스) | 2.0 (현 4차 프로젝트 코드베이스) | 기술적 고도화 포인트 |
+| :--- | :--- | :--- | :--- |
+| **Frontend Framework** | `Streamlit` (Python 기반 렌더링) | **`React (Vite) + TS + Zustand SPA`** | 기존 `st.session_state` 기반의 잦은 화면 새로고침(Re-run) 및 한계성을 탈피하여, 단방향 렌더링과 클라이언트 전역 상태 제어가 가능한 **완벽한 Single Page Application(SPA) 도입** |
+| **Backend Architecture** | 단일 `FastAPI` 1-Tier | **`Django + FastAPI` 하이브리드** | 비동기가 필수적인 AI 추론/WebRTC는 FastAPI가 담당하고, 안정적인 세션, 인증, 커뮤니티 CRUD는 Django가 전담하도록 설계하여 **결합도를 낮추고 서버 안정성을 극대화** |
+| **AI Inference State** | LangGraph 무한 꼬리질문 버그 존재 | **`StateGraph` 동적 제어 (2회 제한 로직)** | `graph.py`와 `state.py`에서 `follow_up_count` 상태를 추적하여, 40점 이하의 답변이라도 **무한 꼬리질문 루프에 빠지지 않도록 안전망(최대 2회) 강제 적용** |
+| **Hybrid Q-Mixer** | 단순 기획(TODO) 단계에 머무름 | **실제 RAG + DB 50:50 동적 병합 출제** | 과거 `node_pick_question`에 주석으로만 존재하던 하이브리드 로직을 실제 코드로 구현. ChromaDB의 이력서 청크와 MySQL 기술 문항을 동적으로 Mixing 하도록 고도화 |
+| **Auth & Security** | 각 페이지별 컴포넌트 내부 검증 | **Zustand 기반 `LoginModal` 전역 Intercept** | 권한이 없는 접근 시 산발적으로 터지던 에러를, **프론트엔드 전역 상태 스토어(`useAuthStore`)와 프록시**를 통해 단일 화면(LoginModal)으로 우아하게(Graceful) 제어 |
 
-- **문제 상황:** 이력서를 정상 업로드했음에도 텍스트 면접 시 AI가 이력서 내용을 무시하고 일반 질문만 반복 출제
-- **원인:** 레거시 라우터(`/infer/ask`)를 경유하면서 벡터 DB 검색 키값인 `session_id`와 `resume_text` 페이로드가 누락
-- **해결:** 통신 경로를 RAG 평가 엔진(`/api/infer/evaluate-turn`)으로 일원화하고 고유 식별자(`user_id` = `db_session_id`)를 정확히 매핑 → **이력서 기반 꼬리질문 100% 작동**
+<br><br>
 
-### ✦ AI 면접 문항 편향성 문제 (Hybrid Question Mix 도입)
 
-- **문제 상황:** 이력서 첨부 시 모든 문항이 경험 위주 질문으로만 편향, 직무 핵심 하드 스킬(CS 등) 검증 누락
-- **해결:** 전체 문항의 50%는 이력서 기반 경험 질문, 50%는 MySQL `question_pool`의 직무/난이도 고정 질문으로 동적 혼합 출제하는 **하이브리드 알고리즘** 구현
+# 10. 테스트 시나리오 (Test Scenarios)
 
-## 2. 프론트엔드 및 데이터 무결성
+기획 및 QA 관점에서 정상 작동을 검증한 핵심 유스케이스입니다.
 
-### ✦ 조용한 에러(Silent Failure)와 무한 로딩
+| 시나리오명 | 입력(Input) 및 조건 | 기대 출력(Output) 및 결과 |
+| :--- | :--- | :--- |
+| **Zero-Click 면접 세팅** | 메인 홈 챗봇에 *"파이썬 백엔드 면접 준비해줘"* 라고 자연어 입력 | 에이전트가 의도를 파악하여 면접장으로 자동 화면 전환 및 직무(파이썬 백엔드), 난이도(기본값) 자동 세팅 |
+| **이력서 RAG 동적 꼬리질문** | 면접 중 사용자의 답변 수준이 환산 점수 기준 **40점 이하** 기록 | 단순 다음 질문이 아닌, 사용자가 업로드한 이력서를 RAG로 검색하여 해당 기술과 연관된 심화 꼬리질문 생성 (최대 2회 제한) |
+| **비전 태도 분석 동작** | 음성/캠 면접 진행 중 웹캠 활성화 및 인터뷰 수행 | HuggingFace 랜드마크 모델이 시선 처리, 표정 변화를 좌표값으로 추출하여 결과 리포트에 피드백 반영 |
+| **전문 첨삭 파이프라인** | 이력서 등록 페이지에서 자기소개서 업로드 후 *"직무 적합성 위주로 첨삭해 줘"* 요청 | STAR 기법 기반의 문장 교정본 및 면접관 시점의 예상 질문 리포트를 마크다운 형식으로 반환 |
 
-- **문제 상황:** 채팅 입력 후 엔터 시 메시지가 전송되지 않고 입력창만 초기화되며 화면이 먹통
-- **원인:** 백엔드 필수 파라미터(`attitude: None`) 누락으로 422 에러 발생, 예외 처리 직후 UI 새로고침 코드가 무조건 실행되어 에러 로그가 덮어씌워짐
-- **해결:** API 호출 함수 리턴 타입을 Boolean으로 변경, 통신 실패 시 `return False`로 재실행 차단 → **방어적 프로그래밍(Defensive Programming) 구조 확립**
+<br><br>
 
-### ✦ 면접 세션 DB 누락 문제
+# 11. 수행결과 (시연 캡처본 및 UX Flow)
 
-- **문제 상황:** 면접 진행 후 DB에 `user_id`, `total_score` 등 핵심 정보가 누락
-- **해결:** 프론트엔드 JWT 토큰 키워드 통일, 페이로드 정확히 매핑, 종료 시 서버 시간(`func.now()`) 삽입 로직 추가 → **트랜잭션 무결성 100% 확보**
+### ✧ 로그인 및 회원가입
 
-## 3. 인프라 및 네트워크
+| **로그인** | **비밀번호 찾기** | **회원가입** |
+| :---: | :---: | :---: |
+| \<img src="frontend/assets/rm/login.png" width="90%"\> | \<img src="frontend/assets/rm/find\_pw.png" width="90%"\> | \<img src="frontend/assets/rm/sign\_up.png" width="100%"\> |
 
-### ✦ 브라우저 마이크 권한 차단 (Ngrok HTTPS 도입)
+### ✧ 메인 대시보드 및 가이드 챗봇
 
-- **문제 상황:** `http://` 환경에서 브라우저 보안 정책으로 WebRTC 마이크 권한 차단, 무료 Ngrok 사용 시 서버 재구동마다 도메인 변경
-- **해결:** Ngrok 유료 플랜 도입 → **고정 HTTPS Custom Domain** 확보, 환경변수 수정 공수 완전 제거
+| **홈** | **가이드 챗봇 (Zero-Click)** |
+| :---: | :---: |
+| \<img src="frontend/assets/rm/home.png" width="100%"\> | \<img src="frontend/assets/rm/guide\_chatbot.png" width="100%"\> |
+
+### ✧ 면접 진행 및 결과
+
+| **면접 진행(Text)** | **면접 진행(TTS & 웹캠)** |
+| :---: | :---: |
+| \<img src="frontend/assets/rm/interview\_text.png" width="100%"\> | \<img src="frontend/assets/rm/interview\_cam.png" width="100%"\> |
+| **면접 설정 모달** | **면접 결과 리포트** |
+| \<img src="frontend/assets/rm/interview\_setting.png" width="70%"\> | \<img src="frontend/assets/rm/interview\_result.png" width="70%"\> |
+
+### ✧ 이력서 분석 및 마이페이지
+
+| **면접 기록 (마이페이지)** | **이력서 등록 및 AI 분석** |
+| :---: | :---: |
+| \<img src="frontend/assets/rm/mypage.png" width="100%"\> | \<img src="frontend/assets/rm/resume.png" width="100%"\> |
+
+<br><br>
+
+# 12. Trouble Shooting
+
+### ✦ AI 동문서답 현상 (RAG 연동 오류)
+
+  * **문제 상황:** 사용자가 이력서를 정상적으로 업로드했음에도, 텍스트 면접 시 AI가 이력서 내용을 읽지 못하고 일반적인 기본 질문만 반복출제.
+  * **원인 분석:** 프론트엔드에서 데이터를 넘길 때, 과거 레거시 API 라우터를 타면서 벡터 DB 검색의 키값이 되는 `session_id`와 `resume_text` 페이로드가 누락됨.
+  * **해결 과정:** 통신 경로를 최신 RAG 평가 엔진(`/api/infer/evaluate-turn`)으로 일원화하고, 고유 식별자(`user_id` = `db_session_id`)를 정확히 매핑.
+  * **개선 결과:** 이력서 기반 맞춤형 꼬리질문 로직이 100% 정상 작동하도록 파이프라인 통일 완료.
+
+### ✦ 조용한 에러(Silent Failure)와 무한 로딩 해결
+
+  * **문제 상황:** 채팅 입력 후 엔터를 치면 메시지가 전송되지 않고 입력창만 초기화되며 화면이 먹통이 됨.
+  * **원인 분석:** 백엔드 필수 파라미터(`attitude: None`) 누락으로 422 에러가 발생했으나, 예외 처리 직후 UI 새로고침(`st.rerun()`) 코드가 무조건 실행되어 사용자가 에러 로그를 보기도 전에 화면이 덮어씌워짐.
+  * **해결 과정:** API 호출 함수 리턴 타입을 Boolean으로 변경. 통신 실패 시 `return False`를 통해 UI 강제 렌더링 실행을 차단하는 **방어 로직(Defensive Programming)** 구축.
+  * **개선 결과:** 데이터 누락 시 즉각적인 에러 트래킹이 가능해져 디버깅 속도 대폭 향상 및 데이터 무결성 확보.
+
+### ✦ AI 면접 문항 편향성 문제
+
+  * **문제 상황:** 이력서를 첨부할 경우, 모든 면접 문항이 이력서 기반의 '경험' 위주 질문으로만 편향되어 지원 직무의 핵심 IT 하드 스킬(CS 등) 검증이 누락됨.
+  * **해결 과정:** 하이브리드 문항 혼합 알고리즘을 구현. 전체 문항의 50%는 이력서 기반 경험 질문으로, 나머지 50%는 MySQL DB에 적재된 직무 기반 고정 질문으로 동적 혼합 출제되도록 리팩터링.
 
 ### ✦ 로컬 분산 DB로 인한 데이터 파편화
 
-- **문제 상황:** 팀원들이 개별 로컬 MySQL을 사용하여 데이터가 불일치하고 통합 테스트 불가
-- **해결:** AWS EC2에 공용 MySQL 서버 구축, 모든 팀원이 하나의 **원격 공유 DB** 를 바라보도록 전환 (동적 RBAC 권한 분리 적용)
+  * **문제 상황:** 팀원들이 개별 로컬 MySQL을 사용하여 데이터가 불일치하고 통합 테스트가 불가능함.
+  * **해결 과정:** AWS EC2에 공용 MySQL 서버를 구축하고, 모든 팀원이 하나의 원격 공유 DB를 바라보도록 아키텍처 전면 전환 (동적 RBAC 권한 분리 적용).
+
+### ✦ 전역 상태(Zustand) 관리를 통한 인증 플로우(Auth Flow) 일원화 및 UX 개선
+
+  * **문제 상황:** 초기 프로젝트에서는 로그인 없이 방명록 작성 등 권한이 필요한 기능 접근 시, 각 컴포넌트 내부에서 산발적으로 기본 `alert` 창과 하드코딩된 리다이렉트 로직이 발생하여 유지보수성과 사용자 경험(UX)이 심각하게 저하됨.
+  * **해결 과정:** React 프론트엔드에서 Zustand의 `useAuthStore`를 활용하여 전역 상태 기반의 공통 로그인 모달(`LoginModal`) 컨트롤러를 구축. 이를 통해 네비게이션 헤더, 모의면접 진입, 방명록 작성 등 권한이 필요한 모든 인터랙션 지점에서 동작을 가로채고(Intercept), 단일화된 디자인의 인증 모달을 띄우도록 아키텍처를 전면 리팩터링함.
+  * **개선 결과:** 중복 코드를 제거하고 인증 흐름을 중앙 집중화하여 시스템의 보안성과 앱 전체의 사용자 몰입도를 크게 향상시킴.
 
 <br><br>
 
-# 💡 Insight
+# 13. 향후 개선 계획 
 
-이번 프로젝트를 통해 **"진정한 AI SaaS는 UI에 챗봇 하나 띄워두는 것이 아님"** 을 깊이 체감했습니다.
+본 프로젝트를 실제 B2B 또는 상용 B2C 서비스로 고도화할 경우 고려하고 있는 확장 계획입니다.
 
-기존의 기능 제공형 도구에서 벗어나, **AI(RAG 엔진과 평가 로직)를 서비스의 핵심 엔진으로 설계하고 그 위에 SaaS 구조를 얹는** 아키텍처 패러다임 전환을 직접 경험했습니다. 프론트엔드의 상태 관리와 백엔드 AI 추론 API 간의 명확한 역할 분리, 그리고 촘촘한 에러 핸들링이 서비스 완성도를 결정짓는 핵심 요소임을 배웠습니다.
+  * **B2B 엔터프라이즈(HR) 대시보드 확장:** 현재 구직자(B2C) 중심의 서비스에 기업 인사담당자 전용 뷰를 추가하여, 지원자들의 역량 분석 리포트 요약 및 AI 채점 랭킹 보드를 한눈에 확인할 수 있는 B2B SaaS로 확장.
+  * **멀티모달 감정 분석 고도화:** 현재 안면 랜드마크 중심의 시선 처리 분석을 넘어, 음성의 높낮이(Pitch), 발화 속도(Pace), 미세한 떨림 등을 분석하여 긴장도 및 자신감을 수치화하는 멀티모달 오디오 분석 모델 추가 도입.
+  * **특화 직군 Fine-Tuning 모델 도입:** 범용 LLM 대신 의료, 금융, 법률 등 특수 도메인 지식에 대해 Fine-Tuning된 자체 소형 모델(sLLM)을 병렬로 연결하여 도메인별 전문 면접 성능 고도화.
 
-본 시스템은 향후 에이전트가 면접 흐름 전체를 설계하는 **Agentic SaaS** 로의 확장, 그리고 기업 채용 초기 역량 검증을 지원하는 **B2B AI 면접 보조 도구** 로의 전환 가능성을 모두 내포하고 있습니다.
+<br><br>
+
+# 14. Insight & 한 줄 회고
+
+## ✦ Insight
+
+이번 프로젝트를 통해 <strong>"진정한 AI SaaS는 UI에 챗봇 하나 띄워두는 것이 아님"</strong>을 깊이 체감했습니다. 
+
+기존에는 기능 제공형 도구를 만들고 AI를 보조 수단으로 붙였다면, 이번에는 <strong>AI(RAG 엔진과 평가 로직)를 서비스의 핵심 엔진으로 설계하고, 그 위에 마이페이지와 세션 관리 등의 SaaS 구조를 구축하는 방식</strong>으로 아키텍처의 패러다임을 전환했습니다. 프론트엔드의 상태 관리와 백엔드의 복잡한 AI 추론 API 간의 명확한 역할 분리 및 에러 핸들링이 서비스의 완성도를 결정짓는 핵심 요소임을 배웠습니다.
 
 <br>
 
-# ✏️ 한 줄 회고
+## ✦ 한 줄 회고
 
-- **양창일 (팀장)**
-
-  > AI를 접목한 SaaS 구조의 프로젝트를 수행하며, 미래지향적인 소프트웨어 아키텍처와 서비스 모델에 대해 깊이 고민해볼 수 있었습니다.
-
-- **김다빈 (팀원)**
-
-  > AWS와 Ngrok이라는 낯선 영역에 도전하며 셀수도 없이 많은 오류를 겪었지만, 유능한 팀원들이 곁에 있었기에 포기하지 않고 끝까지 완주할 수 있었습니다. 감사합니다.
-
-- **김지우 (팀원)**
-
-  > 사용자의 이력서를 벡터 DB에 임베딩하고 RAG 엔진과 연동해 AI 면접 서비스 구조를 설계했습니다. 다양한 테스트를 통해 최적의 청킹 방법을 찾아 환각 문제를 해결하고, 기본 챗봇을 넘어 개인 맞춤형 AI 면접 서비스의 기반을 마련한 의미 있는 프로젝트였습니다.
-
-- **유헌상 (팀원)**
-  > 프롬프트 엔지니어링을 다시 해보면서 LLM의 출력을 원하는 방향으로 유도하는 것이 재밌었습니다. 외부 채용공고 API를 백엔드에 연결하면서 FastAPI의 구조와 기능을 배우고, 백엔드/프론트/LLM 기능들을 고루 경험하며 다양하게 학습할 수 있어 좋았습니다.
-
-<br><br>
-
-# 📚 Industry Insight
-
-최근 업계에서는 **AI 에이전트의 등장으로 기존 SaaS 구조가 근본적으로 변화할 것** 이라는 전망이 제기되고 있습니다. AI가 사용자의 업무 흐름을 직접 수행하는 방향으로 발전함에 따라, 기존의 기능 중심 SaaS는 점차 재편될 가능성이 있습니다.
-
-본 프로젝트는 이러한 흐름 속에서 **AI가 단순 도구가 아닌 평가 및 상호작용 주체로 작동하는 SaaS 구조** 를 실험적으로 구현한 결과물입니다.
-
-### ✦ AI SaaS의 변화 흐름
-
-- [@choi.openai — Threads](https://www.threads.net/@choi.openai/post/DUh_-_DD3V0)
-- [관련 영상](https://www.youtube.com/watch?v=4uzGDAoNOZc)
+  * **김지우 (팀장):**  -
+  * **김다빈 (팀원):**  -
+  * **양창일 (팀원):**  -
+  * **유헌상 (팀원):**  -
