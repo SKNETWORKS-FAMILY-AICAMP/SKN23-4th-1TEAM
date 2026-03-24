@@ -1,13 +1,13 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { useInferStore } from "../../store/inferStore";
+import { Download, List, RotateCcw, ChevronDown } from "lucide-react";
 import { inferApi } from "../../api/inferApi";
 import { ROUTES } from "../../constants/routes";
-import { Download, List, RotateCcw, ChevronDown } from "lucide-react";
+import { useInferStore } from "../../store/inferStore";
 import "./InterviewReportModal.scss";
 
 export interface ChatMessage {
@@ -35,11 +35,11 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const userMessages = messages.filter(
-    (m) => m.role === "user" && m.score !== undefined,
+    (message) => message.role === "user" && message.score !== undefined,
   );
   const avgScore =
     userMessages.length > 0
-      ? userMessages.reduce((acc, m) => acc + (m.score || 0), 0) /
+      ? userMessages.reduce((acc, message) => acc + (message.score || 0), 0) /
         userMessages.length
       : 0;
   const totalScore = Math.round((avgScore / 10) * 100);
@@ -53,16 +53,19 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
   useEffect(() => {
     if (!isLoading) return;
+
     const texts = [
       "AI가 면접 내용을 분석 중입니다...",
       "답변의 전문성과 논리력을 평가하고 있습니다...",
       "맞춤형 개선 피드백을 작성하는 중입니다...",
     ];
-    let i = 0;
+
+    let index = 0;
     const interval = setInterval(() => {
-      i = (i + 1) % texts.length;
-      setLoadingText(texts[i]);
+      index = (index + 1) % texts.length;
+      setLoadingText(texts[index]);
     }, 2500);
+
     return () => clearInterval(interval);
   }, [isLoading]);
 
@@ -90,20 +93,20 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
       }
 
       try {
-        const res = await inferApi.getEvaluationReport({
-          messages: messages,
+        const response = await inferApi.getEvaluationReport({
+          messages,
           job_role: jobRole || "기본 직무",
           difficulty: difficulty || "중",
           resume_text: experienceText || null,
         });
 
-        let rawEval = res.evaluation || "평가 생성 실패";
-        rawEval = rawEval.replace(
-          /\*\*[\d\.]+\s*\/\s*100점\*\*/g,
+        let rawEvaluation = response.evaluation || "평가 생성 실패";
+        rawEvaluation = rawEvaluation.replace(
+          /\*\*[\d.]+\s*\/\s*100점?\*\*/g,
           `**${totalScore} / 100점**`,
         );
 
-        setEvaluation(rawEval);
+        setEvaluation(rawEvaluation);
         setOpenSections({ 0: true, 1: true });
       } catch (error) {
         console.error(error);
@@ -144,12 +147,15 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
         currentTitle = headingMatch[1].replace(/\*\*/g, "").trim();
         currentContent = "";
       } else {
-        currentContent += line + "\n";
+        currentContent += `${line}\n`;
       }
     }
 
     if (currentContent.trim()) {
-      sections.push({ title: currentTitle, content: currentContent.trim() });
+      sections.push({
+        title: currentTitle,
+        content: currentContent.trim(),
+      });
     }
 
     return sections;
@@ -163,6 +169,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
   const handleDownloadTxt = () => {
     if (!evaluation) return;
+
     const element = document.createElement("a");
     const file = new Blob([evaluation], { type: "text/plain;charset=utf-8" });
     element.href = URL.createObjectURL(file);
@@ -177,8 +184,8 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
     try {
       const allOpen: Record<number, boolean> = {};
-      parsedSections.forEach((_, idx) => {
-        allOpen[idx] = true;
+      parsedSections.forEach((_, index) => {
+        allOpen[index] = true;
       });
       setOpenSections(allOpen);
 
@@ -190,7 +197,6 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
       let heightLeft = imgHeight;
@@ -267,8 +273,6 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
             <div className="evaluation-box">
               {isLoading ? (
                 <div className="loading-state">
-                  {/* CSS 스피너 대신 loading.gif 이미지를 출력합니다. 
-                      이미지 크기 조절이 필요하면 width 값을 변경하세요. */}
                   <img
                     src="/images/common/loading.gif"
                     alt="로딩 애니메이션"
@@ -278,19 +282,19 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
                 </div>
               ) : (
                 <div className="accordion-list">
-                  {parsedSections.map((section, idx) => (
+                  {parsedSections.map((section, index) => (
                     <div
-                      key={idx}
-                      className={`accordion-item ${openSections[idx] ? "open" : ""}`}
+                      key={index}
+                      className={`accordion-item ${openSections[index] ? "open" : ""}`}
                     >
                       <button
                         className="accordion-header"
-                        onClick={() => toggleSection(idx)}
+                        onClick={() => toggleSection(index)}
                       >
                         <span className="title">{section.title}</span>
                         <ChevronDown className="icon" size={20} />
                       </button>
-                      {openSections[idx] && (
+                      {openSections[index] && (
                         <div className="accordion-body markdown-content">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {section.content}
@@ -306,13 +310,13 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
         </div>
 
         <div className="modal-fixed-footer">
-            <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
-              <button
-                className="btn-download"
-                style={{ flex: 1 }}
-                onClick={handleDownloadTxt}
-                disabled={isLoading || !evaluation}
-              >
+          <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+            <button
+              className="btn-download"
+              style={{ flex: 1 }}
+              onClick={handleDownloadTxt}
+              disabled={isLoading || !evaluation}
+            >
               <Download size={18} /> TXT 저장
             </button>
             <button
@@ -330,7 +334,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
               <RotateCcw size={18} /> 다시 시작
             </button>
             <button className="btn-home" onClick={handleGoRecords}>
-              <List size={18} /> 내 기록 보러가기
+              <List size={18} /> 내 기록 보기
             </button>
           </div>
         </div>
