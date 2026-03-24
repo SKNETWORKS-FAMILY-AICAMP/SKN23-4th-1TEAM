@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,7 +28,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
   const [evaluation, setEvaluation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingText, setLoadingText] = useState(
-    "AI가 면접 내용을 분석 중입니다...",
+    "AI媛 硫댁젒 ?댁슜??遺꾩꽍 以묒엯?덈떎...",
   );
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({});
 
@@ -54,9 +54,9 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
   useEffect(() => {
     if (!isLoading) return;
     const texts = [
-      "AI가 면접 내용을 분석 중입니다...",
-      "답변의 전문성과 논리력을 평가하고 있습니다...",
-      "맞춤형 개선 피드백을 작성하는 중입니다...",
+      "AI媛 硫댁젒 ?댁슜??遺꾩꽍 以묒엯?덈떎...",
+      "?듬????꾨Ц?깃낵 ?쇰━?μ쓣 ?됯??섍퀬 ?덉뒿?덈떎...",
+      "留욎땄??媛쒖꽑 ?쇰뱶諛깆쓣 ?묒꽦?섎뒗 以묒엯?덈떎...",
     ];
     let i = 0;
     const interval = setInterval(() => {
@@ -71,17 +71,17 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
       if (userMessages.length === 0) {
         setEvaluation(
           [
-            "# 1. 종합 점수",
+            "# 1. 醫낇빀 ?먯닔",
             "",
-            "답변한 내용이 없어 아직 평가를 생성할 수 없습니다.",
+            "?듬????댁슜???놁뼱 ?꾩쭅 ?됯?瑜??앹꽦?????놁뒿?덈떎.",
             "",
-            "# 2. BEST 답변",
+            "# 2. BEST ?듬?",
             "",
-            "아직 제출된 답변이 없습니다.",
+            "?꾩쭅 ?쒖텧???듬????놁뒿?덈떎.",
             "",
-            "# 3. 보완 포인트",
+            "# 3. 蹂댁셿 ?ъ씤??,
             "",
-            "질문에 답변을 제출한 뒤 다시 리포트를 확인해 주세요.",
+            "吏덈Ц???듬????쒖텧?????ㅼ떆 由ы룷?몃? ?뺤씤??二쇱꽭??",
           ].join("\n"),
         );
         setOpenSections({ 0: true, 1: true, 2: true });
@@ -92,22 +92,22 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
       try {
         const res = await inferApi.getEvaluationReport({
           messages: messages,
-          job_role: jobRole || "기본 직무",
-          difficulty: difficulty || "중",
+          job_role: jobRole || "湲곕낯 吏곷Т",
+          difficulty: difficulty || "以?,
           resume_text: experienceText || null,
         });
 
-        let rawEval = res.evaluation || "평가 생성 실패";
+        let rawEval = res.evaluation || "?됯? ?앹꽦 ?ㅽ뙣";
         rawEval = rawEval.replace(
-          /\*\*[\d\.]+\s*\/\s*100점\*\*/g,
-          `**${totalScore} / 100점**`,
+          /\*\*[\d\.]+\s*\/\s*100??*\*/g,
+          `**${totalScore} / 100??*`,
         );
 
         setEvaluation(rawEval);
         setOpenSections({ 0: true, 1: true });
       } catch (error) {
         console.error(error);
-        setEvaluation("서버 통신 오류로 평가 리포트를 불러오지 못했습니다.");
+        setEvaluation("?쒕쾭 ?듭떊 ?ㅻ쪟濡??됯? 由ы룷?몃? 遺덈윭?ㅼ? 紐삵뻽?듬땲??");
       } finally {
         setIsLoading(false);
       }
@@ -122,7 +122,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
     const sections: { title: string; content: string }[] = [];
     let inCodeBlock = false;
-    let currentTitle = "면접 총평";
+    let currentTitle = "硫댁젒 珥앺룊";
     let currentContent = "";
 
     const lines = markdown.split("\n");
@@ -166,7 +166,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
     const element = document.createElement("a");
     const file = new Blob([evaluation], { type: "text/plain;charset=utf-8" });
     element.href = URL.createObjectURL(file);
-    element.download = `AI면접_결과리포트_${jobRole || "기본직무"}.txt`;
+    element.download = `AI硫댁젒_寃곌낵由ы룷??${jobRole || "湲곕낯吏곷Т"}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -206,10 +206,10 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
         heightLeft -= pdfHeight;
       }
 
-      pdf.save(`AI면접_결과리포트_${jobRole || "기본직무"}.pdf`);
+      pdf.save(`AI硫댁젒_寃곌낵由ы룷??${jobRole || "湲곕낯吏곷Т"}.pdf`);
     } catch (error) {
-      console.error("PDF 생성 실패:", error);
-      alert("PDF 다운로드 중 오류가 발생했습니다.");
+      console.error("PDF ?앹꽦 ?ㅽ뙣:", error);
+      alert("PDF ?ㅼ슫濡쒕뱶 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.");
     }
   };
 
@@ -226,7 +226,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
             ref={pdfRef}
             style={{ padding: "20px", backgroundColor: "#fff" }}
           >
-            <h2>면접 결과 리포트</h2>
+            <h2>硫댁젒 寃곌낵 由ы룷??/h2>
 
             <div className="score-circle-container">
               <div
@@ -259,19 +259,19 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
             {!experienceText && (
               <div className="warning-banner">
-                이력서를 연동하지 않은 자율 면접이므로, 직무 매칭률 평가는
-                제한될 수 있습니다.
+                ?대젰?쒕? ?곕룞?섏? ?딆? ?먯쑉 硫댁젒?대?濡? 吏곷Т 留ㅼ묶瑜??됯???
+                ?쒗븳?????덉뒿?덈떎.
               </div>
             )}
 
             <div className="evaluation-box">
               {isLoading ? (
                 <div className="loading-state">
-                  {/* CSS 스피너 대신 loading.gif 이미지를 출력합니다. 
-                      이미지 크기 조절이 필요하면 width 값을 변경하세요. */}
+                  {/* CSS ?ㅽ뵾?????loading.gif ?대?吏瑜?異쒕젰?⑸땲?? 
+                      ?대?吏 ?ш린 議곗젅???꾩슂?섎㈃ width 媛믪쓣 蹂寃쏀븯?몄슂. */}
                   <img
                     src="/images/common/loading.gif"
-                    alt="로딩 애니메이션"
+                    alt="濡쒕뵫 ?좊땲硫붿씠??
                     style={{ width: "80px", marginBottom: "16px" }}
                   />
                   <p className="loading-text animate-pulse">{loadingText}</p>
@@ -313,7 +313,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
                 onClick={handleDownloadTxt}
                 disabled={isLoading || !evaluation}
               >
-              <Download size={18} /> TXT 저장
+              <Download size={18} /> TXT ???
             </button>
             <button
               className="btn-download"
@@ -321,16 +321,16 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
               onClick={handleDownloadPdf}
               disabled={isLoading || !evaluation}
             >
-              <Download size={18} /> PDF 저장
+              <Download size={18} /> PDF ???
             </button>
           </div>
 
           <div className="bottom-row">
             <button className="btn-restart" onClick={onRestart}>
-              <RotateCcw size={18} /> 다시 시작
+              <RotateCcw size={18} /> ?ㅼ떆 ?쒖옉
             </button>
             <button className="btn-home" onClick={handleGoRecords}>
-              <List size={18} /> 내 기록 보러가기
+              <List size={18} /> 내 기록 보기
             </button>
           </div>
         </div>
@@ -338,3 +338,4 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
     </div>
   );
 };
+
