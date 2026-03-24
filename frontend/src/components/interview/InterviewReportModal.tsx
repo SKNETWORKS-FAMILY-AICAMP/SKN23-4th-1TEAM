@@ -306,18 +306,13 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
         </div>
 
         <div className="modal-fixed-footer">
-          <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
-            <button
-              className="btn-download"
-              style={{
-                flex: 1,
-                backgroundColor: "#f8fafc",
-                color: "#475569",
-                border: "1px solid #cbd5e1",
-              }}
-              onClick={handleDownloadTxt}
-              disabled={isLoading || !evaluation}
-            >
+            <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+              <button
+                className="btn-download"
+                style={{ flex: 1 }}
+                onClick={handleDownloadTxt}
+                disabled={isLoading || !evaluation}
+              >
               <Download size={18} /> TXT 저장
             </button>
             <button

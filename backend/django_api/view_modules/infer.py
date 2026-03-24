@@ -212,7 +212,7 @@ def infer_end(request):
             db.commit()
 
         return {
-            "message": "????????????????",
+            "message": "??? ???????.",
             "final_score": final_score,
             "avg_confidence": avg_confidence,
         }

@@ -16,7 +16,6 @@ const NAV_ITEMS = [
 ];
 
 export const Header = () => {
-  // 💡 openLoginModal 함수 추가
   const { isAuthenticated, user, clearAuth, openLoginModal } = useAuthStore();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -37,7 +36,7 @@ export const Header = () => {
     setIsMobileMenuOpen(false);
 
     if (!isAuthenticated) {
-      openLoginModal(); 
+      openLoginModal();
       return;
     }
 
@@ -86,14 +85,14 @@ export const Header = () => {
           {isAuthenticated ? (
             <>
               <span className="user-greeting">{user?.name}님</span>
-              <button className="logout-btn" onClick={handleLogoutClick}>
-                로그아웃
-              </button>
+                <button className="logout-btn" onClick={handleLogoutClick}>
+                  로그아웃
+                </button>
             </>
           ) : (
             <button className="login-btn" onClick={() => navigate(ROUTES.AUTH)}>
-              로그인 / 회원가입
-            </button>
+                로그인 / 회원가입
+              </button>
           )}
         </div>
 
@@ -118,8 +117,8 @@ export const Header = () => {
       <aside className={`mobile-menu-drawer${isMobileMenuOpen ? " open" : ""}`}>
         <div className="mobile-menu-header">
           <div>
-            <strong>AIWORK 메뉴</strong>
-            <p>모바일에서 더 편하게 둘러보세요.</p>
+              <strong>AIWORK 메뉴</strong>
+            <p>모바일에서도 편하게 둘러보세요.</p>
           </div>
           <button
             type="button"
@@ -127,13 +126,11 @@ export const Header = () => {
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="메뉴 닫기"
           >
-            ×
+            ?
           </button>
         </div>
 
-        <div className="mobile-nav-links">
-          {renderNavItems("mobile-nav-btn")}
-        </div>
+        <div className="mobile-nav-links">{renderNavItems("mobile-nav-btn")}</div>
 
         <div className="mobile-auth-panel">
           {isAuthenticated ? (
@@ -142,12 +139,9 @@ export const Header = () => {
                 <span className="mobile-user-label">현재 로그인</span>
                 <strong>{user?.name}님</strong>
               </div>
-              <button
-                className="mobile-auth-btn secondary"
-                onClick={handleLogoutClick}
-              >
-                로그아웃
-              </button>
+                <button className="mobile-auth-btn secondary" onClick={handleLogoutClick}>
+                  로그아웃
+                </button>
             </>
           ) : (
             <button
@@ -163,15 +157,14 @@ export const Header = () => {
         </div>
       </aside>
 
-      {/* 💡 모든 페이지에서 공통으로 띄워질 커스텀 로그인 모달! */}
       <LoginModal />
 
       <CustomAlert
         open={showLogoutModal}
-        title={"로그아웃 하시겠습니까?"}
-        message={"로그아웃 후 로그인 화면으로 이동합니다."}
-        confirmText={"확인"}
-        cancelText={"취소"}
+        title="로그아웃 하시겠습니까?"
+        message="로그아웃 후 로그인 화면으로 이동합니다."
+        confirmText="확인"
+        cancelText="취소"
         onConfirm={executeLogout}
         onCancel={() => setShowLogoutModal(false)}
       />
