@@ -56,7 +56,7 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
     const texts = [
       "AI가 면접 내용을 분석 중입니다...",
-      "답변의 전문성과 논리를 평가하고 있습니다...",
+      "답변의 전문성과 논리력을 평가하고 있습니다...",
       "맞춤형 개선 피드백을 작성하는 중입니다...",
     ];
 
@@ -265,8 +265,8 @@ export const InterviewReportModal = ({ messages, onRestart }: Props) => {
 
             {!experienceText && (
               <div className="warning-banner">
-                이력서를 연동하지 않은 자유 면접이므로 직무 맥락을 평가하는 데
-                제한이 있을 수 있습니다.
+                이력서를 연동하지 않은 자율 면접이므로, 직무 매칭률 평가는
+                제한될 수 있습니다.
               </div>
             )}
 
