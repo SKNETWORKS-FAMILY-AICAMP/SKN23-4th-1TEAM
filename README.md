@@ -285,7 +285,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ## 시스템 아키텍쳐
 
-<img src="frontend/src/assets/rm/[SKN23-4th-1TEAM]시스템 아키텍쳐.png" width="800">
+<img src="frontend/src/assets/systemArchitecture.png" width="800">
 
 </div>
 
@@ -539,7 +539,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 |**가이드봇 시작 채팅**| **Tavily 웹 검색** | **면접 점수 확인** |
 | :---: | :---: | :---: |
-| <img src="frontend/src/assets/rm/사용법.png" width="60%"> | <img src="frontend/src/assets/rm/tavily검색.png" width="60%"> |<img src="frontend/src/assets/rm/면접점수확인.png" width="60%"> |
+| <img src="frontend/src/assets/rm/사용법.png" width="60%"> | <img src="frontend/src/assets/TavilySearch.png" width="60%"> |<img src="frontend/src/assets/rm/면접점수확인.png" width="60%"> |
 
 
 
@@ -609,7 +609,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 | **로딩 애니메이션** | **면접중** |**면접모달리포트** |
 | :---: | :---: | :---: |
-| <img src="frontend/public/images/common/loading.gif" width="1000" align="absmiddle"> | <img src="frontend/src/assets/loadingINT.png" width="100%" align="absmiddle"> |<img src="frontend/src/assets/loadingM.png" width="100%" align="absmiddle"> |
+| <img src="frontend/public/images/common/loading.gif" width="1000" align="absmiddle"> | <img src="frontend/src/assets/loadingINT.jpg" width="100%" align="absmiddle"> |<img src="frontend/src/assets/loadingM.jpg" width="100%" align="absmiddle"> |
 
 <br>
 
