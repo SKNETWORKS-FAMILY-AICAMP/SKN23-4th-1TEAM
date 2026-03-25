@@ -271,10 +271,32 @@
   max-width: 800px;
   max-height: 85vh;
   overflow-y: auto;
+  overflow-x: hidden;
   box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: slideUp 0.3s ease-out;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.7);
+    border-radius: 999px;
+    border: 2px solid #ffffff;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.85);
+  }
 }
 
 .modal-header {

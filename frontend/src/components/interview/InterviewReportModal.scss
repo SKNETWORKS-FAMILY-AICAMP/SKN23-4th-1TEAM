@@ -34,20 +34,25 @@ $border-color: #e2e8f0;
     .modal-scroll-body {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 40px;
+      scrollbar-gutter: stable;
+      box-sizing: border-box;
 
       &::-webkit-scrollbar {
-        width: 8px;
+        width: 10px;
       }
       &::-webkit-scrollbar-track {
         background: transparent;
+        margin: 12px 0;
       }
       &::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
+        background: rgba(148, 163, 184, 0.7);
+        border-radius: 999px;
+        border: 2px solid #ffffff;
       }
       &::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        background: rgba(100, 116, 139, 0.85);
       }
 
       h2 {
