@@ -716,7 +716,7 @@ export const GuideChatbot = () => {
   };
 
   return (
-    <div className="chatbot-wrapper">
+    <div className={`chatbot-wrapper${isOpen ? " open" : ""}`}>
       {toast && (
         <div className={`chatbot-toast-alert ${toast.type}`}>
           {getToastIcon(toast.type)}
