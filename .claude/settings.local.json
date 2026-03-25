@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git reset:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(python:*)",
+      "Bash(conda run:*)",
+      "Bash(conda env:*)"
+    ]
+  }
+}

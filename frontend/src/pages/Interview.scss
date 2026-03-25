@@ -1,0 +1,145 @@
+/* pages/Interview.scss */
+$primary-blue: #0176f7;
+
+.interview-page-container {
+  padding: 24px;
+  background: #f0f2f5; /* 앱 전체 뒷배경 */
+  min-height: 100vh;
+}
+
+.unified-interview-header {
+  background: #ffffff;
+  border: 1px solid #e0e5eb;
+  border-radius: 20px;
+  padding: 16px 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .ai-icon-box {
+      font-size: 28px;
+      background: #f4f7fa;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title-area h1 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111;
+      margin: 0 0 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .badge-persona {
+        font-size: 12px;
+        background: $primary-blue;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 700;
+      }
+    }
+    .meta-info {
+      font-size: 13px;
+      color: #666;
+      font-weight: 600;
+      margin: 0;
+    }
+  }
+
+  .btn-end-interview {
+    background: $primary-blue;
+    border: 1px solid $primary-blue;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover {
+      background: #005fca;
+      border-color: #005fca;
+      color: #fff;
+    } /* 종료는 위험색으로 포인트 */
+  }
+}
+
+@media (max-width: 768px) {
+  .interview-page-container {
+    padding: 16px;
+  }
+
+  .unified-interview-header {
+    padding: 18px 16px;
+    border-radius: 18px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 18px;
+
+    .header-left {
+      align-items: flex-start;
+      gap: 14px;
+
+      .ai-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        flex-shrink: 0;
+      }
+
+      .title-area {
+        min-width: 0;
+
+        h1 {
+          font-size: 17px;
+          line-height: 1.35;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          word-break: keep-all;
+        }
+
+        .badge-persona {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          white-space: nowrap;
+        }
+
+        .meta-info {
+          margin-top: 6px;
+          line-height: 1.55;
+          word-break: keep-all;
+        }
+      }
+    }
+
+    .btn-end-interview {
+      width: 100%;
+      min-height: 50px;
+      padding: 0 16px;
+      border-radius: 14px;
+      font-size: 15px;
+      white-space: normal;
+      word-break: keep-all;
+    }
+  }
+}

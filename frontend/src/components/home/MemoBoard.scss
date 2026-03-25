@@ -1,0 +1,147 @@
+.memo-board-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .memo-form {
+    border: 2px solid #b6d9eb;
+    border-radius: 20px;
+    padding: 20px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(187, 56, 208, 0.05);
+
+    p strong {
+      font-size: 16px;
+      color: #111;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .memo-input-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+
+      input {
+        flex: 1;
+        min-width: 0;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background: #f8f9fa;
+        font-size: 14px;
+        padding: 10px 16px;
+        transition: all 0.2s;
+        outline: none;
+
+        &:focus {
+          border-color: #0176f7;
+          box-shadow: 0 0 0 2px #0176f7;
+          background: #fff;
+        }
+      }
+
+      button {
+        background: #0176f7;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 0 20px;
+        min-width: 88px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+        word-break: keep-all;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px #0176f7;
+          filter: brightness(1.1);
+        }
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+
+  .memos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 4px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: #e5e7eb;
+      border-radius: 4px;
+    }
+
+    .memo-card {
+      padding: 22px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+      position: relative;
+      transition: transform 0.3s;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      &:hover {
+        transform: translateY(-6px);
+      }
+
+      .memo-author {
+        span {
+          font-size: 13px;
+          font-weight: 800;
+          background: rgba(255, 255, 255, 0.7);
+          padding: 6px 12px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+      }
+
+      .memo-content {
+        font-size: 15px;
+        line-height: 1.6;
+        font-weight: 600;
+        word-break: keep-all;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .memo-board-container {
+    .memo-form {
+      padding: 18px 16px;
+
+      .memo-input-row {
+        flex-direction: column;
+        gap: 10px;
+
+        button {
+          width: 100%;
+          min-height: 48px;
+        }
+      }
+    }
+  }
+}

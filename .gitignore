@@ -1,0 +1,50 @@
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Environments
+.env
+.env.local
+
+# Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+pj3_venv/
+.pytest_cache/
+alembic/versions/
+
+# Database & Logs
+app.db
+chroma.sqlite3
+*.log
+server_log.txt
+
+# Frontend
+node_modules/
+dist/
+build/
+frontend_streamlit/
+.eslintcache
+
+# Project Specific
+data/
+static/
+create_admin.py
+run_backend.sh
+settings.json
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*venv*/
+
+*bin
+*.toml
