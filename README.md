@@ -427,8 +427,55 @@ User Flow: AI 모의면접 진행 파이프라인
 
 # 11. 고도화된 <span style="color: #0162e0;">AI</span>WORK (시연 캡처본 및 UX Flow)
 
+## 0) 웹/앱 화면
 
-### 1) Agent 가이드 챗봇
+<div align="center">
+
+## **웹/앱 화면**
+
+</div>
+
+
+<table align="center">
+  <tr>
+    <th width="40%" style="text-align:center">웹 화면</th>
+    <th width="30%" style="text-align:center">앱 화면 (태블릿용)</th>
+    <th width="30%" style="text-align:center">앱 화면 (모바일용)</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="frontend/src/assets/webapp/web.png" width="90%">
+    </td>
+    <td align="center">
+      <img src="frontend/src/assets/webapp/pad.gif" width="100%">
+    </td>
+    <td align="center">
+      <img src="frontend/src/assets/webapp/mobile.gif" width="70%">
+    </td>
+  </tr>
+</table>
+
+<br>
+
+<div align="center">
+
+## **웹/앱 화면 등록**
+
+</div>
+
+
+| **웹/앱 화면 (1)** | **웹/앱 화면 (2)** | **웹/앱 화면 (3)** | **웹/앱 화면 (4)** |
+| :---: | :---: | :---: | :---: |
+| <img src="frontend/src/assets/webapp/webapp1.jpg" width="80%"> |<img src="frontend/src/assets/webapp/webapp2.jpg" width="80%"> |<img src="frontend/src/assets/webapp/webapp3.jpg" width="80%"> |<img src="frontend/src/assets/webapp/webapp4.jpg" width="80%"> |
+
+| **웹/앱 화면 (5)** | **웹/앱 화면 (6)** | **웹/앱 화면 (7)** | **웹/앱 화면 (8)** |
+| :---: | :---: | :---: | :---: |
+| <img src="frontend/src/assets/webapp/webapp5.jpg" width="80%"> |<img src="frontend/src/assets/webapp/webapp6.jpg" width="80%"> |<img src="frontend/src/assets/webapp/webapp7.jpg" width="80%"> |<img src="frontend/src/assets/webapp/webapp8.jpg" width="80%"> |
+
+
+<br><br>
+
+## 1) Agent 가이드 챗봇
 
 <br>
 
@@ -491,10 +538,55 @@ User Flow: AI 모의면접 진행 파이프라인
 | <img src="frontend/src/assets/rm/사용법.png" width="60%"> | <img src="frontend/src/assets/rm/tavily검색.png" width="60%"> |<img src="frontend/src/assets/rm/면접점수확인.png" width="60%"> |
 
 
+
+
+
 <br><br>
 ---
 
-### 2) **수익 모델 (Tier System)** - 일반(Normal) 회원과 프리미엄(PRO) 회원의 기능 및 접근 권한 차별화
+## 2) 면접 진행시 실제 RAG + 일반 DB 50:50 동적 병합 출제
+
+<br>
+
+<div align="center">
+
+## **면접 진행 출제 유형 확인**
+
+</div>
+
+| **면접 세팅** | **면접 문항 확인** |
+| :---: | :---: |
+| <img src="frontend/src/assets/rm/rag/면접1.png" width="90%"> |<img src="frontend/src/assets/rm/rag/면접4.png" width="90%"> |
+
+<br>
+
+<div align="center">
+
+## **이력서 기반 RAG 동적 질문 및 꼬리질문**
+
+</div>
+
+| **이력서 RAG 질문 (1)** | **이력서 RAG 질문 (2)** |
+| :---: | :---: |
+| <img src="frontend/src/assets/rm/rag/면접2.png" width="90%"> |<img src="frontend/src/assets/rm/rag/면접3.png" width="90%"> |
+
+<br>
+
+<div align="center">
+
+## **면접 결과 리포트**
+
+</div>
+
+| **면접 결과 리포트 (1)** | **면접 결과 리포트 (2)** | **면접 결과 리포트 (3)** | **면접 결과 리포트 (4)** |
+| :---: | :---: | :---: | :---: |
+| <img src="frontend/src/assets/rm/rag/면접결과리포트1.jpg" width="90%"> |<img src="frontend/src/assets/rm/rag/면접결과리포트2.jpg" width="90%"> |<img src="frontend/src/assets/rm/rag/면접결과리포트3.jpg" width="90%"> |<img src="frontend/src/assets/rm/rag/면접결과리포트4.jpg" width="90%"> |
+
+
+<br><br>
+---
+
+### 3) **수익 모델 (Tier System)** - 일반(Normal) 회원과 프리미엄(PRO) 회원의 기능 및 접근 권한 차별화
 
 |**PRO 구독**| **PRO회원 권한 예시** | 
 | :---: | :---: |
@@ -503,7 +595,7 @@ User Flow: AI 모의면접 진행 파이프라인
 <br><br>
 ---
 
-### 3) 로딩 처리 
+### 4) 로딩 처리 
 
 <div align="center">
 
@@ -529,7 +621,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ---
 
-### 4) 인성면접 게시판
+### 5) 인성면접 게시판
 
 <div align="center">
 
@@ -558,6 +650,12 @@ User Flow: AI 모의면접 진행 파이프라인
 | <img src="frontend/src/assets/rm/좋아요.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/답변삭제.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/인성면접질문.png" width="100%" align="absmiddle"> |
 
 <br><br>
+
+
+
+
+
+
 
 # 12. Trouble Shooting
 
