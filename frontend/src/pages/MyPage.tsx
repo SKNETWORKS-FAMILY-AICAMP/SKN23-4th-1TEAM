@@ -29,7 +29,7 @@ export const MyPage = () => {
   > | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [price, setPrice] = useState(9900);
+  const [price] = useState(9900);
   const [isWidgetReady, setIsWidgetReady] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
 

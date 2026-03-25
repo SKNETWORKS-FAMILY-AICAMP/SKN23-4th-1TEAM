@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { homeApi } from "../../api/homeApi";
 import type { Memo } from "../../api/homeApi";
 import { useAuthStore } from "../../store/authStore";
-import { ROUTES } from "../../constants/routes";
 import "./MemoBoard.scss";
 
 export const MemoBoard = () => {
