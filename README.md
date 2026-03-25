@@ -14,42 +14,44 @@
 ## ✦ 팀 명 : **사자개 물어** <img src="frontend/public/images/common/loading.gif" width="60" align="absmiddle">
 
 
+<div align="center">
 
-<table style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; font-size: 14px;">
+<table style="border-collapse: collapse; text-align: center; font-size: 14px; margin: auto;">
   <tr>
-      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/kjw.png" style="width: 100%; height: auto; display: block;" alt="김지우" />
+      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/kjw.png" width="150" height="150" alt="김지우" />
       </td>
-      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/kdb.png" style="width: 100%; height: auto; display: block;" alt="김다빈" />
-      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/yci.png" style="width: 100%; height: auto; display: block;" alt="양창일" />
+      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/kdb.png" width="150" height="150" alt="김다빈" />
       </td>
-      <td style="width: 20%; border: 1px solid #ddd; padding: 0px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/yhs.png" style="width: 100%; height: auto; display: block;" alt="유헌상" />
+      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/yci.png" width="150" height="150" alt="양창일" />
+      </td>
+      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/yhs.png" width="150" height="150" alt="유헌상" />
       </td>
   </tr>
   <tr style="background-color: #f9f9f9; font-weight: bold;">
-    <td style="border: 1px solid #ddd; padding: 8px;"><strong>김지우</strong></td>
-    <td style="border: 1px solid #ddd; padding: 8px;"><strong>김다빈</strong></td>
-    <td style="border: 1px solid #ddd; padding: 8px;"><strong>양창일</strong></td>
-    <td style="border: 1px solid #ddd; padding: 8px;"><strong>유헌상</strong></td>
+    <td style="border: 1px solid #ddd; padding: 8px;">김지우</td>
+    <td style="border: 1px solid #ddd; padding: 8px;">김다빈</td>
+    <td style="border: 1px solid #ddd; padding: 8px;">양창일</td>
+    <td style="border: 1px solid #ddd; padding: 8px;">유헌상</td>
   </tr>
   <tr>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
         <span style="font-size: 13px;">역할</span>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
         <span style="font-size: 13px;">역할</span>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
         <span style="font-size: 13px;">역할</span>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all; text-align: center;">
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
         <span style="font-size: 13px;">역할</span>
     </td>
   </tr>
-  <tr style="background-color: #ffffff; font-size: 13px;">
+  <tr style="background-color: #ffffff;">
     <td style="border: 1px solid #ddd; padding: 8px;">
         <a href="https://github.com/jooooww">
         <img src="https://img.shields.io/badge/GitHub-jooooww-black?logo=github">
@@ -72,6 +74,8 @@
     </td>
   </tr>
 </table>
+
+</div>
 
 <br><br>
 
@@ -273,7 +277,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ## ERD
 
-<img src="frontend/src/assets/rm/[SKN23-4th-1TEAM]ERD.png" width="800">
+<img src="frontend/src/assets/ERD.png" width="800">
 
 </div>
 
@@ -605,7 +609,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 | **로딩 애니메이션** | **면접중** |**면접모달리포트** |
 | :---: | :---: | :---: |
-| <img src="frontend/public/images/common/loading.gif" width="1000" align="absmiddle"> | <img src="frontend/src/assets/rm/로딩면접.png" width="100%" align="absmiddle"> |<img src="frontend/src/assets/rm/로딩모달.png" width="100%" align="absmiddle"> |
+| <img src="frontend/public/images/common/loading.gif" width="1000" align="absmiddle"> | <img src="frontend/src/assets/loadingINT.png" width="100%" align="absmiddle"> |<img src="frontend/src/assets/loadingM.png" width="100%" align="absmiddle"> |
 
 <br>
 
