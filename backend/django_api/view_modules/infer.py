@@ -1,6 +1,26 @@
 from .shared import *  # noqa: F401,F403
 
 
+def normalize_question_difficulty(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    normalized = str(value).strip()
+    difficulty_map = {
+        "하": "Easy",
+        "easy": "Easy",
+        "Easy": "Easy",
+        "중": "Medium",
+        "중급": "Medium",
+        "medium": "Medium",
+        "Medium": "Medium",
+        "상": "Hard",
+        "hard": "Hard",
+        "Hard": "Hard",
+    }
+    return difficulty_map.get(normalized, normalized)
+
+
 @api_view(["POST"])
 def infer_proofread(request):
     body = json_body(request)
@@ -66,7 +86,7 @@ def infer_start(request):
 @api_view(["GET"])
 def infer_questions(request):
     job_role = request.GET.get("job_role")
-    difficulty = request.GET.get("difficulty")
+    difficulty = normalize_question_difficulty(request.GET.get("difficulty"))
     limit = int(request.GET.get("limit", 5))
     with db_session() as db:
         rows = (
