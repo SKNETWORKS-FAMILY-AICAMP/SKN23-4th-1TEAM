@@ -21,9 +21,31 @@
   max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 40px;
   position: relative;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.7);
+    border-radius: 999px;
+    border: 2px solid #ffffff;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.85);
+  }
 
   .close-btn {
     position: absolute;
