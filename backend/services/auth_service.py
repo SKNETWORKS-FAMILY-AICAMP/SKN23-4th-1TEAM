@@ -142,12 +142,28 @@ def send_auth_email(receiver_email: str, auth_code: str) -> tuple[bool, str]:
     subject = "[보안] 비밀번호 재설정 인증 코드 안내"
     body = f"""
     <html>
-    <body style="font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; max-width: 500px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #222;">코드를 입력하고 비밀번호를 재설정하세요</h2>
-        <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
-            <h1 style="color: #bb38d0; letter-spacing: 8px; margin: 0; font-size: 32px;">{auth_code}</h1>
+    <body style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        
+        <p style="margin-bottom: 30px; font-size: 15px;">안녕하세요. <strong>AIWORK</strong>입니다.</p>
+        
+        <p style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #222;">인증 번호를 입력하고 비밀번호를 재설정하세요.</p>
+        
+        <p style="margin-bottom: 30px; font-size: 15px;">서비스 이용을 위한 코드는 다음과 같습니다.</p>
+        
+        <div style="background-color: #f8f9fa; border: 1px solid #eaeaec; border-radius: 8px; padding: 40px 20px; text-align: center; margin-bottom: 30px;">
+            <p style="font-size: 14px; color: #666; margin: 0 0 15px 0;">인증 번호</p>
+            <p style="font-size: 42px; font-weight: bold; color: #0176f7; letter-spacing: 16px; margin: 0;">{auth_code}</p>
         </div>
-        <p style="font-size: 14px; color: #555;">화면에 위 코드를 입력하세요. 코드는 15분 뒤 만료됩니다.</p>
+        
+        <p style="margin-bottom: 25px; font-size: 15px;">요청하신 페이지에 위 코드를 입력하여 인증을 완료해 주세요.</p>
+        
+        <p style="font-size: 13px; color: #888; line-height: 1.7; margin-bottom: 30px;">
+            보안을 위해 회원님의 AIWORK 이용을 위해 남들과 코드를 공유하지 마세요.<br>
+            본인이 요청하지 않은 경우 이 메일을 무시하셔도 됩니다.
+        </p>
+        
+        <p style="font-size: 15px; font-weight: bold; color: #888; margin: 0;">AIWORK 드림</p>
+        
     </body>
     </html>
     """
