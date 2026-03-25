@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Download } from "lucide-react";
 import { Header } from "../components/common/Header";
 import { CustomAlert } from "../components/common/CustomAlert";
-import { useAuthStore } from "../store/authStore";
+import { GuideChatbot } from "../components/chat/GuideChatbot";
 import { axiosClient } from "../api/axiosClient";
 import { ROUTES } from "../constants/routes";
+import { useAuthStore } from "../store/authStore";
 import "./RecordsPage.scss";
-import { GuideChatbot } from "../components/chat/GuideChatbot";
 
 interface InterviewSession {
   id: number;
@@ -39,8 +39,6 @@ const SessionDetailModal = ({
 }) => {
   const [details, setDetails] = useState<InterviewDetail[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // PDF 캡처 대상 영역을 참조하기 위한 ref
   const pdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,27 +52,75 @@ const SessionDetailModal = ({
         setLoading(false);
       }
     };
-    fetchDetails();
+
+    void fetchDetails();
   }, [sessionId]);
 
   const handleDownloadPdf = async () => {
     if (!pdfRef.current) return;
 
-    try {
-      // html2canvas로 화면 영역을 캡처 (스케일을 키워 해상도 향상)
-      const canvas = await html2canvas(pdfRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
+    let captureContainer: HTMLDivElement | null = null;
 
-      // A4 사이즈 기준 PDF 생성
+    try {
+      // Scrollable modal content can be clipped by html2canvas. Clone the
+      // printable area offscreen so the full height is rendered before capture.
+      captureContainer = document.createElement("div");
+      captureContainer.style.position = "fixed";
+      captureContainer.style.left = "-100000px";
+      captureContainer.style.top = "0";
+      captureContainer.style.width = `${pdfRef.current.scrollWidth || pdfRef.current.clientWidth}px`;
+      captureContainer.style.padding = "0";
+      captureContainer.style.margin = "0";
+      captureContainer.style.background = "#ffffff";
+      captureContainer.style.zIndex = "-1";
+      captureContainer.style.overflow = "visible";
+
+      const clone = pdfRef.current.cloneNode(true) as HTMLDivElement;
+      clone.style.width = "100%";
+      clone.style.maxHeight = "none";
+      clone.style.height = "auto";
+      clone.style.overflow = "visible";
+
+      captureContainer.appendChild(clone);
+      document.body.appendChild(captureContainer);
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        width: clone.scrollWidth,
+        height: clone.scrollHeight,
+        windowWidth: clone.scrollWidth,
+        windowHeight: clone.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfPageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfPageHeight;
+      }
+
       pdf.save(`면접상세기록_세션${sessionId}.pdf`);
     } catch (error) {
       console.error("PDF 생성 실패:", error);
       alert("PDF 다운로드 중 오류가 발생했습니다.");
+    } finally {
+      if (captureContainer) {
+        document.body.removeChild(captureContainer);
+      }
     }
   };
 
@@ -124,10 +170,7 @@ const SessionDetailModal = ({
             이 세션에 저장된 상세 기록이 없습니다.
           </p>
         ) : (
-          <div
-            ref={pdfRef}
-            style={{ padding: "10px", backgroundColor: "#fff" }}
-          >
+          <div ref={pdfRef} style={{ padding: "10px", backgroundColor: "#fff" }}>
             <div className="score-summary-box">
               <div className="summary-item">
                 <div className="label">종합 점수</div>
@@ -159,9 +202,11 @@ const SessionDetailModal = ({
                       Q{d.turn_index + 1}. 면접관 질문
                       {d.score !== null && (
                         <span
-                          className={`score ${d.score >= 7 ? "green" : d.score >= 5 ? "orange" : "red"}`}
+                          className={`score ${
+                            d.score >= 7 ? "green" : d.score >= 5 ? "orange" : "red"
+                          }`}
                         >
-                          ✦ {d.score.toFixed(1)}/10
+                          {d.score.toFixed(1)}/10
                         </span>
                       )}
                     </div>
@@ -207,6 +252,7 @@ export const RecordsPage = () => {
 
   const fetchRecords = async () => {
     if (!user?.id) return;
+
     try {
       setLoading(true);
       const response = await axiosClient.get(
@@ -221,18 +267,18 @@ export const RecordsPage = () => {
   };
 
   useEffect(() => {
-    fetchRecords();
+    void fetchRecords();
   }, [user]);
 
   const handleConfirmedDelete = async (sessionId: number) => {
     try {
       await axiosClient.delete(`/api/interview/sessions/${sessionId}`);
-      alert("면접 기록이 삭제되었습니다.");
-      fetchRecords();
+      alert("면접 기록을 삭제했습니다.");
+      void fetchRecords();
     } catch (error: any) {
       console.error(error);
       if (error.response?.status === 401 || error.response?.status === 405) {
-        alert("삭제 권한이 없거나 로그인이 만료되었습니다.");
+        alert("삭제 권한이 없거나 로그인 상태가 만료되었습니다.");
       } else {
         alert("삭제에 실패했습니다.");
       }
@@ -261,7 +307,7 @@ export const RecordsPage = () => {
           <div>
             <h1 className="hero-title">내 면접 기록</h1>
             <p className="hero-subtitle">
-              진행 완료된 결과 확인 및 기록을 관리할 수 있습니다.
+              진행 완료한 결과 확인 및 기록을 관리할 수 있습니다.
             </p>
           </div>
           <button
@@ -317,7 +363,11 @@ export const RecordsPage = () => {
                       >
                         {record.status === "COMPLETED" ? (
                           record.total_score !== null ? (
-                            `${(record.total_score <= 10 ? record.total_score * 10 : record.total_score).toFixed(1)}점 / 100`
+                            `${(
+                              record.total_score <= 10
+                                ? record.total_score * 10
+                                : record.total_score
+                            ).toFixed(1)} / 100`
                           ) : (
                             "채점 중"
                           )
@@ -362,7 +412,9 @@ export const RecordsPage = () => {
           </div>
         )}
       </main>
+
       <GuideChatbot />
+
       {selectedSessionId !== null && (
         <SessionDetailModal
           sessionId={selectedSessionId}
