@@ -68,18 +68,6 @@ const SimpleMarkdownRenderer = ({ content }: { content: string }) => {
   );
 };
 
-interface Message {
-  id: string;
-  type: "user" | "bot";
-  content: string;
-  downloadContent?: string;
-  downloadFilename?: string;
-  saveResumePayload?: {
-    title: string;
-    text: string;
-  };
-}
-
 export const GuideChatbot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -94,7 +82,6 @@ export const GuideChatbot = () => {
     setIsOpen,
     messages,
     addMessage,
-    setMessages,
     removeMessageById,
     removeLoadingMessages,
     input,
