@@ -117,7 +117,7 @@ export const InterviewSetupModal = ({ onClose }: Props) => {
           finalResumeText = extracted;
         } catch (e) {
           console.error("PDF 추출 실패:", e);
-          alert("PDF 텍스트 추출에 실패했습니다. 콘솔 에러를 확인해주세요.");
+          alert("PDF 텍스트 추출에 실패했습니다. PDF 파일이나 TXT 파일로 다시 시도해 주세요.");
           setIsUploading(false);
           return;
         }
