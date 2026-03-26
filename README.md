@@ -37,18 +37,30 @@
     <td style="border: 1px solid #ddd; padding: 8px;">양창일</td>
     <td style="border: 1px solid #ddd; padding: 8px;">유헌상</td>
   </tr>
+  <tr style="background-color: #ffffffff; font-weight: bold;">
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;">AI / PM / BE / FE</span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"></span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;">AI / BE / FE</span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"></span></td>
+  </tr>
   <tr>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-        <span style="font-size: 13px;">BE/FE</span>
+          <div style="font-size: 12px; text-align: center; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+              - 에이전트 챗봇 제어 및 기능 고도화<br>
+              - 프론트엔드 아키텍처 재설계<br>
+              - DB 스키마 공동 설계 및 연동<br>
+              - 프로젝트 산출물 및 문서 총괄
+          </div>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
     </td>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-        <span style="font-size: 13px;">BE/FE • 발표</span>
+          <div style="font-size: 12px; text-align: center; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+              - 서비스 엔드투엔드(E2E) 인프라 구축 및 배포<br>
+              - 백엔드 프레임워크 고도화 및 마이그레이션<br>
+              - 시스템 디버깅 및 코드 안정화
+          </div>
     </td>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-        <span style="font-size: 13px;">BE/FE</span>
-    </td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-        <span style="font-size: 13px;">BE/FE</span>
     </td>
   </tr>
   <tr style="background-color: #ffffff;">
@@ -74,6 +86,8 @@
     </td>
   </tr>
 </table>
+
+
 
 </div>
 
@@ -302,6 +316,18 @@ User Flow: AI 모의면접 진행 파이프라인
 
 <div align="center">
 
+## 챗봇 에이전트 동작 플로우
+
+|**에이전트 동작 요약도** | **에이전트 동작 구조** |
+|:---:|:---:|
+| <img src="frontend/src/assets/rm/에이전트동작요약도.png" width="100%"> | <img src="frontend/src/assets/rm/에이전트동작구조.png" width="100%"> |
+
+</div>
+
+<br>
+
+<div align="center">
+
 ## 파일 구조
 </div>
 
@@ -455,15 +481,15 @@ User Flow: AI 모의면접 진행 파이프라인
         ├── App.tsx         # 모든 라우트, 스토어를 감싸는 앱의 뿌리
         ├── main.tsx        # DOM 렌더러
         ├── api/            # Axios 클라이언트 및 엔드포인트 통신 모듈
-        │   ├── adminApi.ts     # 관리자 API (추가됨)
+        │   ├── adminApi.ts     # 관리자 API
         │   ├── authApi.ts
         │   ├── axiosClient.ts
         │   ├── boardApi.ts
         │   ├── homeApi.ts
         │   ├── inferApi.ts
         │   ├── interviewApi.ts
-        │   ├── jobsApi.ts      # 채용 공고 API (추가됨)
-        │   └── resumeApi.ts    # 이력서 API (추가됨)
+        │   ├── jobsApi.ts      # 채용 공고 API
+        │   └── resumeApi.ts    # 이력서 API
         ├── assets/         # 앱 번들에 포함되는 로고 및 아이콘
         │   ├── webapp/         # 웹앱 스크린샷 이미지 모음
         │   └── rm/             # README 전용 에셋 이미지 모음
@@ -479,8 +505,8 @@ User Flow: AI 모의면접 진행 파이프라인
         │   │   └── GuideChatbot.tsx
         │   ├── common/
         │   │   ├── CustomAlert.tsx
-        │   │   ├── CustomModal.tsx     # 공통 모달 컴포넌트 (추가됨)
-        │   │   ├── GlobalAlertHost.tsx # 전역 알림 렌더러 (추가됨)
+        │   │   ├── CustomModal.tsx     # 공통 모달 컴포넌트 
+        │   │   ├── GlobalAlertHost.tsx # 전역 알림 렌더러
         │   │   ├── Header.tsx
         │   │   ├── LoginModal.tsx
         │   │   └── ProtectedRoute.tsx
@@ -491,7 +517,7 @@ User Flow: AI 모의면접 진행 파이프라인
         │   ├── interview/
         │   │   ├── ChatWindow.tsx
         │   │   ├── InterviewReportModal.tsx
-        │   │   ├── InterviewSetupModal.tsx # 면접 설정 모달 (추가됨)
+        │   │   ├── InterviewSetupModal.tsx # 면접 설정 모달 
         │   │   ├── TextInterview.tsx
         │   │   ├── VoiceInterview.tsx
         │   │   └── WebcamBox.tsx
@@ -577,22 +603,9 @@ User Flow: AI 모의면접 진행 파이프라인
 <br><br>
 
 
-# 10. 테스트 시나리오 (Test Scenarios)
+# 10. 고도화된 <span style="color: #0162e0;">AI</span>WORK (시연 캡처본 및 UX Flow)
 
-기획 및 QA 관점에서 정상 작동을 검증한 핵심 유스케이스입니다.
-
-| 시나리오명 | 입력(Input) 및 조건 | 기대 출력(Output) 및 결과 |
-| :--- | :--- | :--- |
-| **Zero-Click 면접 세팅** | 메인 홈 챗봇에 *"파이썬 백엔드 면접 준비해줘"* 라고 자연어 입력 | 에이전트가 의도를 파악하여 면접장으로 자동 화면 전환 및 직무(파이썬 백엔드), 난이도(기본값) 자동 세팅 |
-| **이력서 RAG 동적 꼬리질문** | 면접 중 사용자의 답변 수준이 환산 점수 기준 **40점 이하** 기록 | 단순 다음 질문이 아닌, 사용자가 업로드한 이력서를 RAG로 검색하여 해당 기술과 연관된 심화 꼬리질문 생성 (최대 2회 제한) |
-| **비전 태도 분석 동작** | 음성/캠 면접 진행 중 웹캠 활성화 및 인터뷰 수행 | HuggingFace 랜드마크 모델이 시선 처리, 표정 변화를 좌표값으로 추출하여 결과 리포트에 피드백 반영 |
-| **전문 첨삭 파이프라인** | 이력서 등록 페이지에서 자기소개서 업로드 후 *"직무 적합성 위주로 첨삭해 줘"* 요청 | STAR 기법 기반의 문장 교정본 및 면접관 시점의 예상 질문 리포트를 마크다운 형식으로 반환 |
-
-<br><br>
-
-# 11. 고도화된 <span style="color: #0162e0;">AI</span>WORK (시연 캡처본 및 UX Flow)
-
-## 0) 웹/앱 화면
+# 0) 웹/앱 화면
 
 <div align="center">
 
@@ -640,7 +653,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 <br><br>
 
-## 1) Agent 가이드 챗봇
+# 1) Agent 가이드 챗봇
 
 <br>
 
@@ -667,6 +680,8 @@ User Flow: AI 모의면접 진행 파이프라인
 | :---: | :---: | :---: | :---: |
 | <img src="frontend/src/assets/rm/@이력서분석.png" width="70%"> |<img src="frontend/src/assets/rm/@이력서분석선택.png" width="70%"> |<img src="frontend/src/assets/rm/@이력서분석결과.png" width="70%"> |<img src="frontend/src/assets/rm/@이력서첨삭.png" width="70%"> |
 
+
+<br>
 
 | **이력서 첨삭 및 분석 (종합 요청)** | **이력서 저장 모달** |**이력서 저장 결과** |
 | :---: | :---: | :---: |
@@ -706,12 +721,11 @@ User Flow: AI 모의면접 진행 파이프라인
 
 
 
-<br><br>
----
+<br><br><br>
 
-## 2) 면접 진행시 실제 RAG + 일반 DB 50:50 동적 병합 출제
+# 2) 면접 진행시 실제 RAG + 일반 DB 50:50 동적 병합 출제
 
-<br>
+
 
 <div align="center">
 
@@ -748,19 +762,36 @@ User Flow: AI 모의면접 진행 파이프라인
 | <img src="frontend/src/assets/rm/rag/면접결과리포트1.jpg" width="90%"> |<img src="frontend/src/assets/rm/rag/면접결과리포트2.jpg" width="90%"> |<img src="frontend/src/assets/rm/rag/면접결과리포트3.jpg" width="90%"> |<img src="frontend/src/assets/rm/rag/면접결과리포트4.jpg" width="90%"> |
 
 
-<br><br>
----
+<br><br><br>
 
-## 3) **수익 모델 (Tier System)** - 일반(Normal) 회원과 프리미엄(PRO) 회원의 기능 및 접근 권한 차별화
+
+# 3) **비전 태도 분석**
+
+<div align="center">
+
+## **웹캠을 통한 태도 분석**
+</div>
+
+> HuggingFace 랜드마크 모델이 시선 처리, 표정 변화를 좌표값으로 추출하여 결과 리포트에 피드백 반영
+> 비전 태도 분석의 경우 웹캠 활성화 및 인터뷰 수행시 동작 (음성면접만 웹캠 기능 존재)
+
+| **비전 태도 분석 동작** | 
+| :---: | 
+| <img src="frontend/src/assets/rm/음성면접.png" width="90%"> |
+
+<br><br><br>
+
+
+# 4) **수익 모델 (Tier System)** - 일반(Normal) 회원과 프리미엄(PRO) 회원의 기능 및 접근 권한 차별화
 
 |**PRO 구독**| **PRO회원 권한 예시** | 
 | :---: | :---: |
 | <img src="frontend/src/assets/rm/PRO구독.gif" width="100%"> | <img src="frontend/src/assets/rm/pro예시.png" width="60%"> |
 
-<br><br>
----
+<br><br><br>
 
-## 4) 로딩 처리 
+
+# 5) 로딩 처리 
 
 <div align="center">
 
@@ -784,9 +815,10 @@ User Flow: AI 모의면접 진행 파이프라인
 
 </div>
 
----
 
-## 5) 인성면접 게시판
+<br><br><br>
+
+# 6) 인성면접 게시판
 
 <div align="center">
 
@@ -814,7 +846,7 @@ User Flow: AI 모의면접 진행 파이프라인
 | :---: | :---: | :---: |
 | <img src="frontend/src/assets/rm/좋아요.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/답변삭제.png" width="100%" align="absmiddle"> | <img src="frontend/src/assets/rm/인성면접질문.png" width="100%" align="absmiddle"> |
 
-<br><br>
+<br><br><br>
 
 
 
@@ -822,7 +854,7 @@ User Flow: AI 모의면접 진행 파이프라인
 
 
 
-# 12. Trouble Shooting
+# 11. Trouble Shooting
 
 ### ✦ AI 동문서답 현상 (RAG 연동 오류)
 
@@ -856,18 +888,41 @@ User Flow: AI 모의면접 진행 파이프라인
 
 <br><br>
 
-# 13. 향후 개선 계획 
+# 12. 향후 개선 계획 
 
 본 프로젝트를 실제 B2B 또는 상용 B2C 서비스로 고도화할 경우 고려하고 있는 확장 계획입니다.
 
   * **B2B 엔터프라이즈(HR) 대시보드 확장:** 현재 구직자(B2C) 중심의 서비스에 기업 인사담당자 전용 뷰를 추가하여, 지원자들의 역량 분석 리포트 요약 및 AI 채점 랭킹 보드를 한눈에 확인할 수 있는 B2B SaaS로 확장.
   * **멀티모달 감정 분석 고도화:** 현재 안면 랜드마크 중심의 시선 처리 분석을 넘어, 음성의 높낮이(Pitch), 발화 속도(Pace), 미세한 떨림 등을 분석하여 긴장도 및 자신감을 수치화하는 멀티모달 오디오 분석 모델 추가 도입.
   * **특화 직군 Fine-Tuning 모델 도입:** 범용 LLM 대신 의료, 금융, 법률 등 특수 도메인 지식에 대해 Fine-Tuning된 자체 소형 모델(sLLM)을 병렬로 연결하여 도메인별 전문 면접 성능 고도화.
+  * **실시간 협업 기능 추가:** 여러 명의 면접관이 동시에 접속하여 지원자의 답변을 실시간으로 평가하고 코멘트를 남길 수 있는 협업형 평가 시스템 도입.
+  * **AI 기반 이력서 자동 생성:** 사용자가 입력한 경력과 역량을 바탕으로 AI가 자동으로 이력서 초안을 작성해주고, 기업의 채용 공고에 맞춰 이력서를 최적화해주는 기능 추가.
+  * **유료회원/무료회원 기준 설정:** 유료회원/무료회원 기준에 따른 차별화된 서비스 제공. (예시 참고)
+
+
+<div align="center">
+
+  |구분| **PRO 회원** | **NOMAL 회원** |
+  | :---: | :---: | :---: |
+  |페르소나| 모든 이용 가능 | 기본 이용 가능 |
+  |AI 분석| AI 면접 분석 결과 제공 | AI 면접 분석 결과 미제공 |
+  | 가이드챗봇 | 모든 이용 가능 | 첨삭/분석 제외 사용량 제공 |
+  | 이력서 저장 | 무제한 등록 | 최대 5개만 |
+  | 인성면접 게시판 | 답변 분석 기능 | 답변 피드백은 미제공 |
+  | 음성 면접 | 기능 포함 모든 이용 가능 <br> (음성/화상 면접 무제한)   | 웹캠을 통한 태도분석 기능 제외 <br> (음성/화상 면접 월 5회) |
+  | 텍스트 면접 | 횟수 제한 없음 | 월 10회 제한 |
+  
+
+  
+
+
+</div>
+
 
 <br><br>
 
 
-# 14. Insight & 한 줄 회고
+# 13. Insight & 한 줄 회고
 
 ## ✦ Insight
 
@@ -879,7 +934,14 @@ User Flow: AI 모의면접 진행 파이프라인
 
 ## ✦ 한 줄 회고
 
-  * **김지우 (팀장):**  -
-  * **김다빈 (팀원):**  -
-  * **양창일 (팀원):**  -
-  * **유헌상 (팀원):**  -
+* **김지우 (팀장):**  
+  > LangGraph 기반의 에이전트 파이프라인을 기획하고 프론트엔드 구조를 전면 React로 개편하는 과정을 통해, 복잡한 AI 추론 로직이 실제 사용자 경험으로 지연 없이 이어지는 AI 서비스 통합 아키텍처 설계의 중요성을 체감했습니다.  
+
+* **김다빈 (팀원):** 
+  >
+
+* **양창일 (팀원):** 
+  > FastAPI 기반 프로젝트를 Django로 전환하는 과정에서 어려움이 있었지만, 완전한 Django 구조는 아니더라도 하이브리드 방식으로 구현하고 LLM을 통합해 활용해본 데에 의미를 두었다. 또한 AWS를 활용해 인프라를 처음부터 끝까지 직접 구축해본 경험도 값졌다.
+
+* **유헌상 (팀원):** 
+  >
