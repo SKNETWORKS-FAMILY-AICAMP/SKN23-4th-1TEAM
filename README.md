@@ -41,7 +41,7 @@
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / PM / BE / FE</strong></span></td>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / BE </strong></span></td>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / BE / FE</strong></span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong></strong></span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>BE / 프롬프트 엔지니어</strong></span></td>
   </tr>
   <tr>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
@@ -67,6 +67,11 @@
           </div>
     </td>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
+          <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+              - 기술 면접 및 인성 면접 프롬프트 엔지니어링 구현<br>
+              - 백엔드 구성 및 외부 API 연동<br>
+              - 시스템 디버깅
+          </div>
     </td>
   </tr>
   <tr style="background-color: #ffffff;">
@@ -963,4 +968,4 @@ User Flow: AI 모의면접 진행 파이프라인
   > FastAPI 기반 프로젝트를 Django로 전환하는 과정에서 어려움이 있었지만, 완전한 Django 구조는 아니더라도 하이브리드 방식으로 구현하고 LLM을 통합해 활용해본 데에 의미를 두었다. 또한 AWS를 활용해 인프라를 처음부터 끝까지 직접 구축해본 경험도 값졌다.
 
 * **유헌상 (팀원):** 
-  >
+  > 프롬프트 엔지니어링을 하면서, 아주 작은 설정을 추가하더라도 답변의 질이 확연하게 달라지는 것을 확인할 수 있었습니다. 또한 FastAPI와 Django를 둘 다 이용해보았던 것이 좋았고, 프론트엔드부터 백엔드, LLM을 전반적으로 살펴볼 수 있는 좋은 기회였다고 생각한다.
