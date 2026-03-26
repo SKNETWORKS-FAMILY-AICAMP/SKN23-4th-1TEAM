@@ -15,20 +15,19 @@
 
 
 <div align="center">
-
-<table style="border-collapse: collapse; text-align: center; font-size: 14px; margin: auto;">
+  <table width="100%" style="border-collapse: collapse; text-align: center; font-size: 14px; margin: auto; table-layout: fixed;">
   <tr>
-      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/kjw.png" width="150" height="150" alt="김지우" />
+      <td width="25%" align="center" style="width: 25%; border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/kjw.png" width="150" height="150" alt="김지우" style="display: block; margin: 0 auto;" />
       </td>
-      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/kdb.png" width="150" height="150" alt="김다빈" />
+      <td width="25%" align="center" style="width: 25%; border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/kdb.png" width="150" height="150" alt="김다빈" style="display: block; margin: 0 auto;" />
       </td>
-      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/yci.png" width="150" height="150" alt="양창일" />
+      <td width="25%" align="center" style="width: 25%; border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/yci.png" width="150" height="150" alt="양창일" style="display: block; margin: 0 auto;" />
       </td>
-      <td style="border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
-        <img src="frontend/src/assets/rm/yhs.png" width="150" height="150" alt="유헌상" />
+      <td width="25%" align="center" style="width: 25%; border: 1px solid #ddd; padding: 10px; vertical-align: middle;">
+        <img src="frontend/src/assets/rm/yhs.png" width="150" height="150" alt="유헌상" style="display: block; margin: 0 auto;" />
       </td>
   </tr>
   <tr style="background-color: #f9f9f9; font-weight: bold;">
@@ -37,37 +36,38 @@
     <td style="border: 1px solid #ddd; padding: 8px;">양창일</td>
     <td style="border: 1px solid #ddd; padding: 8px;">유헌상</td>
   </tr>
-  <tr style="background-color: #ffffffff; font-weight: bold;">
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / PM / BE / FE</strong></span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / BE </strong></span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / BE / FE</strong></span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>BE / 프롬프트 엔지니어</strong></span></td>
+  <tr style="background-color: #ffffff; font-weight: bold;">
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555;"><span style="font-size: 13px; font-weight: bold;">AI / PM / BE / FE</span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555;"><span style="font-size: 13px; font-weight: bold;">AI / BE</span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555;"><span style="font-size: 13px; font-weight: bold;">AI / BE / FE</span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555;"><span style="font-size: 13px; font-weight: bold;">BE / 프롬프트 엔지니어</span></td>
   </tr>
   <tr>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-          <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+    <td style="border: 1px solid #ddd; padding: 12px 10px; color: #555; vertical-align: top;">
+          <div style="font-size: 10px; text-align: left; line-height: 1.5; word-wrap: break-word; word-break: break-word;">
               - 에이전트 챗봇 제어 및 기능 고도화<br>
               - RAG 및 벡터 DB 연동<br>
               - 프론트엔드 아키텍처 재설계<br>
               - DB 스키마 부분 설계 및 연동<br>
               - 프로젝트 산출물 및 문서 총괄
           </div>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-    <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
-              - 인성면접 커뮤니티 게시판 백엔드 설계 및 구현<br>
-              - OpenAI API 활용 면접 질문 자동 필터링 및 정제 파이프라인 구축<br>
-              - Vector DB(ChromaDB) 연동 및 LLM 기반 맞춤형 피드백 생성 로직 구현
+    </td>
+    <td style="border: 1px solid #ddd; padding: 12px 10px; color: #555; vertical-align: top;">
+          <div style="font-size: 10px; text-align: left; line-height: 1.5; word-wrap: break-word; word-break: break-word;">
+              - 인성면접 커뮤니티 게시판 <br>백엔드 설계 및 구현<br>
+              - OpenAI API 활용 면접 질문 <br>자동 필터링 및 정제 파이프라인 구축<br>
+              - Vector DB(ChromaDB) 연동 및 LLM 기반 <br>맞춤형 피드백 생성 로직 구현
           </div>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-          <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+    <td style="border: 1px solid #ddd; padding: 12px 10px; color: #555; vertical-align: top;">
+          <div style="font-size: 10px; text-align: left; line-height: 1.5; word-wrap: break-word; word-break: break-word;">
               - 서비스 엔드투엔드(E2E) 인프라 구축 및 배포<br>
               - 백엔드 프레임워크 고도화 및 마이그레이션<br>
               - 시스템 디버깅 및 코드 안정화
           </div>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-          <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+    <td style="border: 1px solid #ddd; padding: 12px 10px; color: #555; vertical-align: top;">
+          <div style="font-size: 10px; text-align: left; line-height: 1.5; word-wrap: break-word; word-break: break-word;">
               - 기술 면접 및 인성 면접 프롬프트 엔지니어링 구현<br>
               - 백엔드 구성 및 외부 API 연동<br>
               - 시스템 디버깅
@@ -75,29 +75,28 @@
     </td>
   </tr>
   <tr style="background-color: #ffffff;">
-    <td style="border: 1px solid #ddd; padding: 8px;">
+    <td align="center" style="border: 1px solid #ddd; padding: 8px;">
         <a href="https://github.com/jooooww">
-        <img src="https://img.shields.io/badge/GitHub-jooooww-black?logo=github">
+        <img src="https://img.shields.io/badge/GitHub-jooooww-black?logo=github" style="display: block; margin: 0 auto;">
         </a>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px;">
+    <td align="center" style="border: 1px solid #ddd; padding: 8px;">
         <a href="https://github.com/tree0327">
-        <img src="https://img.shields.io/badge/GitHub-tree0327-pink?logo=github">
+        <img src="https://img.shields.io/badge/GitHub-tree0327-pink?logo=github" style="display: block; margin: 0 auto;">
         </a>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px;">
+    <td align="center" style="border: 1px solid #ddd; padding: 8px;">
         <a href="https://github.com/clachic00">
-        <img src="https://img.shields.io/badge/GitHub-clachic00-blue?logo=github">
+        <img src="https://img.shields.io/badge/GitHub-clachic00-blue?logo=github" style="display: block; margin: 0 auto;">
         </a>
     </td>
-    <td style="border: 1px solid #ddd; padding: 8px;">
+    <td align="center" style="border: 1px solid #ddd; padding: 8px;">
         <a href="https://github.com/hunsang-you">
-        <img src="https://img.shields.io/badge/GitHub-hunsang--you-green?logo=github">
+        <img src="https://img.shields.io/badge/GitHub-hunsang--you-green?logo=github" style="display: block; margin: 0 auto;">
         </a>
     </td>
   </tr>
 </table>
-
 
 
 </div>
