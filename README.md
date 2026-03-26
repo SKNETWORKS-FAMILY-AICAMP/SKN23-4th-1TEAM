@@ -38,23 +38,29 @@
     <td style="border: 1px solid #ddd; padding: 8px;">유헌상</td>
   </tr>
   <tr style="background-color: #ffffffff; font-weight: bold;">
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;">AI / PM / BE / FE</span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"></span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;">AI / BE / FE</span></td>
-    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"></span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / PM / BE / FE</strong></span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / BE </strong></span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong>AI / BE / FE</strong></span></td>
+    <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;"><span style="font-size: 13px; font-weight: bold;"><strong></strong></span></td>
   </tr>
   <tr>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-          <div style="font-size: 12px; text-align: center; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+          <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
               - 에이전트 챗봇 제어 및 기능 고도화<br>
+              - RAG 및 벡터 DB 연동<br>
               - 프론트엔드 아키텍처 재설계<br>
-              - DB 스키마 공동 설계 및 연동<br>
+              - DB 스키마 부분 설계 및 연동<br>
               - 프로젝트 산출물 및 문서 총괄
           </div>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
+    <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+              - 인성면접 커뮤니티 게시판 백엔드 설계 및 구현<br>
+              - OpenAI API 활용 면접 질문 자동 필터링 및 정제 파이프라인 구축<br>
+              - Vector DB(ChromaDB) 연동 및 LLM 기반 맞춤형 피드백 생성 로직 구현
+          </div>
     </td>
     <td style="border: 1px solid #ddd; padding: 8px; color: #555; word-break: keep-all;">
-          <div style="font-size: 12px; text-align: center; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
+          <div style="font-size: 12px; text-align: left; margin-top: 8px; line-height: 1.4; word-break: keep-all;">
               - 서비스 엔드투엔드(E2E) 인프라 구축 및 배포<br>
               - 백엔드 프레임워크 고도화 및 마이그레이션<br>
               - 시스템 디버깅 및 코드 안정화
@@ -322,6 +328,18 @@ User Flow: AI 모의면접 진행 파이프라인
 |:---:|:---:|
 | <img src="frontend/src/assets/rm/에이전트동작요약도.png" width="100%"> | <img src="frontend/src/assets/rm/에이전트동작구조.png" width="100%"> |
 
+</div>
+
+
+<br>
+
+<div align="center">
+
+## 인성면접 게시판 동작 플로우
+
+|**지능형 인성면접 커뮤니티 상호작용 설계** |
+|:---:|
+| <img src="frontend/src/assets/rm/인성면접플로우.png" width="100%"> |
 </div>
 
 <br>
@@ -897,6 +915,7 @@ User Flow: AI 모의면접 진행 파이프라인
   * **특화 직군 Fine-Tuning 모델 도입:** 범용 LLM 대신 의료, 금융, 법률 등 특수 도메인 지식에 대해 Fine-Tuning된 자체 소형 모델(sLLM)을 병렬로 연결하여 도메인별 전문 면접 성능 고도화.
   * **실시간 협업 기능 추가:** 여러 명의 면접관이 동시에 접속하여 지원자의 답변을 실시간으로 평가하고 코멘트를 남길 수 있는 협업형 평가 시스템 도입.
   * **AI 기반 이력서 자동 생성:** 사용자가 입력한 경력과 역량을 바탕으로 AI가 자동으로 이력서 초안을 작성해주고, 기업의 채용 공고에 맞춰 이력서를 최적화해주는 기능 추가.
+  * **취업 종합 커뮤니티로의 게시판 확장:** 현재의 인성면접 질문/답변 위주로 운영되는 게시판을 넘어, 이력서 작성 노하우, 실전 면접 꿀팁, 직무별 합격 후기 등을 자유롭게 공유하고 소통할 수 있는 종합 취업 커뮤니티 공간으로 기능 확대.
   * **유료회원/무료회원 기준 설정:** 유료회원/무료회원 기준에 따른 차별화된 서비스 제공. (예시 참고)
 
 
@@ -938,7 +957,7 @@ User Flow: AI 모의면접 진행 파이프라인
   > LangGraph 기반의 에이전트 파이프라인을 기획하고 프론트엔드 구조를 전면 React로 개편하는 과정을 통해, 복잡한 AI 추론 로직이 실제 사용자 경험으로 지연 없이 이어지는 AI 서비스 통합 아키텍처 설계의 중요성을 체감했습니다.  
 
 * **김다빈 (팀원):** 
-  >
+  > 인성면접 커뮤니티 게시판을 처음부터 설계하고 구현하면서 ChromaDB 벡터 저장과 AI 피드백 파이프라인까지 직접 연결해본 경험이 가장 기억에 남습니다. 기술적으로 낯선 부분도 많았지만 발표 준비를 위해 프로젝트 전체를 다시 들여다보면서 내가 짠 코드가 시스템 안에서 어떻게 맞물려 돌아가는지 이해할 수 있어 좋은 기회였던 것  같습니다. 좋은 팀원들과 함께 3차 프로토타입부터 4차의 고도화까지 함께 머리 맞대며 고민하고 또 구현해볼 수 있어 좋았습니다.
 
 * **양창일 (팀원):** 
   > FastAPI 기반 프로젝트를 Django로 전환하는 과정에서 어려움이 있었지만, 완전한 Django 구조는 아니더라도 하이브리드 방식으로 구현하고 LLM을 통합해 활용해본 데에 의미를 두었다. 또한 AWS를 활용해 인프라를 처음부터 끝까지 직접 구축해본 경험도 값졌다.
